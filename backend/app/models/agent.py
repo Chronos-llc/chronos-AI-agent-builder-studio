@@ -1,0 +1,91 @@
+from sqlalchemy import Column, String, Text, Boolean, Integer, Float, ForeignKey, JSON, Enum
+from sqlalchemy.orm import relationship
+import enum
+
+from app.models.base import BaseModel
+
+
+class AgentStatus(enum.Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ARCHIVED = "archived"
+
+
+class AgentModel(BaseModel):
+    __tablename__ = "agents"
+    
+    # Basic information
+    name = Column(String(100), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    status = Column(Enum(AgentStatus), default=AgentStatus.DRAFT, nullable=False)
+    
+    # Configuration
+    model_config = Column(JSON, nullable=True)  # LLM configuration
+    system_prompt = Column(Text, nullable=True)
+    user_prompt_template = Column(Text, nullable=True)
+    
+    # Metadata
+    tags = Column(JSON, nullable=True)  # List of tags
+    metadata = Column(JSON, nullable=True)  # Additional metadata
+    
+    # Statistics
+    usage_count = Column(Integer, default=0)
+    success_rate = Column(Float, default=0.0)  # Percentage
+    avg_response_time = Column(Float, default=0.0)  # Seconds
+    
+    # Foreign keys
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Relationships
+    owner = relationship("User", back_populates="agents")
+    versions = relationship("AgentVersion", back_populates="agent", cascade="all, delete-orphan")
+    actions = relationship("Action", back_populates="agent", cascade="all, delete-orphan")
+    hooks = relationship("Hook", back_populates="agent", cascade="all, delete-orphan")
+    integrations = relationship("Integration", back_populates="agent", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"
+
+
+class AgentVersion(BaseModel):
+    __tablename__ = "agent_versions"
+    
+    # Version information
+    version_number = Column(String(20), nullable=False)
+    changelog = Column(Text, nullable=True)
+    is_current = Column(Boolean, default=False)
+    
+    # Configuration snapshot
+    config_snapshot = Column(JSON, nullable=False)  # Complete agent config at this version
+    
+    # Foreign keys
+    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    
+    # Relationships
+    agent = relationship("AgentModel", back_populates="versions")
+    
+    def __repr__(self):
+        return f"<AgentVersion(id={self.id}, version='{self.version_number}', agent_id={self.agent_id})>"
+
+
+class Action(BaseModel):
+    __tablename__ = "actions"
+    
+    # Action information
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    action_type = Column(String(50), nullable=False)  # function, api_call, web_scraping, etc.
+    
+    # Configuration
+    parameters = Column(JSON, nullable=True)  # Action parameters
+    config = Column(JSON, nullable=True)  # Action-specific configuration
+    
+    # Foreign keys
+    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    
+    # Relationships
+    agent = relationship("AgentModel", back_populates="actions")
+    
+    def __repr__(self):
+        return f"<Action(id={self.id}, name='{self.name}', type='{self.action_type}')>"

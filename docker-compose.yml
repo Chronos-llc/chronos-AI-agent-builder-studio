@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: chronos-postgres
+    environment:
+      POSTGRES_DB: chronos_db
+      POSTGRES_USER: chronos_user
+      POSTGRES_PASSWORD: chronos_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-db:/docker-entrypoint-initdb.d
+    networks:
+      - chronos-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: chronos-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - chronos-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chronos-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://chronos_user:chronos_pass@postgres:5432/chronos_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-here
+      - ENVIRONMENT=development
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    networks:
+      - chronos-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chronos-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - chronos-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  chronos-network:
+    driver: bridge
