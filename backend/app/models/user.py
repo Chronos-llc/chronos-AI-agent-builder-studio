@@ -27,7 +27,8 @@ class User(BaseModel):
     language = Column(String(10), default="en")
     
     # Relationships
-    agents = relationship("Agent", back_populates="owner", cascade="all, delete-orphan")
+    agents = relationship("AgentModel", back_populates="owner", cascade="all, delete-orphan")
+    settings = relationship("UserSettings", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"
