@@ -7,8 +7,13 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge
 from app.core.logging import setup_logging
+from app.core.mcp_client import initialize_mcp_integrations
+from app.core.ai_providers import initialize_ai_providers
+from app.core.integration_monitoring import initialize_integration_monitoring
+from app.core.communication_channels import initialize_communication_channels
+from app.core.webchat import initialize_webchat
 
 # Setup logging
 setup_logging()
@@ -24,6 +29,21 @@ async def lifespan(app: FastAPI):
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Initialize MCP integrations
+    await initialize_mcp_integrations()
+    
+    # Initialize AI providers
+    await initialize_ai_providers()
+    
+    # Initialize integration monitoring
+    await initialize_integration_monitoring()
+    
+    # Initialize communication channels
+    await initialize_communication_channels()
+    
+    # Initialize WebChat
+    await initialize_webchat()
     
     yield
     
@@ -55,6 +75,13 @@ app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
 app.include_router(actions.router, prefix="/api/v1", tags=["actions", "hooks"])
 app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])
+app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
+app.include_router(mcp.router, prefix="/api/v1/mcp", tags=["mcp"])
+app.include_router(ai_providers.router, prefix="/api/v1/ai", tags=["ai"])
+app.include_router(integration_monitoring.router, prefix="/api/v1/monitoring", tags=["monitoring"])
+app.include_router(communication_channels.router, prefix="/api/v1/communication", tags=["communication"])
+app.include_router(webchat.router, prefix="/api/v1/webchat", tags=["webchat"])
+app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge"])
 
 
 @app.get("/")

@@ -1,178 +1,270 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from fastapi.websocket import WebSocket
-from typing import Dict, List
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from typing import Dict, List, Any
 import json
+import uuid
 from datetime import datetime
-from backend.app.core.security import verify_jwt_token
+import logging
+
+from backend.app.core.security import get_current_user
 from backend.app.models.user import User
-from backend.app.core.database import get_db
+from backend.app.models.agent import Agent
+from backend.app.schemas.debugging import (
+    DebugEvent, LogEntry, ExecutionTrace, BreakpointHit, 
+    WatchExpressionResult, DebugCommand, DebugResponse
+)
+
 
 router = APIRouter()
 
-class ConnectionManager:
+logger = logging.getLogger(__name__)
+
+
+# WebSocket connection manager
+class DebugWebSocketManager:
     def __init__(self):
-        self.active_connections: Dict[str, List[WebSocket]] = {}
+        self.active_connections: Dict[str, WebSocket] = {}
+        self.session_connections: Dict[str, List[str]] = {}
+        self.user_connections: Dict[int, List[str]] = {}
         
-    async def connect(self, websocket: WebSocket, agent_id: str):
+    async def connect(self, websocket: WebSocket, session_id: str, user_id: int):
         await websocket.accept()
-        if agent_id not in self.active_connections:
-            self.active_connections[agent_id] = []
-        self.active_connections[agent_id].append(websocket)
+        connection_id = str(uuid.uuid4())
         
-    def disconnect(self, websocket: WebSocket, agent_id: str):
-        if agent_id in self.active_connections:
-            self.active_connections[agent_id].remove(websocket)
-            if not self.active_connections[agent_id]:
-                del self.active_connections[agent_id]
-                
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
+        self.active_connections[connection_id] = websocket
         
-    async def broadcast(self, message: str, agent_id: str, exclude_websocket: WebSocket = None):
-        if agent_id in self.active_connections:
-            for connection in self.active_connections[agent_id]:
-                if connection != exclude_websocket:
-                    await connection.send_text(message)
-
-manager = ConnectionManager()
-
-@router.websocket("/ws/agent/{agent_id}")
-async def websocket_endpoint(websocket: WebSocket, agent_id: str, token: str):
-    """
-    WebSocket endpoint for real-time collaboration on agent development
-    
-    Handles:
-    - Real-time chat messages
-    - Agent configuration updates
-    - Knowledge base changes
-    - System instructions edits
-    - Presence detection
-    """
-    try:
-        # Authenticate user
-        user_data = verify_jwt_token(token)
-        if not user_data:
-            await websocket.close(code=1008, reason="Unauthorized")
-            return
+        if session_id not in self.session_connections:
+            self.session_connections[session_id] = []
+        self.session_connections[session_id].append(connection_id)
+        
+        if user_id not in self.user_connections:
+            self.user_connections[user_id] = []
+        self.user_connections[user_id].append(connection_id)
+        
+        return connection_id
+        
+    def disconnect(self, connection_id: str):
+        if connection_id in self.active_connections:
+            websocket = self.active_connections[connection_id]
+            del self.active_connections[connection_id]
             
-        user_id = user_data.get("sub")
-        username = user_data.get("username", "Unknown")
+            # Clean up session and user connections
+            for session_id, connections in self.session_connections.items():
+                if connection_id in connections:
+                    connections.remove(connection_id)
+                    if not connections:
+                        del self.session_connections[session_id]
+                    break
+            
+            for user_id, connections in self.user_connections.items():
+                if connection_id in connections:
+                    connections.remove(connection_id)
+                    if not connections:
+                        del self.user_connections[user_id]
+                    break
         
-        # Connect to WebSocket
-        await manager.connect(websocket, agent_id)
-        
-        # Send welcome message with current collaborators
-        collaborators = [{"user_id": user_id, "username": username, "timestamp": datetime.now().isoformat()}]
-        welcome_message = {
-            "type": "welcome",
-            "agent_id": agent_id,
-            "user": {"user_id": user_id, "username": username},
-            "collaborators": collaborators,
-            "timestamp": datetime.now().isoformat()
-        }
-        await manager.send_personal_message(json.dumps(welcome_message), websocket)
-        
-        # Broadcast new user joined
-        join_message = {
-            "type": "user_joined",
-            "agent_id": agent_id,
-            "user": {"user_id": user_id, "username": username},
-            "timestamp": datetime.now().isoformat()
-        }
-        await manager.broadcast(json.dumps(join_message), agent_id, websocket)
-        
-        # Main message loop
-        while True:
+    async def send_message(self, message: Dict[str, Any], connection_id: str):
+        if connection_id in self.active_connections:
+            websocket = self.active_connections[connection_id]
             try:
-                data = await websocket.receive_text()
-                message = json.loads(data)
+                await websocket.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending message to {connection_id}: {e}")
+                self.disconnect(connection_id)
                 
-                # Handle different message types
-                message_type = message.get("type")
+    async def broadcast_to_session(self, message: Dict[str, Any], session_id: str):
+        if session_id in self.session_connections:
+            for connection_id in self.session_connections[session_id]:
+                await self.send_message(message, connection_id)
                 
-                if message_type == "chat_message":
-                    # Broadcast chat message to all collaborators
-                    chat_message = {
-                        "type": "chat_message",
-                        "agent_id": agent_id,
-                        "user": {"user_id": user_id, "username": username},
-                        "content": message.get("content", ""),
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    await manager.broadcast(json.dumps(chat_message), agent_id)
-                    
-                elif message_type == "agent_update":
-                    # Broadcast agent configuration update
-                    update_message = {
-                        "type": "agent_update",
-                        "agent_id": agent_id,
-                        "user": {"user_id": user_id, "username": username},
-                        "field": message.get("field", ""),
-                        "value": message.get("value"),
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    await manager.broadcast(json.dumps(update_message), agent_id, websocket)
-                    
-                elif message_type == "knowledge_update":
-                    # Broadcast knowledge base update
-                    knowledge_message = {
-                        "type": "knowledge_update",
-                        "agent_id": agent_id,
-                        "user": {"user_id": user_id, "username": username},
-                        "action": message.get("action", ""),
-                        "file_id": message.get("file_id", ""),
-                        "file_name": message.get("file_name", ""),
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    await manager.broadcast(json.dumps(knowledge_message), agent_id, websocket)
-                    
-                elif message_type == "instructions_update":
-                    # Broadcast system instructions update
-                    instructions_message = {
-                        "type": "instructions_update",
-                        "agent_id": agent_id,
-                        "user": {"user_id": user_id, "username": username},
-                        "content": message.get("content", ""),
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    await manager.broadcast(json.dumps(instructions_message), agent_id, websocket)
-                    
-                elif message_type == "presence_update":
-                    # Update user presence
-                    presence_message = {
-                        "type": "presence_update",
-                        "agent_id": agent_id,
-                        "user": {"user_id": user_id, "username": username},
-                        "status": message.get("status", "active"),
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    await manager.broadcast(json.dumps(presence_message), agent_id, websocket)
-                    
-            except json.JSONDecodeError:
-                error_msg = {
-                    "type": "error",
-                    "message": "Invalid JSON format",
-                    "timestamp": datetime.now().isoformat()
-                }
-                await manager.send_personal_message(json.dumps(error_msg), websocket)
+    async def broadcast_to_user(self, message: Dict[str, Any], user_id: int):
+        if user_id in self.user_connections:
+            for connection_id in self.user_connections[user_id]:
+                await self.send_message(message, connection_id)
+
+
+websocket_manager = DebugWebSocketManager()
+
+
+@router.websocket("/ws/debug/{session_id}")
+async def debug_websocket_endpoint(
+    websocket: WebSocket,
+    session_id: str,
+    user: User = Depends(get_current_user)
+):
+    """WebSocket endpoint for real-time debugging"""
+    
+    # Verify session exists and belongs to user
+    # In a real implementation, you would check the session database
+    # For now, we'll just verify the user is authenticated
+    
+    connection_id = await websocket_manager.connect(websocket, session_id, user.id)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            logger.info(f"Received debug message: {message}")
+            
+            # Handle different message types
+            if message.get("type") == "command":
+                command = DebugCommand(**message.get("data", {}))
+                
+                # Execute command and send response
+                response = DebugResponse(
+                    success=True,
+                    message=f"Command '{command.command}' executed",
+                    data={"result": "success"}
+                )
+                
+                await websocket_manager.send_message({
+                    "type": "command_response",
+                    "data": response.dict()
+                }, connection_id)
+                
+            elif message.get("type") == "log":
+                log_entry = LogEntry(**message.get("data", {}))
+                
+                # Store log entry and broadcast to session
+                await websocket_manager.broadcast_to_session({
+                    "type": "log_entry",
+                    "data": log_entry.dict()
+                }, session_id)
+                
+            elif message.get("type") == "breakpoint_hit":
+                breakpoint_hit = BreakpointHit(**message.get("data", {}))
+                
+                # Broadcast breakpoint hit to session
+                await websocket_manager.broadcast_to_session({
+                    "type": "breakpoint_hit",
+                    "data": breakpoint_hit.dict()
+                }, session_id)
+                
+            elif message.get("type") == "watch_result":
+                watch_result = WatchExpressionResult(**message.get("data", {}))
+                
+                # Broadcast watch result to session
+                await websocket_manager.broadcast_to_session({
+                    "type": "watch_result",
+                    "data": watch_result.dict()
+                }, session_id)
+                
+            elif message.get("type") == "execution_trace":
+                trace = ExecutionTrace(**message.get("data", {}))
+                
+                # Broadcast execution trace to session
+                await websocket_manager.broadcast_to_session({
+                    "type": "execution_trace",
+                    "data": trace.dict()
+                }, session_id)
                 
     except WebSocketDisconnect:
-        # Handle client disconnect
-        leave_message = {
-            "type": "user_left",
-            "agent_id": agent_id,
-            "user": {"user_id": user_id, "username": username},
-            "timestamp": datetime.now().isoformat()
-        }
-        await manager.broadcast(json.dumps(leave_message), agent_id, websocket)
-        manager.disconnect(websocket, agent_id)
-        
+        logger.info(f"Debug WebSocket disconnected: {connection_id}")
+        websocket_manager.disconnect(connection_id)
     except Exception as e:
-        # Handle other errors
-        error_msg = {
-            "type": "error",
-            "message": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
-        await manager.send_personal_message(json.dumps(error_msg), websocket)
-        manager.disconnect(websocket, agent_id)
+        logger.error(f"Debug WebSocket error: {e}")
+        websocket_manager.disconnect(connection_id)
+
+
+@router.websocket("/ws/logs/{agent_id}")
+async def logs_websocket_endpoint(
+    websocket: WebSocket,
+    agent_id: int,
+    user: User = Depends(get_current_user)
+):
+    """WebSocket endpoint for real-time log streaming"""
+    
+    # Verify agent exists and belongs to user
+    # In a real implementation, you would check the agent database
+    
+    connection_id = await websocket_manager.connect(websocket, f"logs_{agent_id}", user.id)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            logger.info(f"Received log message: {message}")
+            
+            # Handle log subscription
+            if message.get("type") == "subscribe":
+                # In a real implementation, you would start streaming logs
+                # For now, just acknowledge the subscription
+                await websocket_manager.send_message({
+                    "type": "subscription_ack",
+                    "data": {"status": "subscribed", "agent_id": agent_id}
+                }, connection_id)
+                
+            elif message.get("type") == "unsubscribe":
+                # In a real implementation, you would stop streaming logs
+                await websocket_manager.send_message({
+                    "type": "subscription_ack",
+                    "data": {"status": "unsubscribed", "agent_id": agent_id}
+                }, connection_id)
+                break
+                
+    except WebSocketDisconnect:
+        logger.info(f"Logs WebSocket disconnected: {connection_id}")
+        websocket_manager.disconnect(connection_id)
+    except Exception as e:
+        logger.error(f"Logs WebSocket error: {e}")
+        websocket_manager.disconnect(connection_id)
+
+
+@router.websocket("/ws/performance/{session_id}")
+async def performance_websocket_endpoint(
+    websocket: WebSocket,
+    session_id: str,
+    user: User = Depends(get_current_user)
+):
+    """WebSocket endpoint for real-time performance monitoring"""
+    
+    connection_id = await websocket_manager.connect(websocket, session_id, user.id)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            logger.info(f"Received performance message: {message}")
+            
+            # Handle performance monitoring
+            if message.get("type") == "monitor_start":
+                # In a real implementation, you would start monitoring
+                await websocket_manager.send_message({
+                    "type": "monitor_status",
+                    "data": {"status": "monitoring_started", "session_id": session_id}
+                }, connection_id)
+                
+            elif message.get("type") == "monitor_stop":
+                # In a real implementation, you would stop monitoring
+                await websocket_manager.send_message({
+                    "type": "monitor_status",
+                    "data": {"status": "monitoring_stopped", "session_id": session_id}
+                }, connection_id)
+                break
+                
+    except WebSocketDisconnect:
+        logger.info(f"Performance WebSocket disconnected: {connection_id}")
+        websocket_manager.disconnect(connection_id)
+    except Exception as e:
+        logger.error(f"Performance WebSocket error: {e}")
+        websocket_manager.disconnect(connection_id)
+
+
+# Helper function to broadcast debug events
+async def broadcast_debug_event(event: DebugEvent):
+    """Broadcast a debug event to all connections in the session"""
+    await websocket_manager.broadcast_to_session({
+        "type": "debug_event",
+        "data": event.dict()
+    }, event.session_id)
+
+
+# Helper function to broadcast log entries
+async def broadcast_log_entry(log_entry: LogEntry):
+    """Broadcast a log entry to all connections in the session"""
+    await websocket_manager.broadcast_to_session({
+        "type": "log_entry",
+        "data": log_entry.dict()
+    }, log_entry.session_id)

@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import { ActionsPanel } from './ActionsPanel'
+import VersionControlPanel from './VersionControlPanel'
+import BotSettingsPanel from './BotSettingsPanel'
 import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Play, Pause, Stop, Maximize, Minimize, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Moon, Sun, Keyboard, Plus, Upload, Trash2, Edit, Search, Filter, MoreVertical, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Check, AlertTriangle, Info, HelpCircle, GitBranch, GitCommit, GitMerge, GitPullRequest, Cloud, CloudOffline, Wifi, WifiOff, User, Users as UsersIcon, MessageCircle, Bell, BarChart2, PieChart, LineChart, File, Folder, Image, Video, Code as CodeIcon, Terminal, Cpu, Server, Globe, Lock, Unlock, Eye, EyeOff, Star, Heart, ThumbsUp, ThumbsDown, Share, Download, Bookmark, Flag, Tag, Hash, Sliders, Grid, List, Layout, LayoutDashboard, LayoutGrid, LayoutList, Palette, Paintbrush, Droplet, Sun as SunIcon, Moon as MoonIcon, Sunrise, Sunset, Wind, CloudRain, Snowflake, Thermometer, Activity, AlertCircle, Archive, Award, BarChart, Battery, BatteryCharging, BellOff, Bluetooth, Bold, Book, BookOpen, Box, Briefcase, Calendar, Camera, CameraOff, Car, Cast, CheckCircle, CheckSquare, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Chrome, Circle, Clipboard, Clock, CloudDrizzle, CloudLightning, CloudSnow, CloudSun, Cloudy, Codepen, Coffee, Command, Compass, Copy, CornerDownLeft, CornerDownRight, CornerLeftDown, CornerLeftUp, CornerRightDown, CornerRightUp, CornerUpLeft, CornerUpRight, Cpu as CpuIcon, CreditCard, Crop, Crosshair, Database as DatabaseIcon, Delete, Disc, Divide, DollarSign, DownloadCloud, Droplet as DropletIcon, Edit2, Edit3, ExternalLink, EyeOff as EyeOffIcon, Facebook, FastForward, Feather, Figma, FileMinus, FilePlus, FileText as FileTextIcon, Film, Filter as FilterIcon, Flag as FlagIcon, FolderMinus, FolderPlus, Frown, Gift, GitBranch as GitBranchIcon, GitCommit as GitCommitIcon, GitMerge as GitMergeIcon, GitPullRequest as GitPullRequestIcon, Github, Gitlab, Globe as GlobeIcon, Grid as GridIcon, HardDrive, Hash as HashIcon, Headphones, Heart as HeartIcon, HelpCircle as HelpCircleIcon, Home, Image as ImageIcon, Inbox, Info as InfoIcon, Instagram, Italic, Key, Layers, Layout as LayoutIcon, LifeBuoy, Link, Link2, Linkedin, List as ListIcon, Loader, Lock as LockIcon, LogIn, LogOut, Mail, Map, MapPin, Maximize2, Meh, Menu, MessageCircle as MessageCircleIcon, MessageSquare as MessageSquareIcon, Mic, MicOff, Minimize2, Minus, MinusCircle, MinusSquare, Monitor, Moon as MoonIcon2, MoreHorizontal, MoreVertical as MoreVerticalIcon, MousePointer, Move, Music, Navigation, Navigation2, Octagon, Package, Paperclip, PauseCircle, PenTool, Percent, Phone, PhoneCall, PhoneForwarded, PhoneIncoming, PhoneMissed, PhoneOff, PhoneOutgoing, PieChart as PieChartIcon, PlayCircle, PlusCircle, PlusSquare, Pocket, Power, Printer, Radio, RefreshCcw, RefreshCw, Repeat, Rewind, RotateCcw, RotateCw, Rss, Save as SaveIcon, Scissors, Search as SearchIcon, Send, Server as ServerIcon, Settings as SettingsIcon, Share2, Shield, ShieldOff, ShoppingBag, ShoppingCart, Shuffle, Sidebar, SkipBack, SkipForward, Slack, Slash, Sliders as SlidersIcon, Smartphone, Smile, Speaker, Square, Star as StarIcon, StopCircle, Sun as SunIcon2, Sunrise as SunriseIcon, Sunset as SunsetIcon, Table, Tablet, Tag as TagIcon, Target, Terminal as TerminalIcon, Thermometer as ThermometerIcon, ThumbsDown as ThumbsDownIcon, ThumbsUp as ThumbsUpIcon, ToggleLeft, ToggleRight, Tool, Trash, Trash2 as Trash2Icon, Trello, TrendingDown, TrendingUp, Triangle, Truck, Tv, Twitch, Twitter, Type, Umbrella, Underline, Unlock as UnlockIcon, UploadCloud, UserCheck, UserMinus, UserPlus, UserX, Users as UsersIcon2, Video as VideoIcon, VideoOff, Voicemail, Volume, Volume1, Volume2, VolumeX, Watch, Wifi as WifiIcon, WifiOff as WifiOffIcon, Wind as WindIcon, XCircle, XOctagon, XSquare, Youtube, Zap, ZapOff, ZoomIn, ZoomOut } from 'lucide-react'
 
 // Types
@@ -65,7 +68,7 @@ export const StudioLayout: React.FC = () => {
     const [newMessage, setNewMessage] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions'>('instructions')
+    const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions' | 'versions' | 'settings'>('instructions')
     const [panelSizes, setPanelSizes] = useState({
         left: 300,
         center: 500,
@@ -209,7 +212,7 @@ export const StudioLayout: React.FC = () => {
     // Handle chat message send
     const handleSendMessage = () => {
         if (!newMessage.trim()) return
-n
+        
         const userMessage: ChatMessage = {
             id: Date.now().toString(),
             role: 'user',
@@ -243,7 +246,8 @@ n
 
     const handleMouseMove = (e: MouseEvent) => {
         if (!isDragging || !draggingPanel) return
-n        if (draggingPanel === 'left') {
+        
+        if (draggingPanel === 'left') {
             const newLeftSize = e.clientX
             if (newLeftSize > 100 && newLeftSize < window.innerWidth - 200) {
                 setPanelSizes(prev => ({
@@ -303,13 +307,14 @@ n        if (draggingPanel === 'left') {
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (!files) return
-n        const newItems: KnowledgeItem[] = []
+        
+        const newItems: KnowledgeItem[] = []
         for (let i = 0; i < files.length; i++) {
             const file = files[i]
             const fileType = file.type.startsWith('image/') ? 'image' :
-                           file.type.startsWith('video/') ? 'video' :
-                           file.type === 'application/pdf' ? 'pdf' :
-                           file.type.startsWith('text/') ? 'text' : 'code'
+                file.type.startsWith('video/') ? 'video' :
+                    file.type === 'application/pdf' ? 'pdf' :
+                        file.type.startsWith('text/') ? 'text' : 'code'
 
             newItems.push({
                 id: Date.now() + i + '',
@@ -624,11 +629,10 @@ n        const newItems: KnowledgeItem[] = []
                                         {testResults.map(result => (
                                             <div
                                                 key={result.id}
-                                                className={`p-3 rounded-md flex items-center gap-3 ${
-                                                    result.status === 'pass' ? 'bg-green-50 border border-green-200' :
-                                                    result.status === 'warn' ? 'bg-yellow-50 border border-yellow-200' :
-                                                    'bg-red-50 border border-red-200'
-                                                }`}
+                                                className={`p-3 rounded-md flex items-center gap-3 ${result.status === 'pass' ? 'bg-green-50 border border-green-200' :
+                                                        result.status === 'warn' ? 'bg-yellow-50 border border-yellow-200' :
+                                                            'bg-red-50 border border-red-200'
+                                                    }`}
                                             >
                                                 <div className="flex-1">
                                                     <div className="font-medium">{result.test}</div>
@@ -721,6 +725,27 @@ n        const newItems: KnowledgeItem[] = []
                                         <span>Tools</span>
                                     </button>
                                     <button
+                                        className={`flex items-center gap-2 px-3 py-1 rounded-md ${activeTab === 'actions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                                        onClick={() => setActiveTab('actions')}
+                                    >
+                                        <Zap className="w-4 h-4" />
+                                        <span>Actions</span>
+                                    </button>
+                                    <button
+                                        className={`flex items-center gap-2 px-3 py-1 rounded-md ${activeTab === 'versions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                                        onClick={() => setActiveTab('versions')}
+                                    >
+                                        <GitBranch className="w-4 h-4" />
+                                        <span>Versions</span>
+                                    </button>
+                                    <button
+                                        className={`flex items-center gap-2 px-3 py-1 rounded-md ${activeTab === 'settings' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                                        onClick={() => setActiveTab('settings')}
+                                    >
+                                        <Settings className="w-4 h-4" />
+                                        <span>Settings</span>
+                                    </button>
+                                    <button
                                         className={`flex items-center gap-2 px-3 py-1 rounded-md ${activeTab === 'chat' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
                                         onClick={() => setActiveTab('chat')}
                                     >
@@ -757,7 +782,9 @@ n        const newItems: KnowledgeItem[] = []
                                                         <div className="flex-1">
                                                             <div className="flex items-center justify-between mb-1">
                                                                 <h4 className="font-medium">{tool.name}</h4>
-                                                                <span className="text-xs px-2 py-1 rounded-full ${tool.is_installed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                    tool.is_installed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                                }`}>
                                                                     {tool.is_installed ? 'Installed' : 'Available'}
                                                                 </span>
                                                             </div>
@@ -807,6 +834,10 @@ n        const newItems: KnowledgeItem[] = []
                                             </div>
                                         </div>
                                     </div>
+                                ) : activeTab === 'versions' ? (
+                                    <VersionControlPanel agentId={parseInt(id || '0')} />
+                                ) : activeTab === 'settings' ? (
+                                    <BotSettingsPanel agentId={parseInt(id || '0')} />
                                 ) : (
                                     <div className="flex flex-col h-full">
                                         <div className="flex-1 overflow-auto p-4 space-y-4">
@@ -824,11 +855,10 @@ n        const newItems: KnowledgeItem[] = []
                                                             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                                         >
                                                             <div
-                                                                className={`max-w-[80%] p-3 rounded-lg ${
-                                                                    message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' :
-                                                                    message.role === 'agent' ? 'bg-secondary rounded-bl-none' :
-                                                                    'bg-muted rounded-lg'
-                                                                }`}
+                                                                className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' :
+                                                                        message.role === 'agent' ? 'bg-secondary rounded-bl-none' :
+                                                                            'bg-muted rounded-lg'
+                                                                    }`}
                                                             >
                                                                 <div className="mb-1">
                                                                     <span className="font-medium capitalize text-xs">
@@ -932,7 +962,7 @@ n        const newItems: KnowledgeItem[] = []
                                                     }
                                                 }}
                                                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground min-h-[100px] font-mono text-sm"
-                                                placeholder="{\n  \"model\": \"gpt-4\",\n  \"temperature\": 0.7,\n  \"max_tokens\": 1000\n}"
+                                                placeholder='Enter JSON configuration'
                                             />
                                         </div>
                                     </div>
@@ -953,7 +983,7 @@ n        const newItems: KnowledgeItem[] = []
                                                     }
                                                 }}
                                                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground min-h-[80px] font-mono text-sm"
-                                                placeholder="{\n  \"version\": \"1.0\",\n  \"author\": \"Your Name\"\n}"
+                                                placeholder='Enter metadata as JSON'
                                             />
                                         </div>
 

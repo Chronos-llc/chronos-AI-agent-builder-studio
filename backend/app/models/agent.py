@@ -43,7 +43,10 @@ class AgentModel(BaseModel):
     actions = relationship("Action", back_populates="agent", cascade="all, delete-orphan")
     hooks = relationship("Hook", back_populates="agent", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="agent", cascade="all, delete-orphan")
+    integration_configs = relationship("IntegrationConfig", back_populates="agent", cascade="all, delete-orphan")
     usage_records = relationship("UsageRecord", back_populates="agent", cascade="all, delete-orphan")
+    knowledge_files = relationship("KnowledgeFile", back_populates="agent", cascade="all, delete-orphan")
+    knowledge_searches = relationship("KnowledgeSearch", back_populates="agent", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"

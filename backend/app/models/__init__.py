@@ -8,6 +8,7 @@ from .usage import UsageRecord, UserPlan, UsageType, PlanType
 from .template import AgentTemplate, AgentTemplateCategory
 from .hook import Hook
 from .integration import Integration
+from .knowledge import KnowledgeFile, KnowledgeChunk, KnowledgeSearch, KnowledgeFileStatus, FileType
 
 __all__ = [
     "BaseModel",
@@ -24,5 +25,10 @@ __all__ = [
     "AgentTemplate",
     "AgentTemplateCategory",
     "Hook",
-    "Integration"
+    "Integration",
+    "KnowledgeFile",
+    "KnowledgeChunk",
+    "KnowledgeSearch",
+    "KnowledgeFileStatus",
+    "FileType"
 ]

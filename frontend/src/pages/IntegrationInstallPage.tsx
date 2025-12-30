@@ -1,0 +1,452 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ProtectedRoute } from '../components/ProtectedRoute';
+import { useAuth } from '../contexts/AuthContext';
+
+interface Integration {
+  id: number;
+  name: string;
+  description: string;
+  integration_type: string;
+  category: string;
+  icon: string;
+  config_schema: any;
+  credentials_schema: any;
+}
+
+interface FormField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  placeholder?: string;
+  description?: string;
+  default?: string;
+}
+
+const IntegrationInstallPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [integration, setIntegration] = useState<Integration | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
+  const [configForm, setConfigForm] = useState<Record<string, any>>({});
+  const [credentialsForm, setCredentialsForm] = useState<Record<string, any>>({});
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      fetchIntegrationDetails(parseInt(id));
+    }
+  }, [id]);
+
+  const fetchIntegrationDetails = async (integrationId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/v1/integrations/${integrationId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch integration details');
+      }
+
+      const data = await response.json();
+      setIntegration(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch integration details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    setConfigForm({
+      ...configForm,
+      [name]: type === 'number' ? parseFloat(value) : value
+    });
+  };
+
+  const handleCredentialsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCredentialsForm({
+      ...credentialsForm,
+      [name]: value
+    });
+  };
+
+  const handleTestConnection = async () => {
+    if (!integration) return;
+
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      // Simulate API test
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Mock test result
+      const success = Math.random() > 0.2; // 80% chance of success for demo
+      
+      if (success) {
+        setTestResult({
+          success: true,
+          message: 'Connection test successful! All systems are operational.'
+        });
+      } else {
+        setTestResult({
+          success: false,
+          message: 'Connection test failed. Please check your credentials and configuration.'
+        });
+      }
+    } catch (err) {
+      setTestResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Connection test failed'
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleInstall = async () => {
+    if (!integration || !user) return;
+
+    try {
+      const response = await fetch('/api/v1/integrations/config/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          integration_id: integration.id,
+          config: configForm,
+          credentials: credentialsForm,
+          is_active: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to install integration');
+      }
+
+      const data = await response.json();
+      navigate(`/integrations/${integration.id}/success?config_id=${data.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to install integration');
+    }
+  };
+
+  const getFormFields = (schema: any): FormField[] => {
+    if (!schema || typeof schema !== 'object') {
+      return [];
+    }
+
+    return Object.entries(schema).map(([name, field]) => {
+      if (typeof field === 'object' && field !== null) {
+        return {
+          name,
+          label: field.title || name,
+          type: field.type || 'text',
+          required: field.required || false,
+          placeholder: field.description || `Enter ${name}`,
+          description: field.description,
+          default: field.default
+        };
+      }
+
+      return {
+        name,
+        label: name,
+        type: 'text',
+        required: false,
+        placeholder: `Enter ${name}`
+      };
+    });
+  };
+
+  const renderFormField = (field: FormField) => {
+    return (
+      <div key={field.name} className="mb-4">
+        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+          {field.label}
+        </label>
+        {field.description && (
+          <p className="text-xs text-gray-500 mb-1">{field.description}</p>
+        )}
+        {field.type === 'textarea' ? (
+          <textarea
+            id={field.name}
+            name={field.name}
+            value={configForm[field.name] || field.default || ''}
+            onChange={handleConfigChange}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder={field.placeholder}
+            required={field.required}
+          />
+        ) : (
+          <input
+            type={field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : 'text'}
+            id={field.name}
+            name={field.name}
+            value={configForm[field.name] || field.default || ''}
+            onChange={field.name.startsWith('credential_') ? handleCredentialsChange : handleConfigChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder={field.placeholder}
+            required={field.required}
+          />
+        )}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
+              <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
+              <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
+              <div className="h-6 bg-gray-200 rounded mb-6 w-1/4"></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <p className="text-red-600 mb-4">⚠️ {error}</p>
+              <button
+                onClick={() => fetchIntegrationDetails(parseInt(id || '0'))}
+                className="text-sm text-red-600 hover:text-red-800"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (!integration) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center py-12">
+              <div className="text-6xl text-gray-300 mb-4">🔍</div>
+              <p className="text-gray-600 mb-2">Integration not found</p>
+              <button
+                onClick={() => navigate('/integrations')}
+                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Back to Marketplace
+              </button>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  const configFields = getFormFields(integration.config_schema);
+  const credentialFields = getFormFields(integration.credentials_schema);
+
+  return (
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Install {integration.name}</h1>
+              <p className="text-gray-600 mt-1">Follow the steps to integrate with your agents</p>
+            </div>
+            <button
+              onClick={() => navigate(`/integrations/${integration.id}`)}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+            >
+              ← Back to Details
+            </button>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                1
+              </div>
+              <span className={`text-sm font-medium ${step >= 1 ? 'text-gray-900' : 'text-gray-400'}`}>Configuration</span>
+            </div>
+
+            <div className="flex-1 h-0.5 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}"></div>
+
+            <div className="flex items-center gap-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                2
+              </div>
+              <span className={`text-sm font-medium ${step >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>Credentials</span>
+            </div>
+
+            <div className="flex-1 h-0.5 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}"></div>
+
+            <div className="flex items-center gap-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                3
+              </div>
+              <span className={`text-sm font-medium ${step >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>Test & Install</span>
+            </div>
+          </div>
+
+          {/* Installation Form */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="p-6">
+              {step === 1 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Configuration Settings</h3>
+                  <p className="text-gray-600 mb-6">Configure the basic settings for this integration.</p>
+
+                  {configFields.length > 0 ? (
+                    <form className="space-y-4">
+                      {configFields.map(renderFormField)}
+                    </form>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No configuration required for this integration</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {step === 2 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Credentials Setup</h3>
+                  <p className="text-gray-600 mb-6">Enter your API credentials for this integration.</p>
+
+                  {credentialFields.length > 0 ? (
+                    <form className="space-y-4">
+                      {credentialFields.map(renderFormField)}
+                    </form>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No credentials required for this integration</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {step === 3 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Test Connection</h3>
+                  <p className="text-gray-600 mb-6">Test your configuration before finalizing the installation.</p>
+
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h4 className="font-medium text-gray-700 mb-2">Configuration Summary</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 mb-1">Integration Type</p>
+                        <p className="font-medium">{integration.integration_type.replace('_', ' ')}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1">Category</p>
+                        <p className="font-medium">{integration.category.replace('_', ' ')}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1">Config Fields</p>
+                        <p className="font-medium">{configFields.length} fields configured</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-1">Credential Fields</p>
+                        <p className="font-medium">{credentialFields.length} fields configured</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-700 mb-3">Test Connection</h4>
+                    <button
+                      onClick={handleTestConnection}
+                      disabled={isTesting}
+                      className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors ${isTesting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isTesting ? (
+                        <>
+                          <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                          Testing...
+                        </>
+                      ) : (
+                        'Test Connection'
+                      )}
+                    </button>
+
+                    {testResult && (
+                      <div className={`mt-4 p-3 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                        <p className={testResult.success ? 'text-green-600' : 'text-red-600'}>
+                          {testResult.success ? '✅ ' : '❌ '}{testResult.message}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="border-t border-gray-200 px-6 py-4">
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => step > 1 ? setStep(step - 1) : navigate(`/integrations/${integration.id}`)}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                >
+                  {step > 1 ? '← Previous' : 'Cancel'}
+                </button>
+
+                {step < 3 ? (
+                  <button
+                    onClick={() => setStep(step + 1)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    Next →
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleInstall}
+                    disabled={isTesting || (testResult && !testResult.success)}
+                    className={`bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ${isTesting || (testResult && !testResult.success) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Install Integration
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ProtectedRoute>
+  );
+};
+
+export default IntegrationInstallPage;

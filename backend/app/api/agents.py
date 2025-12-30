@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
+from typing import List, Dict, Any
 
 from app.core.database import get_db
 from app.models.user import User
@@ -262,6 +263,139 @@ async def create_agent_version(
     await db.refresh(version)
     
     return version
+
+
+@router.post("/{agent_id}/versions/{version_id}/rollback")
+async def rollback_to_version(
+    agent_id: int,
+    version_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Rollback agent to a specific version"""
+    
+    # Verify agent ownership
+    result = await db.execute(
+        select(AgentModel).where(
+            and_(
+                AgentModel.id == agent_id,
+                AgentModel.owner_id == current_user.id
+            )
+        )
+    )
+    agent = result.scalar_one_or_none()
+    
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Get the version to rollback to
+    result = await db.execute(
+        select(AgentVersion).where(
+            and_(
+                AgentVersion.id == version_id,
+                AgentVersion.agent_id == agent_id
+            )
+        )
+    )
+    version = result.scalar_one_or_none()
+    
+    if not version:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Version not found"
+        )
+    
+    # Apply the configuration snapshot to the agent
+    config_snapshot = version.config_snapshot
+    
+    # Update agent fields from snapshot
+    for field, value in config_snapshot.items():
+        if hasattr(agent, field):
+            setattr(agent, field, value)
+    
+    await db.commit()
+    await db.refresh(agent)
+    
+    return {"message": f"Agent rolled back to version {version.version_number}", "agent": agent}
+
+
+@router.post("/{agent_id}/versions/compare")
+async def compare_versions(
+    agent_id: int,
+    comparison_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Compare two agent versions"""
+    
+    version1_id = comparison_data.get("version1_id")
+    version2_id = comparison_data.get("version2_id")
+    
+    if not version1_id or not version2_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Both version1_id and version2_id are required"
+        )
+    
+    # Verify agent ownership
+    result = await db.execute(
+        select(AgentModel).where(
+            and_(
+                AgentModel.id == agent_id,
+                AgentModel.owner_id == current_user.id
+            )
+        )
+    )
+    agent = result.scalar_one_or_none()
+    
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Get both versions
+    result = await db.execute(
+        select(AgentVersion).where(
+            AgentVersion.id.in_([version1_id, version2_id])
+        )
+    )
+    versions = result.scalars().all()
+    
+    if len(versions) != 2:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="One or both versions not found"
+        )
+    
+    version1 = next(v for v in versions if v.id == version1_id)
+    version2 = next(v for v in versions if v.id == version2_id)
+    
+    # Compare configurations
+    diffs = []
+    config1 = version1.config_snapshot or {}
+    config2 = version2.config_snapshot or {}
+    
+    # Get all unique keys from both configs
+    all_keys = set(config1.keys()) | set(config2.keys())
+    
+    for key in all_keys:
+        value1 = config1.get(key)
+        value2 = config2.get(key)
+        
+        if value1 != value2:
+            change_type = "added" if value1 is None else "removed" if value2 is None else "modified"
+            diffs.append({
+                "field": key,
+                "old_value": value1,
+                "new_value": value2,
+                "change_type": change_type
+            })
+    
+    return diffs
 
 
 # Actions Endpoints

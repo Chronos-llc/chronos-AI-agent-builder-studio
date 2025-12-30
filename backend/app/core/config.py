@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
     
+    # MCP Server Configuration
+    MCP_SERVER_URL: Optional[str] = Field(default=None, env="MCP_SERVER_URL")
+    MCP_SERVER_API_KEY: Optional[str] = Field(default=None, env="MCP_SERVER_API_KEY")
+    MCP_SERVER_TIMEOUT: int = Field(default=30, env="MCP_SERVER_TIMEOUT")
+    
     # Logging
     LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
     
