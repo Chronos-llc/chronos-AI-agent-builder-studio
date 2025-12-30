@@ -43,6 +43,7 @@ class AgentModel(BaseModel):
     actions = relationship("Action", back_populates="agent", cascade="all, delete-orphan")
     hooks = relationship("Hook", back_populates="agent", cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="agent", cascade="all, delete-orphan")
+    usage_records = relationship("UsageRecord", back_populates="agent", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"
@@ -76,10 +77,17 @@ class Action(BaseModel):
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     action_type = Column(String(50), nullable=False)  # function, api_call, web_scraping, etc.
+    status = Column(String(20), default="draft", nullable=False)
     
     # Configuration
     parameters = Column(JSON, nullable=True)  # Action parameters
     config = Column(JSON, nullable=True)  # Action-specific configuration
+    code = Column(Text, nullable=True)  # Custom code for the action
+    input_schema = Column(JSON, nullable=True)  # Input schema validation
+    output_schema = Column(JSON, nullable=True)  # Output schema validation
+    dependencies = Column(JSON, nullable=True)  # List of dependencies
+    timeout = Column(Integer, default=30)  # Timeout in seconds
+    retry_policy = Column(JSON, nullable=True)  # Retry policy configuration
     
     # Foreign keys
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)

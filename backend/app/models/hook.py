@@ -11,11 +11,16 @@ class Hook(BaseModel):
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     hook_type = Column(String(50), nullable=False)  # pre_process, post_process, error, etc.
+    trigger = Column(String(50), nullable=False)  # before_action, after_action, on_error, etc.
+    status = Column(String(20), default="active", nullable=False)
     
     # Configuration
     trigger_conditions = Column(JSON, nullable=True)  # Conditions that trigger this hook
     action_config = Column(JSON, nullable=False)  # What this hook does
-    is_active = Column(Boolean, default=True)
+    priority = Column(Integer, default=0)  # Execution priority
+    is_global = Column(Boolean, default=False)  # Whether this hook is global
+    dependencies = Column(JSON, nullable=True)  # List of dependencies
+    timeout = Column(Integer, default=10)  # Timeout in seconds
     
     # Foreign keys
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)  # Optional - can be global

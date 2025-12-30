@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents
+from app.api import auth, users, agents, usage, templates, websocket, actions
 from app.core.logging import setup_logging
 
 # Setup logging
@@ -52,6 +52,9 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
+app.include_router(actions.router, prefix="/api/v1", tags=["actions", "hooks"])
+app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"])
+app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])
 
 
 @app.get("/")
