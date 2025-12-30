@@ -1,228 +1,208 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Dict, List, Any
+import logging
 
 from app.core.ai_providers import (
-    AIModelConfig,
-    AIProviderType,
-    ai_provider_manager,
-    AIProviderError
+    ai_provider_manager, 
+    get_ai_response, 
+    get_all_models,
+    get_default_model_config,
+    validate_model_config
 )
-from app.core.security import get_current_user
-from app.models.user import User as UserModel
-
+from app.api.auth import get_current_user
+from app.models.user import User
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
-class AIProviderCreate(BaseModel):
-    provider_id: str
-    config: AIModelConfig
-
-
-class AIProviderResponse(BaseModel):
-    provider_id: str
-    provider_type: AIProviderType
-    model_name: str
-    is_default: bool
-
-
-class AIProviderListResponse(BaseModel):
-    providers: List[AIProviderResponse]
-    default_provider: Optional[str]
-
-
-class AITextRequest(BaseModel):
-    prompt: str
-    provider_id: Optional[str] = None
-    max_tokens: Optional[int] = None
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-
-
-class AITextResponse(BaseModel):
-    text: str
-    provider: str
-    model: str
-    tokens_used: int
-
-
-class AIStreamRequest(BaseModel):
-    prompt: str
-    provider_id: Optional[str] = None
-    max_tokens: Optional[int] = None
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-
-
-@router.post("/ai/providers/", response_model=AIProviderResponse)
-async def add_ai_provider(
-    provider_data: AIProviderCreate,
-    current_user: UserModel = Depends(get_current_user)
-):
-    """Add a new AI provider configuration"""
-    try:
-        await ai_provider_manager.add_provider(provider_data.provider_id, provider_data.config)
-        
-        config = await ai_provider_manager.get_provider(provider_data.provider_id)
-        return AIProviderResponse(
-            provider_id=provider_data.provider_id,
-            provider_type=config.provider_type,
-            model_name=config.model_name,
-            is_default=provider_data.provider_id == ai_provider_manager.default_provider
-        )
-    except AIProviderError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to add AI provider: {str(e)}")
-
-
-@router.delete("/ai/providers/{provider_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_ai_provider(
-    provider_id: str,
-    current_user: UserModel = Depends(get_current_user)
-):
-    """Remove an AI provider configuration"""
-    try:
-        await ai_provider_manager.remove_provider(provider_id)
-    except AIProviderError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to remove AI provider: {str(e)}")
-
-
-@router.get("/ai/providers/", response_model=AIProviderListResponse)
-async def list_ai_providers(
-    current_user: UserModel = Depends(get_current_user)
-):
-    """List all configured AI providers"""
-    providers = await ai_provider_manager.list_providers()
+@router.get("/providers")
+async def get_ai_providers(current_user: User = Depends(get_current_user)):
+    """Get list of available AI providers"""
+    providers = []
     
-    return AIProviderListResponse(
-        providers=[
-            AIProviderResponse(
-                provider_id=p["provider_id"],
-                provider_type=p["config"]["provider_type"],
-                model_name=p["config"]["model_name"],
-                is_default=p["is_default"]
+    for provider_name, provider in ai_provider_manager.providers.items():
+        providers.append({
+            "name": provider_name,
+            "type": provider.__class__.__name__.replace("Provider", ""),
+            "available": True
+        })
+    
+    return {"providers": providers}
+
+
+@router.get("/models")
+async def get_all_ai_models(current_user: User = Depends(get_current_user)):
+    """Get all available models across all providers"""
+    try:
+        models = await get_all_models()
+        return {"models": models}
+    except Exception as e:
+        logger.error(f"Error fetching AI models: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch available models"
+        )
+
+
+@router.get("/models/{provider}")
+async def get_provider_models(
+    provider: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get available models for a specific provider"""
+    try:
+        models = await ai_provider_manager.get_available_models(provider)
+        return {"provider": provider, "models": models}
+    except Exception as e:
+        logger.error(f"Error fetching models for provider {provider}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch models for provider {provider}"
+        )
+
+
+@router.get("/config/{provider}/defaults")
+async def get_default_config(
+    provider: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get default configuration for a provider"""
+    if provider not in ai_provider_manager.providers:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Provider {provider} not found"
+        )
+    
+    config = get_default_model_config(provider)
+    return {"provider": provider, "config": config}
+
+
+@router.post("/chat")
+async def chat_with_ai(
+    request_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Send chat message to AI provider"""
+    try:
+        provider = request_data.get("provider")
+        messages = request_data.get("messages", [])
+        model = request_data.get("model")
+        config = request_data.get("config", {})
+        
+        if not provider or not messages or not model:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="provider, messages, and model are required"
             )
-            for p in providers
-        ],
-        default_provider=ai_provider_manager.default_provider
-    )
-
-
-@router.post("/ai/generate/", response_model=AITextResponse)
-async def generate_text(
-    text_request: AITextRequest,
-    current_user: UserModel = Depends(get_current_user)
-):
-    """Generate text using AI provider"""
-    try:
-        result = await ai_provider_manager.generate_text(
-            text_request.prompt,
-            text_request.provider_id,
-            max_tokens=text_request.max_tokens,
-            temperature=text_request.temperature,
-            top_p=text_request.top_p
+        
+        if provider not in ai_provider_manager.providers:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Provider {provider} not available"
+            )
+        
+        # Validate and merge configuration
+        default_config = get_default_model_config(provider)
+        final_config = {**default_config, **config}
+        
+        if not validate_model_config(provider, final_config):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid model configuration"
+            )
+        
+        # Generate response
+        response = await get_ai_response(
+            provider=provider,
+            messages=messages,
+            model=model,
+            **final_config
         )
         
-        # Get provider info for response
-        config = await ai_provider_manager.get_provider(text_request.provider_id)
+        return {
+            "success": True,
+            "response": response,
+            "provider": provider,
+            "model": model
+        }
         
-        return AITextResponse(
-            text=result,
-            provider=config.provider_type,
-            model=config.model_name,
-            tokens_used=len(result.split())  # Simple token estimation
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in AI chat: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate AI response"
         )
-    except AIProviderError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Text generation failed: {str(e)}")
 
 
-@router.post("/ai/stream/")
-async def stream_text(
-    stream_request: AIStreamRequest,
-    current_user: UserModel = Depends(get_current_user)
+@router.post("/test")
+async def test_ai_provider(
+    request_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
 ):
-    """Stream text generation using AI provider"""
+    """Test AI provider with a simple message"""
     try:
-        async def generate():
-            async for chunk in ai_provider_manager.stream_text(
-                stream_request.prompt,
-                stream_request.provider_id,
-                max_tokens=stream_request.max_tokens,
-                temperature=stream_request.temperature,
-                top_p=stream_request.top_p
-            ):
-                yield f"data: {chunk}\n\n"
+        provider = request_data.get("provider")
+        model = request_data.get("model")
         
-        return generate()
-    except AIProviderError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Text streaming failed: {str(e)}")
-
-
-@router.get("/ai/models/", response_model=Dict[str, List[str]])
-async def list_models(
-    provider_id: Optional[str] = None,
-    current_user: UserModel = Depends(get_current_user)
-):
-    """List available models from AI providers"""
-    try:
-        models = await ai_provider_manager.list_models(provider_id)
+        if not provider or not model:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="provider and model are required"
+            )
         
-        if provider_id:
-            return {"models": models}
-        else:
-            # Return models for all providers
-            result = {}
-            providers = await ai_provider_manager.list_providers()
-            
-            for provider in providers:
-                provider_id = provider["provider_id"]
-                provider_models = await ai_provider_manager.list_models(provider_id)
-                result[provider_id] = provider_models
-            
-            return result
-    except AIProviderError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        test_messages = [
+            {"role": "user", "content": "Hello! Please respond with 'Test successful'."}
+        ]
+        
+        response = await get_ai_response(
+            provider=provider,
+            messages=test_messages,
+            model=model
+        )
+        
+        return {
+            "success": True,
+            "provider": provider,
+            "model": model,
+            "response": response
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list models: {str(e)}")
+        logger.error(f"Error testing AI provider: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to test provider {provider}"
+        )
 
 
-@router.get("/ai/health/", response_model=Dict[str, Any])
-async def ai_health_check(
-    current_user: UserModel = Depends(get_current_user)
-):
-    """Check AI provider health status"""
+@router.get("/health")
+async def ai_providers_health(current_user: User = Depends(get_current_user)):
+    """Health check for AI providers"""
     health_status = {}
     
-    providers = await ai_provider_manager.list_providers()
-    
-    for provider in providers:
-        provider_id = provider["provider_id"]
+    for provider_name, provider in ai_provider_manager.providers.items():
         try:
-            # Test a simple completion to check health
-            test_prompt = "Hello, this is a test."
-            result = await ai_provider_manager.generate_text(test_prompt, provider_id, max_tokens=5)
-            
-            health_status[provider_id] = {
+            # Simple test to check if provider is responsive
+            test_messages = [{"role": "user", "content": "test"}]
+            # Don't actually make the request, just check if provider exists
+            health_status[provider_name] = {
                 "status": "healthy",
-                "response_time": "fast",  # Would be measured in real implementation
-                "model": provider["config"]["model_name"]
+                "available": True,
+                "type": provider.__class__.__name__.replace("Provider", "")
             }
         except Exception as e:
-            health_status[provider_id] = {
+            health_status[provider_name] = {
                 "status": "unhealthy",
+                "available": False,
                 "error": str(e)
             }
     
     return {
-        "status": "ok",
-        "providers": health_status,
-        "default_provider": ai_provider_manager.default_provider
+        "overall_status": "healthy" if any(p.get("available") for p in health_status.values()) else "unhealthy",
+        "providers": health_status
     }
