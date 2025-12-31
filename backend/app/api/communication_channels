@@ -1,0 +1,525 @@
+from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.models.communication_channel import CommunicationChannel
+from app.models.agent import Agent
+from app.schemas.communication_channel import (
+    CommunicationChannel as CommunicationChannelSchema,
+    CommunicationChannelCreate,
+    CommunicationChannelUpdate,
+    WebChatChannelCreate,
+    WebChatConfiguration,
+    TelegramChannelCreate,
+    SlackChannelCreate,
+    WhatsAppChannelCreate
+)
+from app.core.dependencies import get_current_user
+from app.models.user import User
+from app.core.communication_channels import (
+    TelegramChannelManager,
+    SlackChannelManager,
+    WebChatChannelManager,
+    WhatsAppChannelManager
+)
+
+router = APIRouter(prefix="/api/communication-channels", tags=["communication-channels"])
+
+
+@router.get("/", response_model=List[CommunicationChannelSchema])
+async def get_communication_channels(
+    agent_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all communication channels for the current user's agents."""
+    query = db.query(CommunicationChannel)
+    
+    if agent_id:
+        # Verify the agent belongs to the current user
+        agent = db.query(Agent).filter(
+            Agent.id == agent_id,
+            Agent.user_id == current_user.id
+        ).first()
+        if not agent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Agent not found"
+            )
+        query = query.filter(CommunicationChannel.agent_id == agent_id)
+    else:
+        # Only get channels for agents owned by the current user
+        query = query.join(Agent).filter(Agent.user_id == current_user.id)
+    
+    channels = query.all()
+    return channels
+
+
+@router.post("/", response_model=CommunicationChannelSchema)
+async def create_communication_channel(
+    channel_data: CommunicationChannelCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new communication channel."""
+    # Verify the agent exists and belongs to the current user
+    if channel_data.agent_id:
+        agent = db.query(Agent).filter(
+            Agent.id == channel_data.agent_id,
+            Agent.user_id == current_user.id
+        ).first()
+        if not agent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Agent not found"
+            )
+    
+    # Check for duplicate channel names for the same agent
+    if channel_data.agent_id:
+        existing_channel = db.query(CommunicationChannel).filter(
+            CommunicationChannel.agent_id == channel_data.agent_id,
+            CommunicationChannel.name == channel_data.name
+        ).first()
+        if existing_channel:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A channel with this name already exists for this agent"
+            )
+    
+    db_channel = CommunicationChannel(**channel_data.model_dump())
+    db.add(db_channel)
+    db.commit()
+    db.refresh(db_channel)
+    return db_channel
+
+
+@router.get("/{channel_id}", response_model=CommunicationChannelSchema)
+async def get_communication_channel(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific communication channel."""
+    channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.id == channel_id
+    ).join(Agent).filter(
+        Agent.user_id == current_user.id
+    ).first()
+    
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Communication channel not found"
+        )
+    
+    return channel
+
+
+@router.put("/{channel_id}", response_model=CommunicationChannelSchema)
+async def update_communication_channel(
+    channel_id: int,
+    channel_update: CommunicationChannelUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update a communication channel."""
+    channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.id == channel_id
+    ).join(Agent).filter(
+        Agent.user_id == current_user.id
+    ).first()
+    
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Communication channel not found"
+        )
+    
+    # Check for duplicate names if name is being updated
+    if channel_update.name and channel_update.name != channel.name:
+        existing_channel = db.query(CommunicationChannel).filter(
+            CommunicationChannel.agent_id == channel.agent_id,
+            CommunicationChannel.name == channel_update.name,
+            CommunicationChannel.id != channel_id
+        ).first()
+        if existing_channel:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A channel with this name already exists for this agent"
+            )
+    
+    update_data = channel_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(channel, field, value)
+    
+    db.commit()
+    db.refresh(channel)
+    return channel
+
+
+@router.delete("/{channel_id}")
+async def delete_communication_channel(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a communication channel."""
+    channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.id == channel_id
+    ).join(Agent).filter(
+        Agent.user_id == current_user.id
+    ).first()
+    
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Communication channel not found"
+        )
+    
+    db.delete(channel)
+    db.commit()
+    return {"message": "Communication channel deleted successfully"}
+
+
+@router.post("/webchat", response_model=Dict[str, Any])
+async def create_webchat_channel(
+    channel_data: WebChatChannelCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new web chat channel."""
+    # Verify the agent exists and belongs to the current user
+    agent = db.query(Agent).filter(
+        Agent.id == channel_data.agent_id,
+        Agent.user_id == current_user.id
+    ).first()
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Check for duplicate channel names
+    existing_channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.agent_id == channel_data.agent_id,
+        CommunicationChannel.name == channel_data.name
+    ).first()
+    if existing_channel:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A channel with this name already exists for this agent"
+        )
+    
+    # Create the channel
+    channel_config = channel_data.model_dump()
+    db_channel = CommunicationChannel(
+        agent_id=channel_data.agent_id,
+        name=channel_data.name,
+        type="webchat",
+        description=channel_data.description,
+        configuration=channel_config
+    )
+    db.add(db_channel)
+    db.commit()
+    db.refresh(db_channel)
+    
+    # Initialize the web chat channel in background
+    background_tasks.add_task(
+        WebChatChannelManager.initialize_channel,
+        db_channel.id,
+        channel_config
+    )
+    
+    # Generate embed code
+    embed_code = f'''
+    <script>
+        (function() {{
+            var script = document.createElement('script');
+            script.src = '{channel_config.get("embed_url", "https://your-domain.com/webchat.js")}';
+            script.setAttribute('data-agent-id', '{channel_data.agent_id}');
+            script.setAttribute('data-channel-id', '{db_channel.id}');
+            document.head.appendChild(script);
+        }})();
+    </script>
+    '''
+    
+    return {
+        "channel": db_channel,
+        "embed_code": embed_code,
+        "configuration": WebChatConfiguration(
+            theme=channel_data.theme,
+            position=channel_data.position,
+            show_avatar=channel_data.show_avatar,
+            welcome_message=channel_data.welcome_message,
+            embed_code=embed_code
+        )
+    }
+
+
+@router.post("/telegram", response_model=CommunicationChannelSchema)
+async def create_telegram_channel(
+    channel_data: TelegramChannelCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new Telegram bot channel."""
+    # Verify the agent exists and belongs to the current user
+    agent = db.query(Agent).filter(
+        Agent.id == channel_data.agent_id,
+        Agent.user_id == current_user.id
+    ).first()
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Check for duplicate channel names
+    existing_channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.agent_id == channel_data.agent_id,
+        CommunicationChannel.type == "telegram"
+    ).first()
+    if existing_channel:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A Telegram channel already exists for this agent"
+        )
+    
+    # Create the channel
+    channel_config = channel_data.model_dump()
+    db_channel = CommunicationChannel(
+        agent_id=channel_data.agent_id,
+        name=f"Telegram Bot",
+        type="telegram",
+        description=channel_data.description or "Telegram bot integration",
+        configuration=channel_config
+    )
+    db.add(db_channel)
+    db.commit()
+    db.refresh(db_channel)
+    
+    # Initialize the Telegram channel in background
+    background_tasks.add_task(
+        TelegramChannelManager.initialize_channel,
+        db_channel.id,
+        channel_config
+    )
+    
+    return db_channel
+
+
+@router.post("/slack", response_model=CommunicationChannelSchema)
+async def create_slack_channel(
+    channel_data: SlackChannelCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new Slack app channel."""
+    # Verify the agent exists and belongs to the current user
+    agent = db.query(Agent).filter(
+        Agent.id == channel_data.agent_id,
+        Agent.user_id == current_user.id
+    ).first()
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Check for duplicate channel names
+    existing_channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.agent_id == channel_data.agent_id,
+        CommunicationChannel.type == "slack"
+    ).first()
+    if existing_channel:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A Slack channel already exists for this agent"
+        )
+    
+    # Create the channel
+    channel_config = channel_data.model_dump()
+    db_channel = CommunicationChannel(
+        agent_id=channel_data.agent_id,
+        name=f"Slack App",
+        type="slack",
+        description=channel_data.description or "Slack app integration",
+        configuration=channel_config
+    )
+    db.add(db_channel)
+    db.commit()
+    db.refresh(db_channel)
+    
+    # Initialize the Slack channel in background
+    background_tasks.add_task(
+        SlackChannelManager.initialize_channel,
+        db_channel.id,
+        channel_config
+    )
+    
+    return db_channel
+
+
+@router.post("/whatsapp", response_model=CommunicationChannelSchema)
+async def create_whatsapp_channel(
+    channel_data: WhatsAppChannelCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new WhatsApp Business API channel."""
+    # Verify the agent exists and belongs to the current user
+    agent = db.query(Agent).filter(
+        Agent.id == channel_data.agent_id,
+        Agent.user_id == current_user.id
+    ).first()
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Check for duplicate channel names
+    existing_channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.agent_id == channel_data.agent_id,
+        CommunicationChannel.type == "whatsapp"
+    ).first()
+    if existing_channel:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A WhatsApp channel already exists for this agent"
+        )
+    
+    # Create the channel
+    channel_config = channel_data.model_dump()
+    db_channel = CommunicationChannel(
+        agent_id=channel_data.agent_id,
+        name=f"WhatsApp Business",
+        type="whatsapp",
+        description=channel_data.description or "WhatsApp Business API integration",
+        configuration=channel_config
+    )
+    db.add(db_channel)
+    db.commit()
+    db.refresh(db_channel)
+    
+    # Initialize the WhatsApp channel in background
+    background_tasks.add_task(
+        WhatsAppChannelManager.initialize_channel,
+        db_channel.id,
+        channel_config
+    )
+    
+    return db_channel
+
+
+@router.get("/{channel_id}/status", response_model=Dict[str, Any])
+async def get_channel_status(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get the status of a communication channel."""
+    channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.id == channel_id
+    ).join(Agent).filter(
+        Agent.user_id == current_user.id
+    ).first()
+    
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Communication channel not found"
+        )
+    
+    # Get status based on channel type
+    if channel.type == "telegram":
+        status_info = await TelegramChannelManager.get_channel_status(channel.id)
+    elif channel.type == "slack":
+        status_info = await SlackChannelManager.get_channel_status(channel.id)
+    elif channel.type == "webchat":
+        status_info = await WebChatChannelManager.get_channel_status(channel.id)
+    elif channel.type == "whatsapp":
+        status_info = await WhatsAppChannelManager.get_channel_status(channel.id)
+    else:
+        status_info = {"status": "unknown", "message": "Unknown channel type"}
+    
+    return {
+        "channel_id": channel.id,
+        "channel_type": channel.type,
+        "is_active": channel.is_active,
+        **status_info
+    }
+
+
+@router.post("/{channel_id}/activate")
+async def activate_channel(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Activate a communication channel."""
+    channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.id == channel_id
+    ).join(Agent).filter(
+        Agent.user_id == current_user.id
+    ).first()
+    
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Communication channel not found"
+        )
+    
+    channel.is_active = True
+    db.commit()
+    
+    # Activate based on channel type
+    if channel.type == "telegram":
+        await TelegramChannelManager.activate_channel(channel.id)
+    elif channel.type == "slack":
+        await SlackChannelManager.activate_channel(channel.id)
+    elif channel.type == "webchat":
+        await WebChatChannelManager.activate_channel(channel.id)
+    elif channel.type == "whatsapp":
+        await WhatsAppChannelManager.activate_channel(channel.id)
+    
+    return {"message": f"{channel.type} channel activated successfully"}
+
+
+@router.post("/{channel_id}/deactivate")
+async def deactivate_channel(
+    channel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Deactivate a communication channel."""
+    channel = db.query(CommunicationChannel).filter(
+        CommunicationChannel.id == channel_id
+    ).join(Agent).filter(
+        Agent.user_id == current_user.id
+    ).first()
+    
+    if not channel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Communication channel not found"
+        )
+    
+    channel.is_active = False
+    db.commit()
+    
+    # Deactivate based on channel type
+    if channel.type == "telegram":
+        await TelegramChannelManager.deactivate_channel(channel.id)
+    elif channel.type == "slack":
+        await SlackChannelManager.deactivate_channel(channel.id)
+    elif channel.type == "webchat":
+        await WebChatChannelManager.deactivate_channel(channel.id)
+    elif channel.type == "whatsapp":
+        await WhatsAppChannelManager.deactivate_channel(channel.id)
+    
+    return {"message": f"{channel.type} channel deactivated successfully"}

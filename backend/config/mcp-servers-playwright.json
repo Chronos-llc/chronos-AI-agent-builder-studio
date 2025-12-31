@@ -1,0 +1,237 @@
+{
+    "mcp_servers": [
+        {
+            "name": "playwright-automation",
+            "type": "playwright",
+            "enabled": true,
+            "description": "Web automation and testing server using Playwright",
+            "config": {
+                "server_url": "${PLAYWRIGHT_SERVER_URL:http://localhost:8080}",
+                "api_key": "${PLAYWRIGHT_API_KEY:}",
+                "timeout": 30000,
+                "retry_attempts": 3,
+                "batch_size": 10
+            },
+            "capabilities": [
+                "web_automation",
+                "form_filling",
+                "data_extraction",
+                "website_testing",
+                "screenshot_capture",
+                "pdf_generation",
+                "performance_testing"
+            ],
+            "security": {
+                "authentication_required": true,
+                "allowed_origins": [
+                    "http://localhost:3000",
+                    "http://localhost:8000"
+                ],
+                "rate_limit_per_hour": 1000,
+                "data_encryption": true
+            }
+        },
+        {
+            "name": "playwright-monitoring",
+            "type": "playwright",
+            "enabled": "${ENABLE_PLAYWRIGHT_MONITORING:true}",
+            "description": "Website monitoring and uptime tracking server",
+            "config": {
+                "server_url": "${PLAYWRIGHT_SERVER_URL:http://localhost:8080}",
+                "api_key": "${PLAYWRIGHT_API_KEY:}",
+                "check_interval": 300,
+                "alert_threshold": 3,
+                "concurrent_checks": 5
+            },
+            "capabilities": [
+                "website_monitoring",
+                "uptime_tracking",
+                "performance_monitoring",
+                "alert_notifications",
+                "status_reporting"
+            ],
+            "security": {
+                "authentication_required": true,
+                "allowed_origins": [
+                    "http://localhost:3000"
+                ],
+                "rate_limit_per_hour": 500,
+                "data_encryption": true
+            }
+        }
+    ],
+    "playwright_integration": {
+        "default_browser": "chromium",
+        "headless_mode": true,
+        "timeout": 30000,
+        "viewport": {
+            "width": 1920,
+            "height": 1080
+        },
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "proxy_config": {
+            "enabled": false,
+            "host": "",
+            "port": 0,
+            "username": "",
+            "password": ""
+        },
+        "storage_config": {
+            "downloads_dir": "/data/downloads",
+            "screenshots_dir": "/data/screenshots",
+            "har_enabled": true,
+            "retention_days": 7
+        },
+        "security_config": {
+            "blocked_hosts": [
+                "localhost",
+                "127.0.0.1",
+                "*.local"
+            ],
+            "javascript_enabled": true,
+            "auth_cookie_prefix": "chronos_playwright"
+        }
+    },
+    "mcp_server_registry": {
+        "playwright_automation": {
+            "name": "Playwright Automation Server",
+            "version": "1.0.0",
+            "description": "Comprehensive web automation and testing capabilities",
+            "author": "Chronos AI Team",
+            "license": "MIT",
+            "repository": "https://github.com/chronos-ai/playwright-mcp-server",
+            "documentation": "https://docs.chronos-ai.com/playwright-mcp-server",
+            "support_email": "support@chronos-ai.com",
+            "tags": [
+                "automation",
+                "testing",
+                "web-scraping",
+                "browser-automation"
+            ],
+            "supported_protocols": [
+                "mcp",
+                "http",
+                "websocket"
+            ],
+            "dependencies": [
+                "playwright",
+                "python",
+                "fastapi",
+                "sqlalchemy"
+            ],
+            "configuration_schema": {
+                "type": "object",
+                "properties": {
+                    "server_url": {
+                        "type": "string",
+                        "description": "URL of the Playwright server",
+                        "default": "http://localhost:8080"
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "description": "API key for authentication",
+                        "sensitive": true
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Request timeout in milliseconds",
+                        "default": 30000
+                    },
+                    "retry_attempts": {
+                        "type": "integer",
+                        "description": "Number of retry attempts for failed requests",
+                        "default": 3
+                    },
+                    "batch_size": {
+                        "type": "integer",
+                        "description": "Maximum number of concurrent tasks",
+                        "default": 10
+                    }
+                },
+                "required": [
+                    "server_url",
+                    "api_key"
+                ]
+            },
+            "capabilities_metadata": {
+                "web_automation": {
+                    "description": "Automate web interactions and form submissions",
+                    "parameters": [
+                        "url",
+                        "actions",
+                        "timeout"
+                    ]
+                },
+                "data_extraction": {
+                    "description": "Extract structured data from web pages",
+                    "parameters": [
+                        "url",
+                        "selectors",
+                        "output_format"
+                    ]
+                },
+                "website_testing": {
+                    "description": "Perform automated testing of web applications",
+                    "parameters": [
+                        "url",
+                        "test_cases",
+                        "assertions"
+                    ]
+                },
+                "screenshot_capture": {
+                    "description": "Capture screenshots of web pages",
+                    "parameters": [
+                        "url",
+                        "viewport",
+                        "full_page",
+                        "format"
+                    ]
+                },
+                "pdf_generation": {
+                    "description": "Generate PDF documents from web pages",
+                    "parameters": [
+                        "url",
+                        "options",
+                        "output_path"
+                    ]
+                }
+            }
+        }
+    },
+    "playwright_specific_mcp_settings": {
+        "browser_pool_management": {
+            "enabled": true,
+            "pool_size": 5,
+            "idle_timeout": 300,
+            "warmup_enabled": true,
+            "reuse_enabled": true
+        },
+        "task_queue": {
+            "enabled": true,
+            "max_concurrent_tasks": 10,
+            "task_timeout": 300000,
+            "retry_failed_tasks": true,
+            "max_retries": 3
+        },
+        "artifact_storage": {
+            "local_storage": {
+                "enabled": true,
+                "base_path": "/data/playwright/artifacts"
+            },
+            "s3_storage": {
+                "enabled": false,
+                "bucket": "",
+                "region": "",
+                "prefix": "playwright-artifacts/"
+            }
+        },
+        "performance_monitoring": {
+            "enabled": true,
+            "metrics_collection": true,
+            "alert_webhooks": [
+                "http://localhost:8080/webhooks/alerts"
+            ],
+            "log_level": "INFO"
+        }
+    }
+}

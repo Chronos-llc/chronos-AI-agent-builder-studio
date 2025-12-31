@@ -1,0 +1,143 @@
+# Multi-stage Dockerfile for Playwright MCP Server
+# Stage 1: Base with Python and system dependencies
+FROM python:3.11-slim as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Install system dependencies for Playwright
+RUN apt-get update && apt-get install -y \
+    # Playwright dependencies
+    libglib2.0-0 \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxss1 \
+    libasound2 \
+    # Additional system dependencies
+    ca-certificates \
+    fonts-liberation \
+    wget \
+    curl \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright browsers
+RUN playwright install-deps
+RUN playwright install chromium firefox webkit
+
+# Stage 2: Development environment
+FROM base as development
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+RUN chown -R app:app /app
+USER app
+
+# Expose ports
+EXPOSE 8000 9223
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run development server
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# Stage 3: Production environment
+FROM base as production
+
+# Install production-only dependencies
+RUN pip install --no-cache-dir \
+    gunicorn \
+    prometheus-client
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+RUN chown -R app:app /app
+USER app
+
+# Create directories for Playwright data
+RUN mkdir -p /app/playwright-data /app/screenshots /app/downloads
+RUN chown -R app:app /app/playwright-data /app/screenshots /app/downloads
+
+# Expose ports
+EXPOSE 8000 9223
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run production server with Gunicorn
+CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+
+# Stage 4: Lightweight browser-only image
+FROM python:3.11-slim as browser-only
+
+WORKDIR /app
+
+# Install Playwright and browsers only
+RUN pip install playwright
+RUN playwright install-deps
+RUN playwright install chromium firefox webkit
+
+# Create directories for browser data
+RUN mkdir -p /app/playwright-data /app/screenshots /app/downloads
+
+# Copy Playwright service scripts
+COPY scripts/playwright/ ./scripts/playwright/
+COPY config/playwright.toml ./config/
+
+# Expose debug port
+EXPOSE 9223
+
+# Run browser service
+CMD ["python", "scripts/playwright/browser_service.py"]
+
+# Stage 5: Development with browser development tools
+FROM development as development-with-tools
+
+# Install additional development tools
+RUN apt-get update && apt-get install -y \
+    vim \
+    htop \
+    net-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright inspector
+RUN pip install playwrightinspector
+
+# Add development scripts
+COPY scripts/playwright/ ./scripts/playwright/
+RUN chmod +x ./scripts/playwright/*
+
+# Run with additional debug options
+CMD ["python", "-m", "playwright", "inspect", "--host", "0.0.0.0", "--port", "9223"]

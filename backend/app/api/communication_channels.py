@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 from app.core.communication_channels import (
     CommunicationChannelConfig,
@@ -7,6 +8,7 @@ from app.core.communication_channels import (
     communication_manager,
     CommunicationChannelError
 )
+from app.core.content_analysis import content_analyzer
 from app.core.security import get_current_user
 from app.models.user import User as UserModel
 
@@ -357,3 +359,249 @@ async def track_session_message(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to track session message: {str(e)}")
+
+# Interaction Management Endpoints
+
+@router.post("/communication/interactions/send-with-interactions", response_model=Dict[str, Any])
+async def send_message_with_interactions(
+    message_data: Dict[str, Any],
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Send a message with full interaction management (reactions and typing indicators)"""
+    try:
+        # Parse message with new fields
+        message = CommunicationMessage(**message_data)
+        channel_id = message_data.get("channel_id")
+        sender_info = message_data.get("sender_info")
+        
+        # Support for routing to multiple channels
+        route_to = message_data.get("route_to", [])
+        if route_to:
+            message.route_to = route_to
+        
+        result = await communication_manager.process_message_with_interactions(
+            message, channel_id, sender_info
+        )
+        return result
+    except CommunicationChannelError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send message with interactions: {str(e)}")
+
+@router.get("/communication/interactions/active/{channel_id}", response_model=Dict[str, Any])
+async def get_active_interactions(
+    channel_id: str,
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get currently active interactions for a specific channel"""
+    try:
+        interactions = await communication_manager.get_active_interactions(channel_id)
+        return interactions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get active interactions: {str(e)}")
+
+@router.get("/communication/interactions/active", response_model=Dict[str, Any])
+async def get_all_active_interactions(
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get all currently active interactions across all channels"""
+    try:
+        interactions = await communication_manager.get_active_interactions()
+        return interactions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get active interactions: {str(e)}")
+
+@router.post("/communication/interactions/cleanup", response_model=Dict[str, Any])
+async def cleanup_stale_interactions(
+    max_age_seconds: float = 300.0,
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Clean up stale interactions that have been active too long"""
+    try:
+        result = await communication_manager.cleanup_stale_interactions(max_age_seconds)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to cleanup stale interactions: {str(e)}")
+
+@router.post("/communication/content/analyze", response_model=Dict[str, Any])
+async def analyze_message_content(
+    content_data: Dict[str, Any],
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Analyze message content to determine appropriate reactions and interactions"""
+    try:
+        content = content_data.get("content", "")
+        sender_info = content_data.get("sender_info")
+        
+        analysis = content_analyzer.analyze_content(content, sender_info)
+        
+        return {
+            "success": True,
+            "analysis": analysis,
+            "recommended_reaction": analysis["suggested_reaction"],
+            "should_show_typing": analysis["requires_typing"],
+            "typing_duration_estimate": content_analyzer.get_typing_duration_estimate(content, analysis["context"])
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze content: {str(e)}")
+
+@router.get("/communication/content/analysis/stats", response_model=Dict[str, Any])
+async def get_content_analysis_stats(
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get statistics about content analysis usage"""
+    try:
+        stats = content_analyzer.get_analysis_stats()
+        return {
+            "success": True,
+            "stats": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get analysis stats: {str(e)}")
+
+@router.post("/communication/interactions/manual-reaction", response_model=Dict[str, Any])
+async def send_manual_reaction(
+    reaction_data: Dict[str, Any],
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Manually send a reaction to a message"""
+    try:
+        channel_id = reaction_data.get("channel_id")
+        reaction = reaction_data.get("reaction")
+        message_data = reaction_data.get("message")
+        
+        if not all([channel_id, reaction, message_data]):
+            raise HTTPException(status_code=400, detail="Missing required fields: channel_id, reaction, message")
+        
+        # Get channel config
+        config = await communication_manager.get_channel(channel_id)
+        
+        # Create communication message
+        message = CommunicationMessage(**message_data)
+        
+        # Send reaction
+        result = await communication_manager._manage_message_reaction(
+            f"manual_{datetime.now().timestamp()}",
+            config,
+            message,
+            reaction,
+            "manual"
+        )
+        
+        return result
+    except CommunicationChannelError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send manual reaction: {str(e)}")
+
+@router.post("/communication/interactions/manual-typing", response_model=Dict[str, Any])
+async def send_manual_typing(
+    typing_data: Dict[str, Any],
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Manually start a typing indicator"""
+    try:
+        channel_id = typing_data.get("channel_id")
+        message_data = typing_data.get("message")
+        duration = typing_data.get("duration", 3.0)
+        
+        if not all([channel_id, message_data]):
+            raise HTTPException(status_code=400, detail="Missing required fields: channel_id, message")
+        
+        # Get channel config
+        config = await communication_manager.get_channel(channel_id)
+        
+        # Create communication message
+        message = CommunicationMessage(**message_data)
+        
+        # Send typing indicator
+        result = await communication_manager._manage_typing_indicator(
+            f"manual_{datetime.now().timestamp()}",
+            config,
+            message,
+            duration
+        )
+        
+        return result
+    except CommunicationChannelError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send manual typing: {str(e)}")
+
+@router.put("/communication/channels/{channel_id}/interaction-settings", response_model=Dict[str, Any])
+async def update_interaction_settings(
+    channel_id: str,
+    settings_data: Dict[str, Any],
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Update interaction settings for a communication channel"""
+    try:
+        # Get current channel config
+        config = await communication_manager.get_channel(channel_id)
+        
+        # Update interaction settings
+        if "enable_reactions" in settings_data:
+            config.enable_reactions = settings_data["enable_reactions"]
+        if "enable_typing_indicator" in settings_data:
+            config.enable_typing_indicator = settings_data["enable_typing_indicator"]
+        if "processing_reaction" in settings_data:
+            config.processing_reaction = settings_data["processing_reaction"]
+        if "contextual_reactions_enabled" in settings_data:
+            config.contextual_reactions_enabled = settings_data["contextual_reactions_enabled"]
+        if "typing_duration_min" in settings_data:
+            config.typing_duration_min = settings_data["typing_duration_min"]
+        if "typing_duration_max" in settings_data:
+            config.typing_duration_max = settings_data["typing_duration_max"]
+        if "reaction_removal_delay" in settings_data:
+            config.reaction_removal_delay = settings_data["reaction_removal_delay"]
+        
+        # Update the channel
+        await communication_manager.remove_channel(channel_id)
+        await communication_manager.add_channel(channel_id, config)
+        
+        return {
+            "success": True,
+            "channel_id": channel_id,
+            "message": "Interaction settings updated successfully",
+            "updated_settings": {
+                "enable_reactions": config.enable_reactions,
+                "enable_typing_indicator": config.enable_typing_indicator,
+                "processing_reaction": config.processing_reaction,
+                "contextual_reactions_enabled": config.contextual_reactions_enabled,
+                "typing_duration_min": config.typing_duration_min,
+                "typing_duration_max": config.typing_duration_max,
+                "reaction_removal_delay": config.reaction_removal_delay
+            }
+        }
+    except CommunicationChannelError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update interaction settings: {str(e)}")
+
+@router.get("/communication/channels/{channel_id}/interaction-settings", response_model=Dict[str, Any])
+async def get_interaction_settings(
+    channel_id: str,
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get interaction settings for a communication channel"""
+    try:
+        # Get current channel config
+        config = await communication_manager.get_channel(channel_id)
+        
+        return {
+            "success": True,
+            "channel_id": channel_id,
+            "interaction_settings": {
+                "enable_reactions": config.enable_reactions,
+                "enable_typing_indicator": config.enable_typing_indicator,
+                "processing_reaction": config.processing_reaction,
+                "contextual_reactions_enabled": config.contextual_reactions_enabled,
+                "typing_duration_min": config.typing_duration_min,
+                "typing_duration_max": config.typing_duration_max,
+                "reaction_removal_delay": config.reaction_removal_delay
+            }
+        }
+    except CommunicationChannelError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get interaction settings: {str(e)}")

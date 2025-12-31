@@ -1,11 +1,14 @@
 import httpx
 import json
+import asyncio
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 import logging
+from datetime import datetime
 
 from app.core.database import get_db
 from app.models.integration import IntegrationConfig as IntegrationConfigModel
+from app.core.webchat import WebChatMessage, webchat_manager
 
 
 logger = logging.getLogger(__name__)
@@ -49,6 +52,15 @@ class CommunicationChannelConfig(BaseModel):
     analytics_enabled: bool = Field(True, description="Enable analytics tracking")
     rate_limit: Optional[int] = Field(None, description="Rate limit in messages per minute")
     
+    # Dynamic interaction indicators
+    enable_reactions: bool = Field(True, description="Enable emoji reactions to messages")
+    enable_typing_indicator: bool = Field(True, description="Enable typing indicator during message processing")
+    processing_reaction: str = Field("👀", description="Emoji reaction to show during message processing")
+    contextual_reactions_enabled: bool = Field(True, description="Enable context-aware emoji reactions")
+    typing_duration_min: float = Field(1.0, description="Minimum typing indicator duration in seconds")
+    typing_duration_max: float = Field(8.0, description="Maximum typing indicator duration in seconds")
+    reaction_removal_delay: float = Field(0.5, description="Delay before removing processing reaction in seconds")
+    
     # Security and privacy
     encryption_enabled: bool = Field(True, description="Enable end-to-end encryption")
     data_retention_days: int = Field(30, description="Data retention period in days")
@@ -59,6 +71,7 @@ class CommunicationMessage(BaseModel):
     content: str
     channel_id: Optional[str] = None
     user_id: Optional[str] = None
+    message_id: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     message_type: str = Field("text", description="Message type: text, image, video, audio, file, command")
     timestamp: Optional[str] = Field(None, description="Message timestamp")
@@ -176,6 +189,11 @@ class CommunicationChannelManager:
         self.channel_analytics: Dict[str, ChannelAnalytics] = {}
         self.message_queue: Dict[str, List[CommunicationMessage]] = {}
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
+        
+        # Interaction management
+        self.active_reactions: Dict[str, Dict[str, Any]] = {}
+        self.active_typing: Dict[str, Dict[str, Any]] = {}
+        self.message_processing_queue: Dict[str, Dict[str, Any]] = {}
         
         # Initialize analytics for all channels
         self._initialize_analytics()
@@ -732,7 +750,7 @@ class CommunicationChannelManager:
         channel_id: str,
         payload: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Process incoming webhook messages"""
+        """Process incoming webhook messages with interaction management"""
         if channel_id not in self.channels:
             raise CommunicationChannelError(f"Unknown channel: {channel_id}")
         
@@ -740,15 +758,44 @@ class CommunicationChannelManager:
         
         # Process different webhook formats based on channel type
         if config.channel_type == "telegram":
-            return self._process_telegram_webhook(payload)
+            processed_message = self._process_telegram_webhook(payload)
         elif config.channel_type == "slack":
-            return self._process_slack_webhook(payload)
+            processed_message = self._process_slack_webhook(payload)
         elif config.channel_type == "whatsapp":
-            return self._process_whatsapp_webhook(payload)
+            processed_message = self._process_whatsapp_webhook(payload)
         elif config.channel_type == "discord":
-            return self._process_discord_webhook(payload)
+            processed_message = self._process_discord_webhook(payload)
         else:
             raise CommunicationChannelError(f"Unsupported channel type for webhook: {config.channel_type}")
+        
+        # Trigger interactions if enabled and it's an incoming message
+        if processed_message.get("content") and config.enable_reactions:
+            # Create a communication message for interaction processing
+            interaction_message = CommunicationMessage(
+                content=processed_message["content"],
+                channel_id=processed_message.get("chat_id") or processed_message.get("channel_id"),
+                user_id=processed_message.get("user_id"),
+                message_id=processed_message.get("message_id"),
+                metadata={
+                    "message_id": processed_message.get("message_id"),
+                    "timestamp": processed_message.get("timestamp"),
+                    "raw": processed_message.get("raw", {})
+                }
+            )
+            
+            # Start interactions asynchronously
+            asyncio.create_task(
+                self.process_message_with_interactions(
+                    interaction_message,
+                    channel_id,
+                    {
+                        "user_id": processed_message.get("user_id"),
+                        "username": processed_message.get("username")
+                    }
+                )
+            )
+        
+        return processed_message
 
     def _process_telegram_webhook(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Process Telegram webhook payload"""
@@ -761,6 +808,8 @@ class CommunicationChannelManager:
                 "chat_id": message.get("chat", {}).get("id"),
                 "user_id": message.get("from", {}).get("id"),
                 "username": message.get("from", {}).get("username"),
+                "first_name": message.get("from", {}).get("first_name"),
+                "last_name": message.get("from", {}).get("last_name"),
                 "content": message.get("text"),
                 "timestamp": message.get("date"),
                 "raw": payload
@@ -834,6 +883,11 @@ class CommunicationChannelManager:
         self.channel_analytics.clear()
         self.message_queue.clear()
         self.active_sessions.clear()
+        
+        # Clean up interaction data
+        self.active_reactions.clear()
+        self.active_typing.clear()
+        self.message_processing_queue.clear()
     
     async def add_routing_rule(self, channel_id: str, rule: RoutingRule):
         """Add a routing rule for a specific channel"""
@@ -1014,6 +1068,678 @@ class CommunicationChannelManager:
             message,
             "sent"
         )
+    
+    # Interaction Management Methods
+    
+    async def process_message_with_interactions(
+        self,
+        message: CommunicationMessage,
+        channel_id: Optional[str] = None,
+        sender_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Process a message with full interaction management (reactions and typing)"""
+        from app.core.content_analysis import content_analyzer
+        import asyncio
+        
+        config = await self.get_channel(channel_id)
+        processing_id = f"proc_{datetime.now().timestamp()}_{message.analytics_id}"
+        
+        try:
+            # Analyze message content for context
+            analysis = content_analyzer.analyze_content(message.content, sender_info)
+            
+            # Start interactions if enabled
+            interaction_tasks = []
+            
+            if config.enable_reactions and content_analyzer.should_react_to_message(message.content, config.channel_type):
+                # Add processing reaction
+                processing_reaction = config.processing_reaction if config.processing_reaction else analysis.get("suggested_reaction", "👀")
+                reaction_task = asyncio.create_task(
+                    self._manage_message_reaction(
+                        processing_id,
+                        config,
+                        message,
+                        processing_reaction,
+                        "processing"
+                    )
+                )
+                interaction_tasks.append(reaction_task)
+            
+            if config.enable_typing_indicator and analysis.get("requires_typing", True):
+                # Show typing indicator
+                typing_duration = content_analyzer.get_typing_duration_estimate(message.content, analysis["context"])
+                typing_task = asyncio.create_task(
+                    self._manage_typing_indicator(
+                        processing_id,
+                        config,
+                        message,
+                        typing_duration
+                    )
+                )
+                interaction_tasks.append(typing_task)
+            
+            # Wait for initial interactions to start
+            if interaction_tasks:
+                await asyncio.gather(*interaction_tasks, return_exceptions=True)
+            
+            # Process the actual message
+            result = await self.send_message(message, channel_id)
+            
+            # Update interactions based on result
+            await self._finalize_message_interactions(
+                processing_id,
+                config,
+                message,
+                result,
+                analysis
+            )
+            
+            return {
+                **result,
+                "processing_id": processing_id,
+                "interaction_analysis": analysis,
+                "interactions_performed": {
+                    "reaction_added": config.enable_reactions,
+                    "typing_shown": config.enable_typing_indicator
+                }
+            }
+            
+        except Exception as e:
+            # Clean up interactions on error
+            await self._cleanup_message_interactions(processing_id, config, message)
+            raise CommunicationChannelError(f"Failed to process message with interactions: {str(e)}")
+    
+    async def _manage_message_reaction(
+        self,
+        processing_id: str,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str,
+        reaction_type: str
+    ) -> Dict[str, Any]:
+        """Manage emoji reaction to a message"""
+        try:
+            # Store reaction info
+            self.active_reactions[processing_id] = {
+                "reaction": reaction,
+                "reaction_type": reaction_type,
+                "message_id": message.analytics_id,
+                "channel_id": config.channel_id,
+                "channel_type": config.channel_type,
+                "started_at": datetime.now().isoformat(),
+                "status": "active"
+            }
+            
+            # Send reaction based on channel type
+            if config.channel_type == "telegram":
+                return await self._send_telegram_reaction(config, message, reaction)
+            elif config.channel_type == "discord":
+                return await self._send_discord_reaction(config, message, reaction)
+            elif config.channel_type == "slack":
+                return await self._send_slack_reaction(config, message, reaction)
+            else:
+                logger.info(f"Reaction {reaction} not supported for channel type: {config.channel_type}")
+                return {"success": True, "note": "Reaction not supported for this channel type"}
+                
+        except Exception as e:
+            logger.error(f"Failed to manage reaction {reaction}: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
+    async def _manage_typing_indicator(
+        self,
+        processing_id: str,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        duration: float
+    ) -> Dict[str, Any]:
+        """Manage typing indicator for a message"""
+        try:
+            # Store typing info
+            self.active_typing[processing_id] = {
+                "message_id": message.analytics_id,
+                "channel_id": config.channel_id,
+                "channel_type": config.channel_type,
+                "duration": duration,
+                "started_at": datetime.now().isoformat(),
+                "status": "active"
+            }
+            
+            # Send typing indicator based on channel type
+            if config.channel_type == "telegram":
+                return await self._send_telegram_typing(config, message, duration)
+            elif config.channel_type == "discord":
+                return await self._send_discord_typing(config, message, duration)
+            elif config.channel_type == "slack":
+                return await self._send_slack_typing(config, message, duration)
+            else:
+                logger.info(f"Typing indicator not supported for channel type: {config.channel_type}")
+                return {"success": True, "note": "Typing indicator not supported for this channel type"}
+                
+        except Exception as e:
+            logger.error(f"Failed to manage typing indicator: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
+    async def _finalize_message_interactions(
+        self,
+        processing_id: str,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        result: Dict[str, Any],
+        analysis: Dict[str, Any]
+    ):
+        """Finalize interactions after message processing"""
+        from app.core.content_analysis import content_analyzer
+        import asyncio
+        
+        try:
+            # Remove processing reaction and add completion reactions
+            if processing_id in self.active_reactions:
+                reaction_info = self.active_reactions[processing_id]
+                
+                # Get completion reactions
+                completion_reactions = content_analyzer.get_completion_reactions(
+                    analysis["context"],
+                    reaction_info["reaction"]
+                )
+                
+                # Remove processing reaction
+                await self._remove_message_reaction(config, message, reaction_info["reaction"])
+                
+                # Add completion reactions with delay
+                for completion_reaction in completion_reactions:
+                    asyncio.create_task(
+                        self._send_delayed_reaction(
+                            config, message, completion_reaction, config.reaction_removal_delay
+                        )
+                    )
+                
+                # Clean up reaction tracking
+                del self.active_reactions[processing_id]
+            
+            # Stop typing indicator
+            if processing_id in self.active_typing:
+                await self._stop_typing_indicator(config, message)
+                del self.active_typing[processing_id]
+                
+        except Exception as e:
+            logger.error(f"Failed to finalize interactions: {str(e)}")
+    
+    async def _cleanup_message_interactions(
+        self,
+        processing_id: str,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage
+    ):
+        """Clean up interactions when message processing fails"""
+        try:
+            # Remove any active reactions
+            if processing_id in self.active_reactions:
+                reaction_info = self.active_reactions[processing_id]
+                await self._remove_message_reaction(config, message, reaction_info["reaction"])
+                del self.active_reactions[processing_id]
+            
+            # Stop typing indicator
+            if processing_id in self.active_typing:
+                await self._stop_typing_indicator(config, message)
+                del self.active_typing[processing_id]
+                
+        except Exception as e:
+            logger.error(f"Failed to cleanup interactions: {str(e)}")
+    
+    async def _send_telegram_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Send emoji reaction via Telegram"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                url = f"https://api.telegram.org/bot{config.bot_token}/setMessageReaction"
+                
+                payload = {
+                    "chat_id": message.channel_id or config.channel_id,
+                    "message_id": message.metadata.get("message_id") if message.metadata else None,
+                    "reaction": [{"type": "emoji", "emoji": reaction}],
+                    "is_big": False
+                }
+                
+                # If we don't have a message_id, we can't react to a specific message
+                if not payload["message_id"]:
+                    return {"success": False, "error": "No message ID available for reaction"}
+                
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                
+                result = response.json()
+                
+                if result.get("ok"):
+                    return {"success": True, "reaction": reaction, "channel": "telegram"}
+                else:
+                    return {"success": False, "error": result.get("description", "Unknown error")}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _send_discord_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Send emoji reaction via Discord"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                message_id = message.metadata.get("message_id") if message.metadata else None
+                if not message_id:
+                    return {"success": False, "error": "No message ID available for reaction"}
+                
+                url = f"https://discord.com/api/v10/channels/{message.channel_id or config.channel_id}/messages/{message_id}/reactions/{reaction}/@me"
+                
+                response = await client.put(
+                    url,
+                    headers={"Authorization": f"Bot {config.bot_token}"}
+                )
+                
+                if response.status_code == 204:
+                    return {"success": True, "reaction": reaction, "channel": "discord"}
+                else:
+                    return {"success": False, "error": f"HTTP {response.status_code}"}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _send_slack_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Send emoji reaction via Slack"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                # Slack reactions are called "reactions" in their API
+                timestamp = message.metadata.get("ts") if message.metadata else None
+                if not timestamp:
+                    return {"success": False, "error": "No timestamp available for reaction"}
+                
+                url = "https://slack.com/api/reactions.add"
+                
+                payload = {
+                    "channel": message.channel_id or config.channel_id,
+                    "name": reaction,
+                    "timestamp": timestamp
+                }
+                
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Authorization": f"Bearer {config.access_token}"}
+                )
+                
+                result = response.json()
+                
+                if result.get("ok"):
+                    return {"success": True, "reaction": reaction, "channel": "slack"}
+                else:
+                    return {"success": False, "error": result.get("error", "Unknown error")}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _remove_message_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Remove an emoji reaction"""
+        try:
+            if config.channel_type == "telegram":
+                return await self._remove_telegram_reaction(config, message, reaction)
+            elif config.channel_type == "discord":
+                return await self._remove_discord_reaction(config, message, reaction)
+            elif config.channel_type == "slack":
+                return await self._remove_slack_reaction(config, message, reaction)
+            else:
+                return {"success": True, "note": "Reaction removal not supported for this channel type"}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _remove_telegram_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Remove emoji reaction via Telegram"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                url = f"https://api.telegram.org/bot{config.bot_token}/setMessageReaction"
+                
+                payload = {
+                    "chat_id": message.channel_id or config.channel_id,
+                    "message_id": message.metadata.get("message_id") if message.metadata else None,
+                    "reaction": [],  # Empty reaction list removes all reactions
+                    "is_big": False
+                }
+                
+                if not payload["message_id"]:
+                    return {"success": False, "error": "No message ID available"}
+                
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                
+                result = response.json()
+                
+                if result.get("ok"):
+                    return {"success": True, "removed_reaction": reaction, "channel": "telegram"}
+                else:
+                    return {"success": False, "error": result.get("description", "Unknown error")}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _remove_discord_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Remove emoji reaction via Discord"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                message_id = message.metadata.get("message_id") if message.metadata else None
+                if not message_id:
+                    return {"success": False, "error": "No message ID available"}
+                
+                url = f"https://discord.com/api/v10/channels/{message.channel_id or config.channel_id}/messages/{message_id}/reactions/{reaction}/@me"
+                
+                response = await client.delete(
+                    url,
+                    headers={"Authorization": f"Bot {config.bot_token}"}
+                )
+                
+                if response.status_code == 204:
+                    return {"success": True, "removed_reaction": reaction, "channel": "discord"}
+                else:
+                    return {"success": False, "error": f"HTTP {response.status_code}"}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _remove_slack_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str
+    ) -> Dict[str, Any]:
+        """Remove emoji reaction via Slack"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                timestamp = message.metadata.get("ts") if message.metadata else None
+                if not timestamp:
+                    return {"success": False, "error": "No timestamp available"}
+                
+                url = "https://slack.com/api/reactions.remove"
+                
+                payload = {
+                    "channel": message.channel_id or config.channel_id,
+                    "name": reaction,
+                    "timestamp": timestamp
+                }
+                
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Authorization": f"Bearer {config.access_token}"}
+                )
+                
+                result = response.json()
+                
+                if result.get("ok"):
+                    return {"success": True, "removed_reaction": reaction, "channel": "slack"}
+                else:
+                    return {"success": False, "error": result.get("error", "Unknown error")}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _send_telegram_typing(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        duration: float
+    ) -> Dict[str, Any]:
+        """Send typing indicator via Telegram"""
+        try:
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                url = f"https://api.telegram.org/bot{config.bot_token}/sendChatAction"
+                
+                payload = {
+                    "chat_id": message.channel_id or config.channel_id,
+                    "action": "typing"
+                }
+                
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                
+                result = response.json()
+                
+                if result.get("ok"):
+                    return {"success": True, "duration": duration, "channel": "telegram"}
+                else:
+                    return {"success": False, "error": result.get("description", "Unknown error")}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _send_discord_typing(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        duration: float
+    ) -> Dict[str, Any]:
+        """Send typing indicator via Discord"""
+        try:
+            # Discord doesn't have a persistent typing indicator API
+            # We simulate it by sending periodic updates
+            import asyncio
+            
+            async def typing_loop():
+                try:
+                    async with httpx.AsyncClient(timeout=config.timeout) as client:
+                        url = f"https://discord.com/api/v10/channels/{message.channel_id or config.channel_id}/typing"
+                        
+                        while duration > 0:
+                            response = await client.post(
+                                url,
+                                headers={"Authorization": f"Bot {config.bot_token}"}
+                            )
+                            
+                            if response.status_code != 204:
+                                break
+                            
+                            await asyncio.sleep(10)  # Discord typing indicator lasts 10 seconds
+                            duration -= 10
+                            
+                except Exception as e:
+                    logger.error(f"Discord typing indicator error: {str(e)}")
+            
+            # Start typing indicator in background
+            asyncio.create_task(typing_loop())
+            
+            return {"success": True, "duration": duration, "channel": "discord"}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _send_slack_typing(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        duration: float
+    ) -> Dict[str, Any]:
+        """Send typing indicator via Slack"""
+        try:
+            # Slack uses the same endpoint as sending messages but with different payload
+            async with httpx.AsyncClient(timeout=config.timeout) as client:
+                url = "https://slack.com/api/chat.postMessage"
+                
+                payload = {
+                    "channel": message.channel_id or config.channel_id,
+                    "text": "",  # Empty text for typing indicator
+                    "username": "Typing Indicator",
+                    "icon_emoji": ":typing:",
+                    "thread_ts": message.metadata.get("thread_ts") if message.metadata else None
+                }
+                
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Authorization": f"Bearer {config.access_token}"}
+                )
+                
+                result = response.json()
+                
+                if result.get("ok"):
+                    return {"success": True, "duration": duration, "channel": "slack"}
+                else:
+                    return {"success": False, "error": result.get("error", "Unknown error")}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _stop_typing_indicator(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage
+    ) -> Dict[str, Any]:
+        """Stop typing indicator"""
+        # For most platforms, stopping typing indicator is automatic
+        # Telegram and Discord don't require explicit stop commands
+        # Slack might need special handling
+        
+        try:
+            if config.channel_type == "slack":
+                # For Slack, we can send a follow-up message to clear the typing indicator
+                async with httpx.AsyncClient(timeout=config.timeout) as client:
+                    url = "https://slack.com/api/chat.postMessage"
+                    
+                    payload = {
+                        "channel": message.channel_id or config.channel_id,
+                        "text": " ",  # Single space to clear typing
+                        "thread_ts": message.metadata.get("thread_ts") if message.metadata else None
+                    }
+                    
+                    response = await client.post(
+                        url,
+                        json=payload,
+                        headers={"Authorization": f"Bearer {config.access_token}"}
+                    )
+                    
+                    result = response.json()
+                    
+                    if result.get("ok"):
+                        return {"success": True, "stopped": True, "channel": "slack"}
+                    else:
+                        return {"success": False, "error": result.get("error", "Unknown error")}
+            else:
+                # For other platforms, typing indicators stop automatically
+                return {"success": True, "stopped": True, "channel": config.channel_type}
+        
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    async def _send_delayed_reaction(
+        self,
+        config: CommunicationChannelConfig,
+        message: CommunicationMessage,
+        reaction: str,
+        delay: float
+    ):
+        """Send a reaction after a delay"""
+        import asyncio
+        await asyncio.sleep(delay)
+        await self._manage_message_reaction(
+            f"delayed_{datetime.now().timestamp()}",
+            config,
+            message,
+            reaction,
+            "completion"
+        )
+    
+    async def get_active_interactions(self, channel_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get information about currently active interactions"""
+        try:
+            filtered_reactions = {}
+            filtered_typing = {}
+            
+            if channel_id:
+                # Filter by channel
+                for proc_id, reaction_info in self.active_reactions.items():
+                    if reaction_info["channel_id"] == channel_id:
+                        filtered_reactions[proc_id] = reaction_info
+                
+                for proc_id, typing_info in self.active_typing.items():
+                    if typing_info["channel_id"] == channel_id:
+                        filtered_typing[proc_id] = typing_info
+            else:
+                filtered_reactions = self.active_reactions.copy()
+                filtered_typing = self.active_typing.copy()
+            
+            return {
+                "active_reactions": filtered_reactions,
+                "active_typing": filtered_typing,
+                "total_active_reactions": len(filtered_reactions),
+                "total_active_typing": len(filtered_typing),
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        except Exception as e:
+            return {"error": str(e)}
+    
+    async def cleanup_stale_interactions(self, max_age_seconds: float = 300.0):
+        """Clean up stale interactions that have been active too long"""
+        try:
+            import time
+            current_time = time.time()
+            stale_reactions = []
+            stale_typing = []
+            
+            # Check for stale reactions
+            for proc_id, reaction_info in self.active_reactions.items():
+                started_at = datetime.fromisoformat(reaction_info["started_at"])
+                if (current_time - started_at.timestamp()) > max_age_seconds:
+                    stale_reactions.append(proc_id)
+            
+            # Check for stale typing indicators
+            for proc_id, typing_info in self.active_typing.items():
+                started_at = datetime.fromisoformat(typing_info["started_at"])
+                if (current_time - started_at.timestamp()) > max_age_seconds:
+                    stale_typing.append(proc_id)
+            
+            # Remove stale interactions
+            for proc_id in stale_reactions:
+                del self.active_reactions[proc_id]
+            
+            for proc_id in stale_typing:
+                del self.active_typing[proc_id]
+            
+            cleaned_count = len(stale_reactions) + len(stale_typing)
+            if cleaned_count > 0:
+                logger.info(f"Cleaned up {cleaned_count} stale interactions")
+            
+            return {
+                "cleaned_reactions": len(stale_reactions),
+                "cleaned_typing": len(stale_typing),
+                "total_cleaned": cleaned_count
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to cleanup stale interactions: {str(e)}")
+            return {"error": str(e)}
 
 
 # Global communication channel manager instance
