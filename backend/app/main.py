@@ -7,9 +7,10 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
+from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
 from app.core.ai_providers import initialize_ai_providers
 from app.core.integration_monitoring import initialize_integration_monitoring
 from app.core.communication_channels import initialize_communication_channels
@@ -31,7 +32,7 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     
     # Initialize MCP integrations
-    await initialize_mcp_integrations()
+    await initialize_enhanced_mcp()
     
     # Initialize AI providers
     await initialize_ai_providers()
@@ -76,7 +77,8 @@ app.include_router(actions.router, prefix="/api/v1", tags=["actions", "hooks"])
 app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])
 app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
-app.include_router(mcp.router, prefix="/api/v1/mcp", tags=["mcp"])
+app.include_router(mcp.router, prefix="/api/v1/mcp", tags=["mcp"])  # Original MCP endpoints
+app.include_router(enhanced_mcp.router, prefix="/api/v1", tags=["enhanced-mcp"])  # Enhanced MCP endpoints
 app.include_router(ai_providers.router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(integration_monitoring.router, prefix="/api/v1/monitoring", tags=["monitoring"])
 app.include_router(communication_channels.router, prefix="/api/v1/communication", tags=["communication"])

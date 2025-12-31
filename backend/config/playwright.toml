@@ -1,0 +1,217 @@
+# Playwright MCP Server Configuration
+# This file contains Playwright-specific configuration settings
+
+[server]
+# Server host and port
+host = "0.0.0.0"
+port = 8080
+
+# API configuration
+api_version = "/api/v1"
+debug_mode = false
+
+# CORS settings
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "https://yourdomain.com"
+]
+
+[database]
+# Database URL (overrides environment variable)
+# url = "postgresql://user:password@localhost:5432/database"
+
+# Connection pool settings
+pool_size = 10
+max_overflow = 20
+pool_timeout = 30
+pool_recycle = 3600
+
+# Database retry settings
+max_retries = 3
+retry_delay = 1
+
+[redis]
+# Redis URL (overrides environment variable)
+# url = "redis://localhost:6379/0"
+
+# Connection settings
+socket_timeout = 5
+socket_connect_timeout = 5
+health_check_interval = 30
+
+# SSL settings
+ssl = false
+
+[security]
+# JWT settings
+secret_key = "your-secret-key-here"
+algorithm = "HS256"
+access_token_expire_minutes = 30
+
+# CORS settings
+allow_credentials = true
+allow_methods = ["*"]
+allow_headers = ["*"]
+
+[playwright]
+# Browser settings
+browser_timeout = 30000  # milliseconds
+navigation_timeout = 30000
+page_load_timeout = 30000
+default_wait_timeout = 5000
+
+# Concurrency settings
+max_concurrent_tasks = 5
+max_browser_instances = 10
+browser_pool_size = 5
+
+# Browser types
+default_browser = "chromium"
+supported_browsers = ["chromium", "firefox", "webkit"]
+
+# Browser launch options
+headless = true
+ignore_https_errors = false
+bypass_csp = false
+disable_web_security = false
+
+# Resource limits
+max_page_size_mb = 50
+max_screenshot_size_mb = 10
+max_video_size_mb = 100
+
+# Storage directories
+screenshot_dir = "/app/screenshots"
+video_dir = "/app/videos"
+artifact_dir = "/app/artifacts"
+log_dir = "/app/logs"
+
+# Network settings
+proxy_url = null  # "http://proxy.example.com:8080"
+user_agent = "Playwright-MCP-Server/1.0"
+
+[storage]
+# File storage settings
+max_file_size_mb = 100
+cleanup_interval_hours = 24
+retention_days = 30
+
+# Storage backends
+use_s3 = false
+s3_bucket = "playwright-artifacts"
+s3_region = "us-east-1"
+
+[monitoring]
+# Monitoring and metrics
+enable_monitoring = true
+metrics_port = 9090
+health_check_port = 8081
+
+# Logging
+log_level = "INFO"
+log_format = "json"
+log_file = "/app/logs/playwright.log"
+max_log_size_mb = 100
+backup_count = 5
+
+# Performance monitoring
+enable_profiling = false
+profile_dir = "/app/profiles"
+performance_threshold_ms = 5000
+
+# Alerting
+enable_alerts = true
+alert_webhook_url = null  # "https://hooks.slack.com/services/..."
+
+[automation]
+# Task automation settings
+default_task_timeout = 300000  # 5 minutes
+max_task_retries = 3
+task_retry_delay = 1000  # milliseconds
+
+# Script execution
+enable_javascript = true
+enable_python = false
+sandbox_mode = true
+
+# Error handling
+continue_on_error = false
+capture_screenshots_on_error = true
+capture_videos_on_error = false
+
+[security_options]
+# Browser security settings
+disable_extensions = true
+disable_plugins = false
+disable_background_networking = true
+disable_background_timer_throttling = false
+disable_backgrounding_occluded_windows = false
+disable_renderer_backgrounding = true
+
+# Content security policy
+bypass_csp_for_testing = false
+ignore_certificate_errors = false
+
+# Network security
+block_trackers = true
+block_ads = false
+enable_cookies = true
+enable_local_storage = true
+enable_session_storage = true
+
+[performance]
+# Performance optimization
+enable_caching = true
+cache_ttl_seconds = 3600
+enable_compression = true
+
+# Memory management
+max_memory_mb = 1024
+gc_interval_minutes = 5
+force_gc_on_task_completion = true
+
+# CPU optimization
+cpu_throttle_factor = 0.8
+enable_parallel_processing = false
+
+[proxy]
+# Proxy configuration
+http_proxy = null  # "http://proxy.example.com:8080"
+https_proxy = null  # "https://proxy.example.com:8080"
+no_proxy = ["localhost", "127.0.0.1"]
+
+# Proxy authentication
+proxy_username = null
+proxy_password = null
+
+[environment]
+# Environment-specific settings
+environment = "development"
+
+# Development settings
+dev_mode = true
+enable_debug_tools = true
+enable_hot_reload = false
+
+# Production settings
+enable_https = false
+ssl_cert_path = null
+ssl_key_path = null
+
+# Testing settings
+test_mode = false
+mock_external_services = false
+
+[features]
+# Feature flags
+enable_ai_automation = true
+enable_screen_recording = true
+enable_performance_monitoring = true
+enable_cost_tracking = true
+enable_usage_analytics = false
+
+# Experimental features
+experimental_headless_shell = false
+experimental_automation_ai = false
+enable_cross_browser_testing = true

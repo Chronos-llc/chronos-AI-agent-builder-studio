@@ -1,0 +1,207 @@
+version: '3.8'
+
+services:
+  playwright-mcp:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.playwright
+      target: ${DOCKER_TARGET:-development}
+    container_name: chronos-playwright-mcp
+    restart: unless-stopped
+    ports:
+      - "${PLAYWRIGHT_MCP_PORT:-8003}:8000"
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-chronos_ai}
+      
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      
+      # MCP Configuration
+      - MCP_SERVER_NAME=playwright
+      - MCP_SERVER_VERSION=1.0.0
+      - MCP_SERVER_HOST=0.0.0.0
+      - MCP_SERVER_PORT=8000
+      
+      # Playwright Configuration
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
+      - PLAYWRIGHT_INSTALL_DEPS=1
+      
+      # Browser Pool Configuration
+      - PLAYWRIGHT_POOL_SIZE=${PLAYWRIGHT_POOL_SIZE:-5}
+      - PLAYWRIGHT_POOL_TIMEOUT=${PLAYWRIGHT_POOL_TIMEOUT:-30000}
+      - PLAYWRIGHT_MAX_CONCURRENT_SESSIONS=${PLAYWRIGHT_MAX_CONCURRENT_SESSIONS:-20}
+      
+      # Automation Configuration
+      - PLAYWRIGHT_DEFAULT_TIMEOUT=${PLAYWRIGHT_DEFAULT_TIMEOUT:-30000}
+      - PLAYWRIGHT_ACTION_TIMEOUT=${PLAYWRIGHT_ACTION_TIMEOUT:-10000}
+      - PLAYWRIGHT_SCREENSHOT_QUALITY=${PLAYWRIGHT_SCREENSHOT_QUALITY:-80}
+      
+      # Security Configuration
+      - PLAYWRIGHT_SANDBOX_MODE=${PLAYWRIGHT_SANDBOX_MODE:-true}
+      - PLAYWRIGHT_HEADLESS=${PLAYWRIGHT_HEADLESS:-true}
+      - PLAYWRIGHT_DISABLE_DEV_SHM=${PLAYWRIGHT_DISABLE_DEV_SHM:-false}
+      
+      # Performance Configuration
+      - PLAYWRIGHT_MAX_MEMORY_USAGE=${PLAYWRIGHT_MAX_MEMORY_USAGE:-512}
+      - PLAYWRIGHT_CPU_LIMIT=${PLAYWRIGHT_CPU_LIMIT:-2.0}
+      - PLAYWRIGHT_ENABLE_METRICS=${PLAYWRIGHT_ENABLE_METRICS:-true}
+      
+      # Logging Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PLAYWRIGHT_LOG_LEVEL=${PLAYWRIGHT_LOG_LEVEL:-INFO}
+      - PLAYWRIGHT_LOG_TO_FILE=${PLAYWRIGHT_LOG_TO_FILE:-true}
+      
+      # Monitoring Configuration
+      - ENABLE_METRICS=${ENABLE_METRICS:-true}
+      - METRICS_PORT=${METRICS_PORT:-9090}
+      - HEALTH_CHECK_ENABLED=${HEALTH_CHECK_ENABLED:-true}
+      
+    volumes:
+      # Playwright browsers cache
+      - playwright-browsers:/ms-playwright
+      # Screenshots and artifacts storage
+      - playwright-artifacts:/app/artifacts
+      # Logs storage
+      - playwright-logs:/app/logs
+      # Temporary files
+      - playwright-temp:/tmp
+      # Development mode: mount source code
+      - ./backend:/app
+      - /app/__pycache__
+      - /app/**/__pycache__
+      
+    networks:
+      - chronos-network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    deploy:
+      resources:
+        limits:
+          memory: ${PLAYWRIGHT_MAX_MEMORY_USAGE:-512}M
+          cpus: '${PLAYWRIGHT_CPU_LIMIT:-2.0}'
+        reservations:
+          memory: 256M
+          cpus: '1.0'
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Playwright Browser Pool Manager
+  playwright-pool-manager:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.playwright
+      target: ${DOCKER_TARGET:-development}
+    container_name: chronos-playwright-pool-manager
+    restart: unless-stopped
+    command: python -m app.core.playwright --pool-manager
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-chronos_ai}
+      - REDIS_URL=redis://redis:6379/0
+      - PLAYWRIGHT_POOL_SIZE=${PLAYWRIGHT_POOL_SIZE:-5}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - playwright-browsers:/ms-playwright
+      - playwright-artifacts:/app/artifacts
+      - playwright-logs:/app/logs
+      - playwright-temp:/tmp
+    networks:
+      - chronos-network
+    depends_on:
+      - playwright-mcp
+      - postgres
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '1.0'
+
+  # Playwright Monitoring Service
+  playwright-monitor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.playwright
+      target: ${DOCKER_TARGET:-development}
+    container_name: chronos-playwright-monitor
+    restart: unless-stopped
+    command: python -m app.core.playwright --monitor
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-chronos_ai}
+      - REDIS_URL=redis://redis:6379/0
+      - ENABLE_METRICS=${ENABLE_METRICS:-true}
+      - METRICS_PORT=${METRICS_PORT:-9090}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - playwright-logs:/app/logs
+      - playwright-metrics:/app/metrics
+    networks:
+      - chronos-network
+    depends_on:
+      - playwright-mcp
+      - postgres
+      - redis
+    ports:
+      - "${METRICS_PORT:-9090}:9090"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+
+volumes:
+  playwright-browsers:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PLAYWRIGHT_BROWSERS_PATH:-./playwright-browsers}
+  
+  playwright-artifacts:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PLAYWRIGHT_ARTIFACTS_PATH:-./playwright-artifacts}
+  
+  playwright-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PLAYWRIGHT_LOGS_PATH:-./playwright-logs}
+  
+  playwright-temp:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PLAYWRIGHT_TEMP_PATH:-./playwright-temp}
+  
+  playwright-metrics:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PLAYWRIGHT_METRICS_PATH:-./playwright-metrics}
+
+networks:
+  chronos-network:
+    external: true

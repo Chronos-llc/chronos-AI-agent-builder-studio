@@ -1,0 +1,251 @@
+version: '3.8'
+
+services:
+  # Development Playwright MCP Server
+  playwright-mcp-dev:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.playwright.dev
+    container_name: chronos-playwright-mcp-dev
+    ports:
+      - "8001:8001"
+      - "8003:8003"
+      - "5678:5678" # Debugger port
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/chronos_ai_dev
+      - REDIS_URL=redis://redis:6379/2
+      - PLAYWRIGHT_BROWSERS_PATH=/app/browsers
+      - PLAYWRIGHT_POOL_SIZE=5
+      - PLAYWRIGHT_MAX_CONCURRENT_TASKS=10
+      - CHRONOS_API_URL=http://host.docker.internal:8000
+      - CHRONOS_API_KEY=dev-key
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend:/app/backend:ro
+      - playwright-dev-data:/app/data
+      - playwright-dev-browsers:/app/browsers
+      - playwright-dev-logs:/app/logs
+    depends_on:
+      - postgres-dev
+      - redis-dev
+    networks:
+      - chronos-dev-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        pip install -e /app/backend &&
+        playwright install chromium firefox webkit &&
+        uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --reload
+      "
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development Browser Pool Manager
+  playwright-pool-dev:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.playwright.pool.dev
+    container_name: chronos-playwright-pool-dev
+    ports:
+      - "8002:8002"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - REDIS_URL=redis://redis:6379/3
+      - POOL_MIN_SIZE=1
+      - POOL_MAX_SIZE=5
+      - BROWSER_TIMEOUT=60000
+      - CLEANUP_INTERVAL=60
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend:/app/backend:ro
+      - playwright-dev-pool-data:/app/pools
+      - playwright-dev-logs:/app/logs
+    depends_on:
+      - redis-dev
+    networks:
+      - chronos-dev-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        pip install -e /app/backend &&
+        uvicorn backend.app.core.playwright_pool:app --host 0.0.0.0 --port 8002 --reload
+      "
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Development Redis
+  redis-dev:
+    image: redis:7-alpine
+    container_name: chronos-redis-dev
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis-dev-playwright-data:/data
+      - ./backend/config/redis-playwright.dev.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - chronos-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  # Development Database (shared with main backend)
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: chronos-postgres-dev
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=chronos_ai_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-dev-playwright-data:/var/lib/postgresql/data
+      - ./backend/init-db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - chronos-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Development Playwright Browser Inspector
+  playwright-inspector:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.playwright.inspector
+    container_name: chronos-playwright-inspector
+    ports:
+      - "8005:8005"
+    environment:
+      - ENVIRONMENT=development
+      - PLAYWRIGHT_MCP_URL=http://playwright-mcp-dev:8001
+      - INSPECTOR_MODE=true
+    volumes:
+      - ./backend:/app/backend:ro
+      - playwright-dev-logs:/app/logs:ro
+    depends_on:
+      - playwright-mcp-dev
+    networks:
+      - chronos-dev-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        pip install -e /app/backend &&
+        uvicorn backend.app.core.playwright_inspector:app --host 0.0.0.0 --port 8005 --reload
+      "
+    profiles:
+      - inspector
+
+  # Development Testing Environment
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.playwright.test
+    container_name: chronos-playwright-tests
+    environment:
+      - ENVIRONMENT=test
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/chronos_ai_test
+      - REDIS_URL=redis://redis:6379/4
+      - PLAYWRIGHT_BROWSERS_PATH=/app/browsers
+      - PLAYWRIGHT_POOL_SIZE=2
+      - PLAYWRIGHT_MAX_CONCURRENT_TASKS=5
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend:/app/backend:ro
+      - ./tests:/app/tests:ro
+      - playwright-test-data:/app/test-data
+      - playwright-test-browsers:/app/browsers
+    depends_on:
+      - postgres-test
+      - redis-test
+    networks:
+      - chronos-dev-network
+    restart: "no"
+    profiles:
+      - test
+    command: >
+      sh -c "
+        pip install -e /app/backend &&
+        playwright install &&
+        pytest /app/tests/playwright/ -v --tb=short
+      "
+
+  # Test Database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: chronos-postgres-test
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_DB=chronos_ai_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-test-playwright-data:/var/lib/postgresql/data
+    networks:
+      - chronos-dev-network
+    restart: "no"
+    profiles:
+      - test
+
+  # Test Redis
+  redis-test:
+    image: redis:7-alpine
+    container_name: chronos-redis-test
+    ports:
+      - "6382:6379"
+    volumes:
+      - redis-test-playwright-data:/data
+    networks:
+      - chronos-dev-network
+    restart: "no"
+    profiles:
+      - test
+
+networks:
+  chronos-dev-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  playwright-dev-data:
+    driver: local
+  playwright-dev-browsers:
+    driver: local
+  playwright-dev-pool-data:
+    driver: local
+  playwright-dev-monitor-data:
+    driver: local
+  playwright-dev-logs:
+    driver: local
+  redis-dev-playwright-data:
+    driver: local
+  postgres-dev-playwright-data:
+    driver: local
+  playwright-test-data:
+    driver: local
+  playwright-test-browsers:
+    driver: local
+  postgres-test-playwright-data:
+    driver: local
+  redis-test-playwright-data:
+    driver: local
