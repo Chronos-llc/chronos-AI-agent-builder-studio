@@ -6,7 +6,7 @@ A comprehensive platform for building, managing, and deploying AI agents with ad
 
 - 🤖 **Agent Builder**: Visual interface for creating and configuring AI agents
 - 🔧 **Version Control**: Track agent iterations and deployments
-- 🔗 **Integrations**: Connect with external services and APIs
+- 🔗 **Integrations**: Connect with external services, APIs, and MCP servers
 - 📊 **Analytics**: Monitor agent performance and usage
 - 🔒 **Authentication**: Secure JWT-based authentication system
 - 📱 **Responsive Design**: Works on desktop and mobile devices
@@ -28,6 +28,15 @@ This project uses a modern monorepo architecture with:
 - Docker and Docker Compose
 - Node.js 18+ (for local development)
 - Python 3.11+ (for local development)
+
+### MCP Server Integrations
+
+The Chronos Hub Marketplace now includes two powerful MCP server integrations:
+
+1. **Playwright MCP Server** - Web automation and testing with vision capabilities
+2. **Memory MCP Server** - Persistent memory and conversation history
+
+These integrations are automatically initialized when you start the backend.
 
 ### Using Docker (Recommended)
 
@@ -54,6 +63,7 @@ docker-compose up --build
    - Frontend: <http://localhost:3000>
    - Backend API: <http://localhost:8000>
    - API Documentation: <http://localhost:8000/docs>
+   - Chronos Hub Marketplace: <http://localhost:3000/integrations>
 
 ### Local Development
 
@@ -159,10 +169,26 @@ The application uses the following main entities:
 - **AgentVersions**: Version control for agents
 - **Actions**: Available actions for agents
 - **Hooks**: Event hooks and triggers
-- **Integrations**: External service integrations
+- **Integrations**: External service integrations including MCP servers
 - **Settings**: Application and user settings
 
 ## Development
+
+### MCP Integrations
+
+To manually initialize MCP integrations:
+
+```bash
+cd backend
+python scripts/run_initialize_mcp_integrations.py
+```
+
+To test MCP integrations:
+
+```bash
+cd backend
+python test_mcp_integrations.py
+```
 
 ### Database Migrations
 

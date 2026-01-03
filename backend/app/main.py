@@ -15,6 +15,7 @@ from app.core.ai_providers import initialize_ai_providers
 from app.core.integration_monitoring import initialize_integration_monitoring
 from app.core.communication_channels import initialize_communication_channels
 from app.core.webchat import initialize_webchat
+from scripts.initialize_mcp_integrations import initialize_mcp_integrations
 
 # Setup logging
 setup_logging()
@@ -33,6 +34,9 @@ async def lifespan(app: FastAPI):
     
     # Initialize MCP integrations
     await initialize_enhanced_mcp()
+    
+    # Initialize MCP server integrations for the Hub Marketplace
+    await initialize_mcp_integrations()
     
     # Initialize AI providers
     await initialize_ai_providers()
