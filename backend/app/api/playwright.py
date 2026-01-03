@@ -37,6 +37,11 @@ from app.core.playwright import (
     PlaywrightPoolManager, get_browser_manager, get_task_executor,
     get_artifact_manager, get_pool_manager
 )
+from app.core.playwright_enhanced import (
+    PlaywrightMCPManager, get_mcp_manager,
+    PlaywrightToolManager, get_tool_manager,
+    validate_url, sanitize_input, check_operation_permissions
+)
 
 router = APIRouter()
 
