@@ -5,25 +5,18 @@ import {
     User,
     Shield,
     Zap,
-    Database,
     Key,
     Gauge,
     Brain,
-    Globe,
-    Clock,
-    AlertTriangle,
-    CheckCircle,
     Info,
     Upload,
     Download,
-    Copy,
     Eye,
     EyeOff,
     Plus,
     Trash2,
-    Edit,
     Save,
-    X
+    Globe
 } from 'lucide-react';
 
 interface BotSettings {
@@ -54,13 +47,10 @@ interface BotSettings {
     enable_encryption: boolean;
     log_level: 'debug' | 'info' | 'warn' | 'error';
 
-    // Integration Settings
-    webhook_url?: string;
-    api_keys: Record<string, string>;
-    database_config: Record<string, any>;
-
     // Environment Variables
     environment_variables: Record<string, string>;
+    api_keys: Record<string, string>;
+    database_config: Record<string, any>;
 
     // Advanced Configuration
     custom_prompts: {
@@ -80,13 +70,6 @@ interface EnvironmentVariable {
     value: string;
     description?: string;
     isSecret: boolean;
-}
-
-interface Integration {
-    name: string;
-    type: string;
-    config: Record<string, any>;
-    enabled: boolean;
 }
 
 const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
@@ -157,7 +140,7 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
     useEffect(() => {
         if (settings) {
-            setBotSettings({ ...botSettings, ...settings });
+            setBotSettings(prevSettings => ({ ...prevSettings, ...settings }));
         }
     }, [settings]);
 
@@ -190,16 +173,6 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
     const toggleSecretValue = (key: string) => {
         setShowSecretValues(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const getLogLevelColor = (level: string) => {
-        switch (level) {
-            case 'debug': return 'text-blue-600';
-            case 'info': return 'text-green-600';
-            case 'warn': return 'text-yellow-600';
-            case 'error': return 'text-red-600';
-            default: return 'text-gray-600';
-        }
     };
 
     if (isLoading) {
@@ -350,10 +323,11 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="llm-model" className="block text-sm font-medium text-gray-700 mb-2">
                                 Model
                             </label>
                             <select
+                                id="llm-model"
                                 value={botSettings.llm_model}
                                 onChange={(e) => updateSetting('llm_model', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -367,10 +341,11 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="llm-temperature" className="block text-sm font-medium text-gray-700 mb-2">
                                     Temperature: {botSettings.llm_temperature}
                                 </label>
                                 <input
+                                    id="llm-temperature"
                                     type="range"
                                     min="0"
                                     max="2"
@@ -378,6 +353,8 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     value={botSettings.llm_temperature}
                                     onChange={(e) => updateSetting('llm_temperature', parseFloat(e.target.value))}
                                     className="w-full"
+                                    title="Temperature setting"
+                                    aria-label="Temperature setting for LLM model"
                                 />
                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                                     <span>Focused</span>
@@ -387,10 +364,11 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="llm-max-tokens" className="block text-sm font-medium text-gray-700 mb-2">
                                     Max Tokens: {botSettings.llm_max_tokens}
                                 </label>
                                 <input
+                                    id="llm-max-tokens"
                                     type="range"
                                     min="100"
                                     max="4000"
@@ -398,6 +376,8 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     value={botSettings.llm_max_tokens}
                                     onChange={(e) => updateSetting('llm_max_tokens', parseInt(e.target.value))}
                                     className="w-full"
+                                    title="Maximum tokens setting"
+                                    aria-label="Maximum tokens setting for LLM model"
                                 />
                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                                     <span>100</span>
@@ -407,10 +387,11 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="llm-top-p" className="block text-sm font-medium text-gray-700 mb-2">
                                     Top P: {botSettings.llm_top_p}
                                 </label>
                                 <input
+                                    id="llm-top-p"
                                     type="range"
                                     min="0"
                                     max="1"
@@ -418,14 +399,17 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     value={botSettings.llm_top_p}
                                     onChange={(e) => updateSetting('llm_top_p', parseFloat(e.target.value))}
                                     className="w-full"
+                                    title="Top P setting"
+                                    aria-label="Top P setting for LLM model"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="llm-frequency-penalty" className="block text-sm font-medium text-gray-700 mb-2">
                                     Frequency Penalty: {botSettings.llm_frequency_penalty}
                                 </label>
                                 <input
+                                    id="llm-frequency-penalty"
                                     type="range"
                                     min="-2"
                                     max="2"
@@ -433,14 +417,17 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     value={botSettings.llm_frequency_penalty}
                                     onChange={(e) => updateSetting('llm_frequency_penalty', parseFloat(e.target.value))}
                                     className="w-full"
+                                    title="Frequency penalty setting"
+                                    aria-label="Frequency penalty setting for LLM model"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="llm-presence-penalty" className="block text-sm font-medium text-gray-700 mb-2">
                                     Presence Penalty: {botSettings.llm_presence_penalty}
                                 </label>
                                 <input
+                                    id="llm-presence-penalty"
                                     type="range"
                                     min="-2"
                                     max="2"
@@ -448,6 +435,8 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     value={botSettings.llm_presence_penalty}
                                     onChange={(e) => updateSetting('llm_presence_penalty', parseFloat(e.target.value))}
                                     className="w-full"
+                                    title="Presence penalty setting"
+                                    aria-label="Presence penalty setting for LLM model"
                                 />
                             </div>
                         </div>
@@ -470,73 +459,93 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="max-concurrent-requests" className="block text-sm font-medium text-gray-700 mb-2">
                                     Max Concurrent Requests
                                 </label>
                                 <input
+                                    id="max-concurrent-requests"
                                     type="number"
                                     min="1"
                                     max="100"
                                     value={botSettings.max_concurrent_requests}
                                     onChange={(e) => updateSetting('max_concurrent_requests', parseInt(e.target.value))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="10"
+                                    aria-label="Maximum concurrent requests"
+                                    title="Maximum number of simultaneous requests"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">Maximum number of simultaneous requests</p>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="request-timeout" className="block text-sm font-medium text-gray-700 mb-2">
                                     Request Timeout (seconds)
                                 </label>
                                 <input
+                                    id="request-timeout"
                                     type="number"
                                     min="5"
                                     max="300"
                                     value={botSettings.request_timeout}
                                     onChange={(e) => updateSetting('request_timeout', parseInt(e.target.value))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="30"
+                                    aria-label="Request timeout in seconds"
+                                    title="Timeout for request processing"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="rate-limit-minute" className="block text-sm font-medium text-gray-700 mb-2">
                                     Rate Limit per Minute
                                 </label>
                                 <input
+                                    id="rate-limit-minute"
                                     type="number"
                                     min="1"
                                     max="1000"
                                     value={botSettings.rate_limit_per_minute}
                                     onChange={(e) => updateSetting('rate_limit_per_minute', parseInt(e.target.value))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="60"
+                                    aria-label="Rate limit per minute"
+                                    title="Maximum requests per minute"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="rate-limit-hour" className="block text-sm font-medium text-gray-700 mb-2">
                                     Rate Limit per Hour
                                 </label>
                                 <input
+                                    id="rate-limit-hour"
                                     type="number"
                                     min="10"
                                     max="10000"
                                     value={botSettings.rate_limit_per_hour}
                                     onChange={(e) => updateSetting('rate_limit_per_hour', parseInt(e.target.value))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="1000"
+                                    aria-label="Rate limit per hour"
+                                    title="Maximum requests per hour"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="cache-ttl" className="block text-sm font-medium text-gray-700 mb-2">
                                     Cache TTL (seconds)
                                 </label>
                                 <input
+                                    id="cache-ttl"
                                     type="number"
                                     min="60"
                                     max="86400"
                                     value={botSettings.cache_ttl}
                                     onChange={(e) => updateSetting('cache_ttl', parseInt(e.target.value))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="300"
+                                    aria-label="Cache TTL in seconds"
+                                    title="Cache time-to-live in seconds"
                                 />
                             </div>
                         </div>
@@ -574,10 +583,11 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="data-retention" className="block text-sm font-medium text-gray-700 mb-2">
                                     Data Retention (days)
                                 </label>
                                 <select
+                                    id="data-retention"
                                     value={botSettings.data_retention_days}
                                     onChange={(e) => updateSetting('data_retention_days', parseInt(e.target.value))}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -591,10 +601,11 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="log-level" className="block text-sm font-medium text-gray-700 mb-2">
                                     Log Level
                                 </label>
                                 <select
+                                    id="log-level"
                                     value={botSettings.log_level}
                                     onChange={(e) => updateSetting('log_level', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -677,75 +688,6 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                     </div>
                 )}
 
-                {activeTab === 'integrations' && (
-                    <div className="space-y-6">
-                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                            <div className="flex items-start space-x-3">
-                                <Globe className="w-5 h-5 text-purple-600 mt-0.5" />
-                                <div>
-                                    <h3 className="font-medium text-purple-900">External Integrations</h3>
-                                    <p className="text-sm text-purple-700 mt-1">
-                                        Configure webhooks, databases, and third-party service integrations.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Webhook URL
-                            </label>
-                            <input
-                                type="url"
-                                value={botSettings.webhook_url || ''}
-                                onChange={(e) => updateSetting('webhook_url', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="https://your-webhook-url.com/webhook"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">URL to receive bot events and notifications</p>
-                        </div>
-
-                        <div className="border border-gray-200 rounded-lg p-4">
-                            <h3 className="font-medium mb-4">Database Configuration</h3>
-                            <textarea
-                                value={JSON.stringify(botSettings.database_config, null, 2)}
-                                onChange={(e) => {
-                                    try {
-                                        updateSetting('database_config', JSON.parse(e.target.value));
-                                    } catch (error) {
-                                        // Keep previous value if invalid JSON
-                                    }
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                                rows={6}
-                                placeholder='{\n  "host": "localhost",\n  "port": 5432,\n  "database": "myapp"\n}'
-                            />
-                        </div>
-
-                        <div className="border border-gray-200 rounded-lg p-4">
-                            <h3 className="font-medium mb-4">API Keys</h3>
-                            <p className="text-sm text-gray-600 mb-4">Configure external service API keys</p>
-                            {Object.entries(botSettings.api_keys).map(([service, key]) => (
-                                <div key={service} className="flex items-center space-x-2 mb-2">
-                                    <span className="text-sm font-medium w-24">{service}:</span>
-                                    <input
-                                        type="password"
-                                        value={key}
-                                        onChange={(e) => updateSetting('api_keys', {
-                                            ...botSettings.api_keys,
-                                            [service]: e.target.value
-                                        })}
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                            ))}
-                            <button className="text-blue-600 text-sm hover:text-blue-700">
-                                + Add API Key
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 {activeTab === 'env' && (
                     <div className="space-y-6">
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -781,10 +723,14 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                                 <span className="font-medium text-sm">{key}</span>
                                                 <div className="flex-1 max-w-md">
                                                     <input
+                                                        id={`env-var-${key}`}
                                                         type={showSecretValues[key] ? 'text' : 'password'}
                                                         value={value}
                                                         readOnly
                                                         className="w-full px-2 py-1 bg-gray-100 border border-gray-300 rounded text-sm"
+                                                        placeholder="Value"
+                                                        aria-label={`Environment variable value for ${key}`}
+                                                        title={`Value for environment variable ${key}`}
                                                     />
                                                 </div>
                                                 <button

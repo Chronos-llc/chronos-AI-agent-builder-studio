@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -15,6 +15,7 @@ from app.core.ai_providers import initialize_ai_providers
 from app.core.integration_monitoring import initialize_integration_monitoring
 from app.core.communication_channels import initialize_communication_channels
 from app.core.webchat import initialize_webchat
+from app.core.agent_engine import initialize_agent_engine, cleanup_agent_engine
 from scripts.initialize_mcp_integrations import initialize_mcp_integrations
 
 # Setup logging
@@ -27,26 +28,29 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Chronos AI Agent Builder Studio")
-    
+     
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+     
+    # Initialize AgentEngine for training
+    await initialize_agent_engine()
+     
     # Initialize MCP integrations
     await initialize_enhanced_mcp()
-    
+     
     # Initialize MCP server integrations for the Hub Marketplace
     await initialize_mcp_integrations()
-    
+     
     # Initialize AI providers
     await initialize_ai_providers()
-    
+     
     # Initialize integration monitoring
     await initialize_integration_monitoring()
-    
+     
     # Initialize communication channels
     await initialize_communication_channels()
-    
+     
     # Initialize WebChat
     await initialize_webchat()
     
@@ -54,6 +58,9 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down Chronos AI Agent Builder Studio")
+    
+    # Cleanup AgentEngine
+    await cleanup_agent_engine()
 
 
 # Create FastAPI application
@@ -88,6 +95,7 @@ app.include_router(integration_monitoring.router, prefix="/api/v1/monitoring", t
 app.include_router(communication_channels.router, prefix="/api/v1/communication", tags=["communication"])
 app.include_router(webchat.router, prefix="/api/v1/webchat", tags=["webchat"])
 app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge"])
+app.include_router(training.router, prefix="/api/v1", tags=["training"])
 
 
 @app.get("/")

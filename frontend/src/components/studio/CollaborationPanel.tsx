@@ -29,9 +29,29 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ agentId,
     const [newMessage, setNewMessage] = useState('');
     const [isConnected, setIsConnected] = useState(false);
 
+    // Ref to expose updateCursorPosition to parent components
+    const cursorUpdateRef = React.useRef<((x: number, y: number) => void) | null>(null);
+
     const { sendMessage, lastMessage, readyState } = useWebSocket(
         `ws://localhost:8000/ws/collaboration/${agentId}`
     );
+
+    const updateCursorPosition = React.useCallback((x: number, y: number) => {
+        if (user) {
+            const message: CollaborationMessage = {
+                type: 'cursor',
+                userId: user.id.toString(),
+                data: { position: { x, y } },
+                timestamp: Date.now()
+            };
+            sendMessage(JSON.stringify(message));
+        }
+    }, [user, sendMessage]);
+
+    // Initialize ref with updateCursorPosition
+    React.useEffect(() => {
+        cursorUpdateRef.current = updateCursorPosition;
+    }, [updateCursorPosition]);
 
     useEffect(() => {
         setIsConnected(readyState === WebSocket.OPEN);
@@ -89,24 +109,12 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ agentId,
         if (newMessage.trim() && user) {
             const message: CollaborationMessage = {
                 type: 'message',
-                userId: user.id,
+                userId: user.id.toString(),
                 data: { text: newMessage },
                 timestamp: Date.now()
             };
             sendMessage(JSON.stringify(message));
             setNewMessage('');
-        }
-    };
-
-    const updateCursorPosition = (x: number, y: number) => {
-        if (user) {
-            const message: CollaborationMessage = {
-                type: 'cursor',
-                userId: user.id,
-                data: { position: { x, y } },
-                timestamp: Date.now()
-            };
-            sendMessage(JSON.stringify(message));
         }
     };
 
@@ -116,6 +124,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ agentId,
                 <h3 className="text-lg font-semibold">Collaboration</h3>
                 <button
                     onClick={onClose}
+                    aria-label="Close collaboration panel"
                     className="text-gray-400 hover:text-white transition-colors"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
