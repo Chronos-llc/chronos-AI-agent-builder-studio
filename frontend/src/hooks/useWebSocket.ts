@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 
-export const useWebSocket = (url: string) => {
+export const useWebSocket = (url: string | null) => {
     const [lastMessage, setLastMessage] = useState<MessageEvent | null>(null);
     const [readyState, setReadyState] = useState<number>(WebSocket.CLOSED);
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
+        if (!url) {
+            return;
+        }
+
         const socket = new WebSocket(url);
         ws.current = socket;
 

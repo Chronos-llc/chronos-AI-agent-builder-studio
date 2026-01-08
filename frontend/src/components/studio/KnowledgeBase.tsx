@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileText, Image, Video, Code, Trash2, Search, Filter, MoreVertical, Eye, Edit, Download, Plus, Folder, Database, X, Check, AlertTriangle, Info, HelpCircle } from 'lucide-react'
+import { Upload, FileText, Image, Video, Code, Trash2, Search, Filter, Eye, Edit, Download, Folder, Database, X, AlertTriangle, Loader2 } from 'lucide-react'
 
 interface KnowledgeItem {
     id: string
@@ -43,7 +43,6 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
         setUploadProgress(new Array(acceptedFiles.length).fill(0))
 
         // Simulate file processing
-        const newItems: KnowledgeItem[] = []
         acceptedFiles.forEach((file, index) => {
             const fileType = getFileType(file)
 
@@ -65,7 +64,7 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                     return newProgress
                 })
 
-                newItems.push({
+                const item: KnowledgeItem = {
                     id: Date.now() + index + '',
                     name: file.name,
                     type: fileType,
@@ -77,11 +76,15 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                     },
                     created_at: new Date().toISOString(),
                     status: 'ready'
-                })
+                }
 
-                // Update state
-                setItems(prev => [...prev, ...newItems])
-                onItemsChange([...prev, ...newItems])
+                // Update state with callback to ensure we have the latest items
+                setItems(prevItems => {
+                    const updatedItems = [...prevItems, item]
+                    // Call onItemsChange with the computed value (not a callback)
+                    onItemsChange(updatedItems)
+                    return updatedItems
+                })
 
                 // Clear processing state after all files are done
                 if (index === acceptedFiles.length - 1) {
@@ -204,6 +207,7 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value as any)}
                         className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground appearance-none"
+                        aria-label="Filter by file type"
                     >
                         <option value="all">All Types</option>
                         <option value="text">Text</option>
@@ -230,12 +234,7 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                                     {getFileIcon(getFileType(file))}
                                 </div>
                                 <span className="text-sm flex-1 truncate">{file.name}</span>
-                                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-primary"
-                                        style={{ width: `${uploadProgress[index]}%` }}
-                                    />
-                                </div>
+                                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden" style={{width: `${uploadProgress[index] ?? 0}%`}}/>
                                 <span className="text-xs text-muted-foreground w-8 text-right">
                                     {uploadProgress[index]}%
                                 </span>
@@ -344,12 +343,12 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
 
                             {item.status === 'processing' && (
                                 <div className="h-1 bg-primary/20">
-                                    <div className="h-full bg-primary animate-pulse" style={{ width: '50%' }} />
+                                    <div className="h-full bg-primary animate-pulse w-1/2" />
                                 </div>
                             )}
                             {item.status === 'error' && (
                                 <div className="h-1 bg-destructive/20">
-                                    <div className="h-full bg-destructive" style={{ width: '100%' }} />
+                                    <div className="h-full bg-destructive w-full" />
                                 </div>
                             )}
                         </div>
@@ -369,6 +368,7 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                             <button
                                 onClick={() => setShowUploadDialog(false)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                aria-label="Close dialog"
                             >
                                 <X className="w-4 h-4" />
                             </button>

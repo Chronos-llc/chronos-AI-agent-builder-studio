@@ -829,6 +829,65 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
                 "SLACK_TEAM_ID": "T01234567",
                 "SLACK_CHANNEL_IDS": "C01234567, C76543210"
             }
+        },
+        {
+            "name": "Google Maps MCP Server",
+            "description": "Google Maps MCP Server for location services and mapping capabilities. Provides geocoding, directions, place search, and map visualization through the Model Context Protocol.",
+            "integration_type": "mcp_server",
+            "category": "geospatial",
+            "icon": "🗺️",
+            "documentation_url": "https://developers.google.com/maps",
+            "version": "1.0.0",
+            "is_public": True,
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "default": "docker",
+                        "description": "Command to run the MCP server"
+                    },
+                    "args": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "default": ["run", "-i", "--rm", "-e", "GOOGLE_MAPS_API_KEY", "mcp/google-maps"],
+                        "description": "Arguments for the MCP server command"
+                    },
+                    "server_url": {
+                        "type": "string",
+                        "default": "http://localhost:8090",
+                        "description": "Server URL for the Google Maps MCP server"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "default": 30000,
+                        "description": "Request timeout in milliseconds"
+                    }
+                },
+                "required": ["command", "args"]
+            },
+            "credentials_schema": {
+                "type": "object",
+                "properties": {
+                    "google_maps_api_key": {
+                        "type": "string",
+                        "description": "Google Maps API key for authentication",
+                        "sensitive": True
+                    }
+                },
+                "required": ["google_maps_api_key"]
+            },
+            "supported_features": [
+                "geocoding",
+                "directions",
+                "place_search",
+                "map_visualization",
+                "distance_matrix",
+                "location_services"
+            ],
+            "env": {
+                "GOOGLE_MAPS_API_KEY": "<YOUR_API_KEY>"
+            }
         }
     ]
     

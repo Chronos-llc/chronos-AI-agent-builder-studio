@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, Text, Boolean, Integer, Float, ForeignKey, JSON, Enum
+from sqlalchemy import Column
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import JSON
+from sqlalchemy.dialects.postgresql import ENUM
 import enum
 
 from app.models.base import BaseModel
@@ -25,6 +27,9 @@ class AgentModel(BaseModel):
     system_prompt = Column(Text, nullable=True)
     user_prompt_template = Column(Text, nullable=True)
     
+    # Sub-agent configurations
+    sub_agent_config = Column(JSON, nullable=True)  # Sub-agent specific configurations
+    
     # Metadata
     tags = Column(JSON, nullable=True)  # List of tags
     metadata = Column(JSON, nullable=True)  # Additional metadata
@@ -48,6 +53,7 @@ class AgentModel(BaseModel):
     knowledge_files = relationship("KnowledgeFile", back_populates="agent", cascade="all, delete-orphan")
     knowledge_searches = relationship("KnowledgeSearch", back_populates="agent", cascade="all, delete-orphan")
     communication_channels = relationship("CommunicationChannel", back_populates="agent", cascade="all, delete-orphan")
+    training_sessions = relationship("TrainingSession", back_populates="agent", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"
