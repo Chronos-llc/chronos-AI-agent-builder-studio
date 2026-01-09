@@ -40,10 +40,10 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
 
     // Handle incoming log messages
     useEffect(() => {
-        if (!logSocket.message) return;
+        if (!logSocket.lastMessage) return;
 
         try {
-            const message = JSON.parse(logSocket.message);
+            const message = JSON.parse(logSocket.lastMessage.data);
 
             if (message.type === 'log_entry') {
                 setLogEntries(prev => [...prev, message.data]);
@@ -53,7 +53,7 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
         } catch (err) {
             console.error('Error parsing log message:', err);
         }
-    }, [logSocket.message]);
+    }, [logSocket.lastMessage]);
 
     // Apply filters
     useEffect(() => {
@@ -61,15 +61,14 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
             // Search term filter
             const matchesSearch = searchTerm === '' ||
                 log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (log.context && log.context.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (log.details && JSON.stringify(log.details).toLowerCase().includes(searchTerm.toLowerCase()));
+                (log.context && JSON.stringify(log.context).toLowerCase().includes(searchTerm.toLowerCase()));
 
             // Log level filter
             const matchesLevel = logLevelFilter === 'all' || log.level === logLevelFilter;
 
             // Context filter
             const matchesContext = contextFilter === '' ||
-                (log.context && log.context.toLowerCase().includes(contextFilter.toLowerCase()));
+                (log.context && JSON.stringify(log.context).toLowerCase().includes(contextFilter.toLowerCase()));
 
             // Date range filter
             const matchesDate = !dateRange || (
@@ -304,7 +303,7 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
                                                         </span>
                                                         {log.context && (
                                                             <span className="text-xs bg-gray-600 px-2 py-1 rounded">
-                                                                {log.context}
+                                                                {JSON.stringify(log.context)}
                                                             </span>
                                                         )}
                                                     </div>
@@ -313,13 +312,7 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
                                                         {log.message}
                                                     </div>
 
-                                                    {log.details && (
-                                                        <div className="mt-2 text-xs text-gray-400">
-                                                            <pre className="overflow-x-auto max-w-full">
-                                                                {JSON.stringify(log.details, null, 2)}
-                                                            </pre>
-                                                        </div>
-                                                    )}
+                                                    {/* Context rendered above */}
                                                 </div>
                                             </div>
                                         </div>

@@ -65,3 +65,5 @@ export interface LogAnalysisResult {
     maxMemoryUsage: number;
   };
 }
+
+export type LogExportFormat = 'json' | 'csv' | 'text';

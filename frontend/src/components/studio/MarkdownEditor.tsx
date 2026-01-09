@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Editor, EditorContent, useEditor } from '@tiptap/react'
+import React, { useState, useEffect } from 'react'
+import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import CodeBlock from '@tiptap/extension-code-block'
 import Placeholder from '@tiptap/extension-placeholder'
+import CharacterCount from '@tiptap/extension-character-count'
 import { Bold, Italic, Code, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Code as CodeIcon, Undo, Redo, Eye, EyeOff } from 'lucide-react'
 
 interface MarkdownEditorProps {
@@ -28,6 +29,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             Placeholder.configure({
                 placeholder: placeholder,
             }),
+            CharacterCount,
         ],
         content: value,
         onUpdate: ({ editor }) => {
@@ -70,18 +72,18 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         markdown = markdown.replace(/<code>(.*?)<\/code>/g, '`$1`')
 
         // Convert lists
-        markdown = markdown.replace(/<ul>(.*?)<\/ul>/gs, (match, content) => {
+        markdown = markdown.replace(/<ul>(.*?)<\/ul>/gs, (_match: string, content: string) => {
             return content.replace(/<li>(.*?)<\/li>/g, '- $1\n').trim() + '\n\n'
         })
 
-        markdown = markdown.replace(/<ol>(.*?)<\/ol>/gs, (match, content) => {
+        markdown = markdown.replace(/<ol>(.*?)<\/ol>/gs, (_match: string, content: string) => {
             let index = 1
             return content.replace(/<li>(.*?)<\/li>/g, () => `${index++}. $1\n`).trim() + '\n\n'
         })
 
         // Convert blockquotes
-        markdown = markdown.replace(/<blockquote>(.*?)<\/blockquote>/gs, (match, content) => {
-            return content.split('\n').map(line => `> ${line}`).join('\n') + '\n\n'
+        markdown = markdown.replace(/<blockquote>(.*?)<\/blockquote>/gs, (_match: string, content: string) => {
+            return content.split('\n').map((line: string) => `> ${line}`).join('\n') + '\n\n'
         })
 
         // Remove remaining HTML tags
@@ -221,7 +223,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     <MarkdownPreview content={value} />
                 </div>
             ) : (
-                <EditorContent editor={editor} className="p-4 min-h-[200px] overflow-auto prose dark:prose-invert max-w-none" />
+                <div className="p-4 min-h-[200px] overflow-auto prose dark:prose-invert max-w-none">
+                    {/* @ts-expect-error - EditorContent type compatibility issue with @tiptap/react */}
+                    <EditorContent editor={editor} />
+                </div>
             )}
 
             <div className="p-2 bg-secondary border-t border-border text-sm text-muted-foreground flex justify-between">
