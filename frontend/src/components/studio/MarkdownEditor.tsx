@@ -224,7 +224,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 </div>
             ) : (
                 <div className="p-4 min-h-[200px] overflow-auto prose dark:prose-invert max-w-none">
-                    {/* @ts-expect-error - EditorContent type compatibility issue with @tiptap/react */}
                     <EditorContent editor={editor} />
                 </div>
             )}
