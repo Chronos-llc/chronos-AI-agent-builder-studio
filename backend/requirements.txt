@@ -39,6 +39,9 @@ httpx==0.25.2
 # File handling
 aiofiles==23.2.1
 
+# DeepDiff for configuration comparison
+deepdiff==6.7.1
+
 # Development
 black==23.11.0
 isort==5.12.0

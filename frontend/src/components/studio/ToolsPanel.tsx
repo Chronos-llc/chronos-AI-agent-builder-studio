@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Code, Search, Plus, Settings, Trash2, Edit, Eye, Download, Upload, Check, X, AlertTriangle, Info, HelpCircle, Star, Heart, ThumbsUp, ThumbsDown, Share, Bookmark, Filter, MoreVertical, ChevronDown, ChevronUp, Grid, List, Palette, Paintbrush, Sun, Moon, Laptop, Phone, Tablet, Globe, Lock, Unlock, Key, Shield, ShieldOff, User, Users, MessageSquare, Bell, BarChart2, PieChart, LineChart, Activity, AlertCircle, Archive, Award, Battery, BatteryCharging, Bluetooth, Bold, Book, Box, Briefcase, Calendar, Camera, CameraOff, CreditCard, Crop, Database, Delete, DollarSign, Droplet, File, FileText, Film, Folder, Gift, GitBranch, GitCommit, GitMerge, GitPullRequest, Headphones, Home, Image, Inbox, Italic, Layers, LifeBuoy, Link, Map, MapPin, Navigation, Octagon, Package, Paperclip, Percent, PieChart as PieChartIcon, Play, Plug, Plug2, Power, Printer, Radio, RefreshCcw, Save, Scissors, Server, Share2, Sliders, Smartphone, Snowflake, Sunrise, Sunset, Tag, Target, Terminal, Thermometer, ToggleLeft, ToggleRight, Truck, Tv, Type, Umbrella, Underline, UploadCloud, Video, Watch, Wifi, Wind, Zap, ZoomIn, ZoomOut } from 'lucide-react'
+import { Code, Search, Plus, Settings, Trash2, Download, Check, X, AlertTriangle, Info, HelpCircle, Star, MoreVertical, ChevronDown, Grid, List, Globe, MessageSquare, Book, Box, Database, File, Mail, Loader2, Plug, Power } from 'lucide-react'
 
 interface ToolIntegration {
     id: string
@@ -47,10 +47,47 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
     const [marketplaceTools, setMarketplaceTools] = useState<ToolIntegration[]>([])
     const [isLoadingMarketplace, setIsLoadingMarketplace] = useState(false)
 
+    // Form state for configuration dialog
+    const [formConfig, setFormConfig] = useState({
+        apiEndpoint: '',
+        apiKey: '',
+        timeout: 5000,
+        maxRetries: 3,
+        customHeaders: '',
+        rateLimitingEnabled: false,
+        rateLimitingMaxRequests: 100,
+        rateLimitingTimeWindow: 60,
+        debugLogging: true,
+        logRequests: false,
+        logErrorsOnly: false
+    })
+
     // Update tools when props change
     useEffect(() => {
         setTools(initialTools)
     }, [initialTools])
+
+    // Initialize form state when config dialog opens
+    useEffect(() => {
+        if (showConfigDialog) {
+            const tool = tools.find(t => t.id === showConfigDialog)
+            if (tool) {
+                setFormConfig({
+                    apiEndpoint: tool.config.apiEndpoint || '',
+                    apiKey: tool.config.apiKey || '',
+                    timeout: tool.config.timeout || 5000,
+                    maxRetries: tool.config.maxRetries || 3,
+                    customHeaders: tool.config.customHeaders ? JSON.stringify(tool.config.customHeaders, null, 2) : '',
+                    rateLimitingEnabled: tool.config.rateLimiting?.enabled || false,
+                    rateLimitingMaxRequests: tool.config.rateLimiting?.maxRequests || 100,
+                    rateLimitingTimeWindow: tool.config.rateLimiting?.timeWindow || 60,
+                    debugLogging: tool.config.logging?.debug || true,
+                    logRequests: tool.config.logging?.requests || false,
+                    logErrorsOnly: tool.config.logging?.errorsOnly || false
+                })
+            }
+        }
+    }, [showConfigDialog, tools])
 
     // Filter and sort tools
     const filteredTools = tools.filter(tool => {
@@ -312,6 +349,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
 
                     <div className="relative">
                         <select
+                            title="Filter by category"
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
                             className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground text-sm appearance-none"
@@ -327,6 +365,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
 
                     <div className="relative">
                         <select
+                            title="Filter by type"
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
                             className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground text-sm appearance-none"
@@ -342,6 +381,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
 
                     <div className="relative">
                         <select
+                            title="Sort tools by"
                             value={`${sortBy}-${sortDirection}`}
                             onChange={(e) => {
                                 const [newSortBy, newSortDirection] = e.target.value.split('-')
@@ -369,12 +409,14 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-1 rounded-md ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                            title="Grid view"
                         >
                             <Grid className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-1 rounded-md ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                            title="List view"
                         >
                             <List className="w-4 h-4" />
                         </button>
@@ -655,6 +697,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                             <button
                                 onClick={() => setShowToolDetails(null)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                title="Close"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -720,7 +763,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                     <div>
                                         <h5 className="font-medium mb-2">Links</h5>
                                         <div className="space-y-2">
-                                            <a
+                                            <a 
                                                 href={tools.find(tool => tool.id === showToolDetails)!.documentation_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -729,7 +772,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                 <Book className="w-4 h-4" />
                                                 <span>Documentation</span>
                                             </a>
-                                            <a
+                                            <a 
                                                 href={tools.find(tool => tool.id === showToolDetails)!.support_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -817,6 +860,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                             <button
                                 onClick={() => setShowInstallDialog(null)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                title="Close"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -857,7 +901,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
 
                                     <div>
                                         <h5 className="font-medium mb-2">Version</h5>
-                                        <select className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                        <select title="Select version" className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground">
                                             <option>Latest ({tools.find(tool => tool.id === showInstallDialog)!.version})</option>
                                             <option>Stable (1.0.0)</option>
                                             <option>Beta (2.0.0-beta)</option>
@@ -915,6 +959,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                             <button
                                 onClick={() => setShowConfigDialog(null)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                title="Close"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -942,7 +987,8 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                 <label className="block text-sm font-medium mb-1">API Endpoint</label>
                                                 <input
                                                     type="text"
-                                                    defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.apiEndpoint || ''}
+                                                    value={formConfig.apiEndpoint}
+                                                    onChange={(e) => setFormConfig({ ...formConfig, apiEndpoint: e.target.value })}
                                                     className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                                                     placeholder="https://api.example.com/v1"
                                                 />
@@ -952,7 +998,8 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                 <label className="block text-sm font-medium mb-1">API Key</label>
                                                 <input
                                                     type="password"
-                                                    defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.apiKey || ''}
+                                                    value={formConfig.apiKey}
+                                                    onChange={(e) => setFormConfig({ ...formConfig, apiKey: e.target.value })}
                                                     className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                                                     placeholder="Enter your API key"
                                                 />
@@ -962,8 +1009,10 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                 <label className="block text-sm font-medium mb-1">Timeout (ms)</label>
                                                 <input
                                                     type="number"
-                                                    defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.timeout || 5000}
-                                                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                                    title="Timeout in milliseconds"
+                                                    value={formConfig.timeout}
+                                                    onChange={(e) => setFormConfig({ ...formConfig, timeout: parseInt(e.target.value) || 5000 })}
+                                                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
                                                     min="1000"
                                                     max="30000"
                                                 />
@@ -973,8 +1022,10 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                 <label className="block text-sm font-medium mb-1">Max Retries</label>
                                                 <input
                                                     type="number"
-                                                    defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.maxRetries || 3}
-                                                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                                    title="Maximum retry attempts"
+                                                    value={formConfig.maxRetries}
+                                                    onChange={(e) => setFormConfig({ ...formConfig, maxRetries: parseInt(e.target.value) || 3 })}
+                                                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
                                                     min="0"
                                                     max="10"
                                                 />
@@ -988,9 +1039,13 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">Custom Headers</label>
                                                 <textarea
-                                                    defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.customHeaders ? JSON.stringify(tools.find(tool => tool.id === showConfigDialog)!.config.customHeaders, null, 2) : ''}
+                                                    value={formConfig.customHeaders}
+                                                    onChange={(e) => setFormConfig({ ...formConfig, customHeaders: e.target.value })}
                                                     className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground min-h-[80px] font-mono text-sm"
-                                                    placeholder="{\n  \" Authorization\": \"Bearer token\",\n  \"X-Custom-Header\": \"value\"\n}"
+                                                    placeholder={`{
+  "Authorization": "Bearer token",
+  "X-Custom-Header": "value"
+}`}
                                                 />
                                             </div>
 
@@ -1000,7 +1055,8 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                     <label className="flex items-center gap-2">
                                                         <input
                                                             type="checkbox"
-                                                            defaultChecked={tools.find(tool => tool.id === showConfigDialog)!.config.rateLimiting?.enabled || false}
+                                                            checked={formConfig.rateLimitingEnabled}
+                                                            onChange={(e) => setFormConfig({ ...formConfig, rateLimitingEnabled: e.target.checked })}
                                                             className="rounded"
                                                         />
                                                         <span className="text-sm">Enable rate limiting</span>
@@ -1008,7 +1064,8 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                     <div className="flex gap-2">
                                                         <input
                                                             type="number"
-                                                            defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.rateLimiting?.maxRequests || 100}
+                                                            value={formConfig.rateLimitingMaxRequests}
+                                                            onChange={(e) => setFormConfig({ ...formConfig, rateLimitingMaxRequests: parseInt(e.target.value) || 100 })}
                                                             className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
                                                             placeholder="Max requests"
                                                             min="1"
@@ -1016,7 +1073,8 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                         />
                                                         <input
                                                             type="number"
-                                                            defaultValue={tools.find(tool => tool.id === showConfigDialog)!.config.rateLimiting?.timeWindow || 60}
+                                                            value={formConfig.rateLimitingTimeWindow}
+                                                            onChange={(e) => setFormConfig({ ...formConfig, rateLimitingTimeWindow: parseInt(e.target.value) || 60 })}
                                                             className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
                                                             placeholder="Time window (seconds)"
                                                             min="1"
@@ -1030,15 +1088,30 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                                 <label className="block text-sm font-medium mb-1">Logging</label>
                                                 <div className="space-y-2">
                                                     <label className="flex items-center gap-2">
-                                                        <input type="checkbox" defaultChecked className="rounded" />
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formConfig.debugLogging}
+                                                            onChange={(e) => setFormConfig({ ...formConfig, debugLogging: e.target.checked })}
+                                                            className="rounded"
+                                                        />
                                                         <span className="text-sm">Enable debug logging</span>
                                                     </label>
                                                     <label className="flex items-center gap-2">
-                                                        <input type="checkbox" className="rounded" />
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formConfig.logRequests}
+                                                            onChange={(e) => setFormConfig({ ...formConfig, logRequests: e.target.checked })}
+                                                            className="rounded"
+                                                        />
                                                         <span className="text-sm">Log requests and responses</span>
                                                     </label>
                                                     <label className="flex items-center gap-2">
-                                                        <input type="checkbox" className="rounded" />
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formConfig.logErrorsOnly}
+                                                            onChange={(e) => setFormConfig({ ...formConfig, logErrorsOnly: e.target.checked })}
+                                                            className="rounded"
+                                                        />
                                                         <span className="text-sm">Log errors only</span>
                                                     </label>
                                                 </div>
@@ -1049,7 +1122,24 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                     <div>
                                         <h5 className="font-medium mb-2">Configuration Preview</h5>
                                         <pre className="bg-secondary p-3 rounded-md text-sm overflow-x-auto">
-                                            {JSON.stringify(tools.find(tool => tool.id === showConfigDialog)!.config, null, 2)}
+                                            {JSON.stringify({
+                                                apiEndpoint: formConfig.apiEndpoint,
+                                                timeout: formConfig.timeout,
+                                                maxRetries: formConfig.maxRetries,
+                                                customHeaders: formConfig.customHeaders ? (() => {
+                                                    try { return JSON.parse(formConfig.customHeaders); } catch { return undefined; }
+                                                })() : undefined,
+                                                rateLimiting: formConfig.rateLimitingEnabled ? {
+                                                    enabled: true,
+                                                    maxRequests: formConfig.rateLimitingMaxRequests,
+                                                    timeWindow: formConfig.rateLimitingTimeWindow
+                                                } : undefined,
+                                                logging: {
+                                                    debug: formConfig.debugLogging,
+                                                    requests: formConfig.logRequests,
+                                                    errorsOnly: formConfig.logErrorsOnly
+                                                }
+                                            }, null, 2)}
                                         </pre>
                                     </div>
                                 </div>
@@ -1065,12 +1155,33 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                             </button>
                             <button
                                 onClick={() => {
-                                    // Get form values and update configuration
-                                    const form = document.querySelector('form')
-                                    // In a real implementation, you would extract the form values here
+                                    // Build the updated configuration from form state
+                                    let parsedHeaders = undefined
+                                    if (formConfig.customHeaders.trim()) {
+                                        try {
+                                            parsedHeaders = JSON.parse(formConfig.customHeaders)
+                                        } catch (e) {
+                                            // Keep as string if parsing fails
+                                            parsedHeaders = formConfig.customHeaders
+                                        }
+                                    }
+
                                     const updatedConfig = {
-                                        ...tools.find(tool => tool.id === showConfigDialog)!.config,
-                                        // Update with form values
+                                        apiEndpoint: formConfig.apiEndpoint,
+                                        apiKey: formConfig.apiKey,
+                                        timeout: formConfig.timeout,
+                                        maxRetries: formConfig.maxRetries,
+                                        customHeaders: parsedHeaders,
+                                        rateLimiting: formConfig.rateLimitingEnabled ? {
+                                            enabled: true,
+                                            maxRequests: formConfig.rateLimitingMaxRequests,
+                                            timeWindow: formConfig.rateLimitingTimeWindow
+                                        } : undefined,
+                                        logging: {
+                                            debug: formConfig.debugLogging,
+                                            requests: formConfig.logRequests,
+                                            errorsOnly: formConfig.logErrorsOnly
+                                        }
                                     }
                                     handleConfigureTool(showConfigDialog!, updatedConfig)
                                 }}
@@ -1095,6 +1206,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                             <button
                                 onClick={() => setShowMarketplace(false)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                title="Close"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -1119,7 +1231,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                         </div>
 
                                         <div className="relative">
-                                            <select className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground appearance-none">
+                                            <select title="Filter by category" className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground appearance-none">
                                                 <option>All Categories</option>
                                                 <option>Information</option>
                                                 <option>Development</option>
@@ -1131,7 +1243,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                                         </div>
 
                                         <div className="relative">
-                                            <select className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground appearance-none">
+                                            <select title="Sort by" className="pl-3 pr-8 py-2 border border-input rounded-md bg-background text-foreground appearance-none">
                                                 <option>Sort: Popular</option>
                                                 <option>Sort: Rating</option>
                                                 <option>Sort: Newest</option>
