@@ -26,3 +26,22 @@
 .btn-outline {
     @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
 }
+
+/* Studio Layout - Dynamic Panel Widths using CSS Variables */
+.studio-layout {
+    --studio-sidebar-width: 300px;
+    --studio-center-width: 500px;
+    --studio-tools-width: 300px;
+}
+
+.studio-layout .studio-sidebar {
+    width: var(--studio-sidebar-width);
+}
+
+.studio-layout .studio-center {
+    width: var(--studio-center-width);
+}
+
+.studio-layout .studio-tools {
+    width: var(--studio-tools-width);
+}

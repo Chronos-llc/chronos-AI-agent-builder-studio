@@ -27,8 +27,15 @@ const LoginPage: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8">
                 <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                        Sign in to Chronos AI Studio
+                    <div className="flex justify-center mb-4">
+                        <img 
+                            src="https://i.postimg.cc/FRyC2G1k/IMG-20260103-192235-443.webp" 
+                            alt="Chronos Studio Logo" 
+                            className="h-16 w-auto"
+                        />
+                    </div>
+                    <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
+                        Sign in to Chronos Studio
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
                         Build, manage, and deploy AI agents

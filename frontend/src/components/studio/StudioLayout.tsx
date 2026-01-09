@@ -3,11 +3,10 @@ import { useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
-import { ActionsPanel } from './ActionsPanel'
 import VersionControlPanel from './VersionControlPanel'
 import BotSettingsPanel from './BotSettingsPanel'
 import SubAgentConfigPanel from './SubAgentConfigPanel'
-import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Play, Pause, Stop, Maximize, Minimize, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Moon, Sun, Keyboard, Plus, Upload, Trash2, Edit, Search, Filter, MoreVertical, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Check, AlertTriangle, Info, HelpCircle, GitBranch, GitCommit, GitMerge, GitPullRequest, Cloud, CloudOffline, Wifi, WifiOff, User, Users as UsersIcon, MessageCircle, Bell, BarChart2, PieChart, LineChart, File, Folder, Image, Video, Code as CodeIcon, Terminal, Cpu, Server, Globe, Lock, Unlock, Eye, EyeOff, Star, Heart, ThumbsUp, ThumbsDown, Share, Download, Bookmark, Flag, Tag, Hash, Sliders, Grid, List, Layout, LayoutDashboard, LayoutGrid, LayoutList, Palette, Paintbrush, Droplet, Sun as SunIcon, Moon as MoonIcon, Sunrise, Sunset, Wind, CloudRain, Snowflake, Thermometer, Activity, AlertCircle, Archive, Award, BarChart, Battery, BatteryCharging, BellOff, Bluetooth, Bold, Book, BookOpen, Box, Briefcase, Calendar, Camera, CameraOff, Car, Cast, CheckCircle, CheckSquare, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Chrome, Circle, Clipboard, Clock, CloudDrizzle, CloudLightning, CloudSnow, CloudSun, Cloudy, Codepen, Coffee, Command, Compass, Copy, CornerDownLeft, CornerDownRight, CornerLeftDown, CornerLeftUp, CornerRightDown, CornerRightUp, CornerUpLeft, CornerUpRight, Cpu as CpuIcon, CreditCard, Crop, Crosshair, Database as DatabaseIcon, Delete, Disc, Divide, DollarSign, DownloadCloud, Droplet as DropletIcon, Edit2, Edit3, ExternalLink, EyeOff as EyeOffIcon, Facebook, FastForward, Feather, Figma, FileMinus, FilePlus, FileText as FileTextIcon, Film, Filter as FilterIcon, Flag as FlagIcon, FolderMinus, FolderPlus, Frown, Gift, GitBranch as GitBranchIcon, GitCommit as GitCommitIcon, GitMerge as GitMergeIcon, GitPullRequest as GitPullRequestIcon, Github, Gitlab, Globe as GlobeIcon, Grid as GridIcon, HardDrive, Hash as HashIcon, Headphones, Heart as HeartIcon, HelpCircle as HelpCircleIcon, Home, Image as ImageIcon, Inbox, Info as InfoIcon, Instagram, Italic, Key, Layers, Layout as LayoutIcon, LifeBuoy, Link, Link2, Linkedin, List as ListIcon, Loader, Lock as LockIcon, LogIn, LogOut, Mail, Map, MapPin, Maximize2, Meh, Menu, MessageCircle as MessageCircleIcon, MessageSquare as MessageSquareIcon, Mic, MicOff, Minimize2, Minus, MinusCircle, MinusSquare, Monitor, Moon as MoonIcon2, MoreHorizontal, MoreVertical as MoreVerticalIcon, MousePointer, Move, Music, Navigation, Navigation2, Octagon, Package, Paperclip, PauseCircle, PenTool, Percent, Phone, PhoneCall, PhoneForwarded, PhoneIncoming, PhoneMissed, PhoneOff, PhoneOutgoing, PieChart as PieChartIcon, PlayCircle, PlusCircle, PlusSquare, Pocket, Power, Printer, Radio, RefreshCcw, RefreshCw, Repeat, Rewind, RotateCcw, RotateCw, Rss, Save as SaveIcon, Scissors, Search as SearchIcon, Send, Server as ServerIcon, Settings as SettingsIcon, Share2, Shield, ShieldOff, ShoppingBag, ShoppingCart, Shuffle, Sidebar, SkipBack, SkipForward, Slack, Slash, Sliders as SlidersIcon, Smartphone, Smile, Speaker, Square, Star as StarIcon, StopCircle, Sun as SunIcon2, Sunrise as SunriseIcon, Sunset as SunsetIcon, Table, Tablet, Tag as TagIcon, Target, Terminal as TerminalIcon, Thermometer as ThermometerIcon, ThumbsDown as ThumbsDownIcon, ThumbsUp as ThumbsUpIcon, ToggleLeft, ToggleRight, Tool, Trash, Trash2 as Trash2Icon, Trello, TrendingDown, TrendingUp, Triangle, Truck, Tv, Twitch, Twitter, Type, Umbrella, Underline, Unlock as UnlockIcon, UploadCloud, UserCheck, UserMinus, UserPlus, UserX, Users as UsersIcon2, Video as VideoIcon, VideoOff, Voicemail, Volume, Volume1, Volume2, VolumeX, Watch, Wifi as WifiIcon, WifiOff as WifiOffIcon, Wind as WindIcon, XCircle, XOctagon, XSquare, Youtube, Zap, ZapOff, ZoomIn, ZoomOut } from 'lucide-react'
+import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Play, Maximize, Minimize, PanelLeftClose, PanelRightClose, Moon, Sun, Keyboard, Plus, Upload, Trash2, Edit, X, AlertTriangle, Info, GitBranch, Image, Video, Cpu, Eye, Send, Zap } from 'lucide-react'
 
 // Types
 interface AgentConfig {
@@ -85,8 +84,20 @@ export const StudioLayout: React.FC = () => {
     const [emulatorMode, setEmulatorMode] = useState(false)
     const [isTesting, setIsTesting] = useState(false)
     const [testResults, setTestResults] = useState<any[]>([])
-    const [collaborators, setCollaborators] = useState<any[]>([])
     const [onlineUsers, setOnlineUsers] = useState<number>(0)
+
+    // Simulate online users count (in production, this would come from WebSocket or API)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Simulate random online users between 1-5
+            setOnlineUsers(Math.floor(Math.random() * 5) + 1)
+        }, 30000) // Update every 30 seconds
+
+        // Initial count
+        setOnlineUsers(Math.floor(Math.random() * 5) + 1)
+
+        return () => clearInterval(interval)
+    }, [])
 
     // Fetch agent data
     const { data: agentData, isLoading: isAgentLoading } = useQuery({
@@ -102,13 +113,13 @@ export const StudioLayout: React.FC = () => {
     // Fetch knowledge base
     const { data: knowledgeData } = useQuery({
         queryKey: ['knowledge', id],
-        queryFn: async () => {
+        queryFn: async (): Promise<KnowledgeItem[]> => {
             if (!id) return []
             // Mock data for now
             return [
                 { id: '1', name: 'Getting Started Guide', type: 'text', size: 1024, content: 'Welcome to the AI Agent Studio...', metadata: {}, created_at: new Date().toISOString() },
                 { id: '2', name: 'API Documentation', type: 'pdf', size: 2048, content: 'API documentation content...', metadata: {}, created_at: new Date().toISOString() }
-            ]
+            ] as KnowledgeItem[]
         },
         enabled: !!id
     })
@@ -216,7 +227,7 @@ export const StudioLayout: React.FC = () => {
     // Handle chat message send
     const handleSendMessage = () => {
         if (!newMessage.trim()) return
-        
+
         const userMessage: ChatMessage = {
             id: Date.now().toString(),
             role: 'user',
@@ -233,7 +244,7 @@ export const StudioLayout: React.FC = () => {
             const agentMessage: ChatMessage = {
                 id: (Date.now() + 1).toString(),
                 role: 'agent',
-                content: `I received your message: "${newMessage}". How can I assist you further?`,
+                content: `I received your message: "${userMessage.content}". How can I assist you further?`,
                 timestamp: new Date().toISOString(),
                 status: 'delivered'
             }
@@ -250,7 +261,7 @@ export const StudioLayout: React.FC = () => {
 
     const handleMouseMove = (e: MouseEvent) => {
         if (!isDragging || !draggingPanel) return
-        
+
         if (draggingPanel === 'left') {
             const newLeftSize = e.clientX
             if (newLeftSize > 100 && newLeftSize < window.innerWidth - 200) {
@@ -311,7 +322,7 @@ export const StudioLayout: React.FC = () => {
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (!files) return
-        
+
         const newItems: KnowledgeItem[] = []
         for (let i = 0; i < files.length; i++) {
             const file = files[i]
@@ -344,9 +355,9 @@ export const StudioLayout: React.FC = () => {
     const handleEmulatorToggle = () => {
         setEmulatorMode(!emulatorMode)
         if (!emulatorMode) {
-            toast.info('Emulator mode activated')
+            toast('Emulator mode activated', { icon: '🔧' })
         } else {
-            toast.info('Emulator mode deactivated')
+            toast('Emulator mode deactivated', { icon: '🔧' })
         }
     }
 
@@ -354,8 +365,8 @@ export const StudioLayout: React.FC = () => {
     const handleStartTesting = () => {
         setIsTesting(true)
         setTestResults([])
-        toast.info('Testing started...')
-        
+        toast('Testing started...', { icon: '🧪' })
+
         // Simulate test results
         setTimeout(() => {
             const mockResults = [
@@ -368,6 +379,14 @@ export const StudioLayout: React.FC = () => {
             toast.success('Testing completed')
         }, 3000)
     }
+
+    // CSS custom properties for panel widths - updated dynamically via JavaScript
+    useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty('--studio-sidebar-width', `${panelSizes.left}px`);
+        root.style.setProperty('--studio-center-width', `${showSidebar ? panelSizes.center : showToolsPanel ? window.innerWidth - panelSizes.left - panelSizes.right : window.innerWidth - panelSizes.left}px`);
+        root.style.setProperty('--studio-tools-width', `${panelSizes.right}px`);
+    }, [panelSizes.left, panelSizes.center, panelSizes.right, showSidebar, showToolsPanel]);
 
     if (isLoading || isAgentLoading) {
         return (
@@ -386,8 +405,13 @@ export const StudioLayout: React.FC = () => {
                 {/* Header */}
                 <header className="flex items-center justify-between p-4 border-b border-border bg-card">
                     <div className="flex items-center gap-4">
+                        <img 
+                            src="https://i.postimg.cc/FRyC2G1k/IMG-20260103-192235-443.webp" 
+                            alt="Chronos Studio Logo" 
+                            className="h-8 w-auto"
+                        />
                         <h1 className="text-xl font-bold">
-                            {agentConfig.name || 'AI Agent Studio'}
+                            {agentConfig.name || 'Chronos Studio'}
                         </h1>
                         <span className="text-sm text-muted-foreground">
                             {agentConfig.status.toUpperCase()}
@@ -460,8 +484,7 @@ export const StudioLayout: React.FC = () => {
                     {/* Left Sidebar - Instructions */}
                     {showSidebar && (
                         <div
-                            className="flex flex-col border-r border-border bg-card overflow-hidden"
-                            style={{ width: panelSizes.left }}
+                            className="flex flex-col border-r border-border bg-card overflow-hidden studio-sidebar"
                         >
                             <div className="flex items-center justify-between p-3 border-b border-border">
                                 <h2 className="font-semibold flex items-center gap-2">
@@ -535,6 +558,7 @@ export const StudioLayout: React.FC = () => {
                                                     <button
                                                         onClick={() => handleConfigChange('tags', agentConfig.tags.filter((_, i) => i !== index))}
                                                         className="text-xs"
+                                                        aria-label={`Remove tag ${tag}`}
                                                     >
                                                         <X className="w-3 h-3" />
                                                     </button>
@@ -562,6 +586,7 @@ export const StudioLayout: React.FC = () => {
                                                         input.value = ''
                                                     }
                                                 }}
+                                                aria-label="Add tag"
                                             >
                                                 <Plus className="w-4 h-4" />
                                             </button>
@@ -582,8 +607,7 @@ export const StudioLayout: React.FC = () => {
 
                     {/* Center Panel - Knowledge Base */}
                     <div
-                        className="flex flex-col border-r border-border bg-card overflow-hidden"
-                        style={{ width: showSidebar ? panelSizes.center : `calc(100% - ${showToolsPanel ? panelSizes.right : 0}px)` }}
+                        className="flex flex-col border-r border-border bg-card overflow-hidden studio-center"
                     >
                         <div className="flex items-center justify-between p-3 border-b border-border">
                             <h2 className="font-semibold flex items-center gap-2">
@@ -677,6 +701,7 @@ export const StudioLayout: React.FC = () => {
                                                     <button
                                                         className="text-muted-foreground hover:text-foreground"
                                                         onClick={() => handleKnowledgeChange(knowledgeItems.filter(i => i.id !== item.id))}
+                                                        aria-label={`Delete ${item.name}`}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -716,8 +741,7 @@ export const StudioLayout: React.FC = () => {
                     {/* Right Panel - Tools & Chat */}
                     {showToolsPanel && (
                         <div
-                            className="flex flex-col border-r border-border bg-card overflow-hidden"
-                            style={{ width: panelSizes.right }}
+                            className="flex flex-col border-r border-border bg-card overflow-hidden studio-tools"
                         >
                             <div className="flex items-center justify-between p-3 border-b border-border">
                                 <div className="flex items-center gap-4">
@@ -810,9 +834,11 @@ export const StudioLayout: React.FC = () => {
                                                                 )}
                                                                 <button
                                                                     className="flex items-center gap-1 px-3 py-1 text-sm bg-secondary rounded-md hover:bg-secondary/80"
+                                                                    onClick={() => handleToolsChange(tools.filter(t => t.id !== tool.id))}
+                                                                    aria-label={`Remove ${tool.name}`}
                                                                 >
-                                                                    <Info className="w-3 h-3" />
-                                                                    <span>Details</span>
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                    <span>Remove</span>
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -902,6 +928,7 @@ export const StudioLayout: React.FC = () => {
                                                     onClick={handleSendMessage}
                                                     disabled={!newMessage.trim() || isTesting}
                                                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+                                                    aria-label="Send message"
                                                 >
                                                     <Send className="w-4 h-4" />
                                                 </button>
@@ -930,6 +957,7 @@ export const StudioLayout: React.FC = () => {
                             <button
                                 onClick={toggleConfigPanel}
                                 className="p-1 rounded-md hover:bg-accent"
+                                aria-label="Close configuration panel"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -946,6 +974,7 @@ export const StudioLayout: React.FC = () => {
                                                 value={agentConfig.status}
                                                 onChange={(e) => handleConfigChange('status', e.target.value)}
                                                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                                aria-label="Agent Status"
                                             >
                                                 <option value="draft">Draft</option>
                                                 <option value="active">Active</option>
@@ -966,7 +995,7 @@ export const StudioLayout: React.FC = () => {
                                                     }
                                                 }}
                                                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground min-h-[100px] font-mono text-sm"
-                                                placeholder='Enter JSON configuration'
+                                                placeholder="Enter JSON configuration"
                                             />
                                         </div>
                                     </div>
@@ -987,7 +1016,7 @@ export const StudioLayout: React.FC = () => {
                                                     }
                                                 }}
                                                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground min-h-[80px] font-mono text-sm"
-                                                placeholder='Enter metadata as JSON'
+                                                placeholder="Enter metadata as JSON"
                                             />
                                         </div>
 
@@ -1016,7 +1045,10 @@ export const StudioLayout: React.FC = () => {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Data Retention</label>
-                                            <select className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                            <select
+                                                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                                aria-label="Data Retention"
+                                            >
                                                 <option>30 days</option>
                                                 <option>60 days</option>
                                                 <option>90 days</option>
@@ -1071,7 +1103,7 @@ export const StudioLayout: React.FC = () => {
             <div className="fixed bottom-4 right-4">
                 <button
                     className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-md hover:bg-secondary/80 text-sm"
-                    onClick={() => toast.info('Keyboard shortcuts guide coming soon!')}
+                    onClick={() => toast('Keyboard shortcuts guide coming soon!', { icon: '⌨️' })}
                 >
                     <Keyboard className="w-4 h-4" />
                     <span>Shortcuts</span>
