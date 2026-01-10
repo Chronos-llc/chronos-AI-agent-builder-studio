@@ -69,10 +69,10 @@ const StatusBadge: React.FC<{ status: CommandStatus | SessionStatus }> = ({ stat
 // ============== Main Component ==============
 
 interface FuzzyPanelProps {
-    defaultMetaAgentId?: number;
+    agentId?: number;
 }
 
-export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ defaultMetaAgentId = 1 }) => {
+export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ agentId = 1 }) => {
     const queryClient = useQueryClient();
     
     // State
@@ -143,7 +143,7 @@ export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ defaultMetaAgentId = 1 }
 
     // Create new session mutation
     const createSessionMutation = useMutation({
-        mutationFn: () => metaAgentService.createSession(defaultMetaAgentId),
+        mutationFn: () => metaAgentService.createSession(agentId),
         onSuccess: (session: MetaAgentSession) => {
             setCurrentSessionId(session.id);
             toast.success('New session created');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Code, Search, Plus, Settings, Trash2, Download, Check, X, AlertTriangle, Info, HelpCircle, Star, MoreVertical, ChevronDown, Grid, List, Globe, MessageSquare, Book, Box, Database, File, Mail, Loader2, Plug, Power } from 'lucide-react'
 
-interface ToolIntegration {
+export interface ToolIntegration {
     id: string
     name: string
     description: string

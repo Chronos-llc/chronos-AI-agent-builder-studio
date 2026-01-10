@@ -17,6 +17,12 @@ from .mcp_server import (
     MCPServer, MCPOperationLog, MCPServerMetric, 
     MCPCacheEntry, MCPServerGroup, MCPServerGroupMember
 )
+from .agent_table import AgentTable, AgentTableRecord
+from .agent_memory import AgentMemory, ConversationContext, MemoryType, MemoryImportance
+from .voice import (
+    VoiceConfiguration, VoiceSession, VoiceInteraction,
+    VoiceProvider, VoiceGender, AudioFormat
+)
 
 __all__ = [
     "BaseModel",
@@ -54,5 +60,17 @@ __all__ = [
     "MCPServerMetric",
     "MCPCacheEntry",
     "MCPServerGroup",
-    "MCPServerGroupMember"
+    "MCPServerGroupMember",
+    "AgentTable",
+    "AgentTableRecord",
+    "AgentMemory",
+    "ConversationContext",
+    "MemoryType",
+    "MemoryImportance",
+    "VoiceConfiguration",
+    "VoiceSession",
+    "VoiceInteraction",
+    "VoiceProvider",
+    "VoiceGender",
+    "AudioFormat"
 ]
