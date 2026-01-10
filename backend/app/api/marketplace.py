@@ -22,6 +22,7 @@ from app.schemas.marketplace import (
     MarketplaceReviewCreate, MarketplaceReviewUpdate, MarketplaceReviewResponse, MarketplaceReviewList,
     MarketplaceSearchParams, ModerationAction, ListingType, Visibility, ModerationStatus
 )
+from app.core.marketplace_engine import MarketplaceEngine, get_marketplace_engine
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,6 +36,13 @@ def is_admin(user: User) -> bool:
 def is_owner_or_admin(user: User, listing: MarketplaceListing) -> bool:
     """Check if user is owner of listing or admin"""
     return user.id == listing.author_id or user.is_superuser
+
+
+# Enhanced Marketplace Installation Schema with customization options
+class MarketplaceInstallationWithCustomization(MarketplaceInstallationCreate):
+    """Extended installation schema with agent customization options"""
+    custom_agent_name: Optional[str] = None
+    preserve_original_reference: bool = True
 
 
 # Marketplace Listings Endpoints
@@ -334,85 +342,183 @@ async def delete_marketplace_listing(
 @router.post("/listings/{listing_id}/install", response_model=MarketplaceInstallationResponse)
 async def install_marketplace_agent(
     listing_id: int,
-    install_data: MarketplaceInstallationCreate,
+    install_data: MarketplaceInstallationWithCustomization,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    marketplace_engine: MarketplaceEngine = Depends(get_marketplace_engine)
 ):
-    """Install marketplace agent"""
+    """
+    Install marketplace agent with enhanced copying functionality
     
-    # Get listing
-    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id))
-    listing = result.scalar_one_or_none()
-    
-    if not listing:
+    This endpoint now uses the MarketplaceEngine to handle complex agent copying
+    including all related entities and proper metadata tracking.
+    """
+    try:
+        # Check if already installed
+        result = await marketplace_engine.db.execute(select(MarketplaceInstallation).where(
+            and_(
+                MarketplaceInstallation.listing_id == listing_id,
+                MarketplaceInstallation.user_id == current_user.id
+            )
+        ))
+        existing_installation = result.scalar_one_or_none()
+        
+        if existing_installation:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Agent already installed"
+            )
+        
+        # Use the marketplace engine to copy the agent
+        agent_copy = await marketplace_engine.copy_agent_from_marketplace(
+            listing_id=listing_id,
+            user_id=current_user.id,
+            custom_name=install_data.custom_agent_name,
+            preserve_original_reference=install_data.preserve_original_reference
+        )
+        
+        # Get the installation record that was created by the engine
+        result = await marketplace_engine.db.execute(select(MarketplaceInstallation).where(
+            and_(
+                MarketplaceInstallation.listing_id == listing_id,
+                MarketplaceInstallation.user_id == current_user.id
+            )
+        ))
+        installation = result.scalar_one_or_none()
+        
+        if not installation:
+            logger.error(f"Installation record not found after copying agent {listing_id} for user {current_user.id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Installation failed - no installation record created"
+            )
+        
+        logger.info(f"Successfully installed marketplace agent {listing_id} for user {current_user.id}")
+        
+        return MarketplaceInstallationResponse.from_orm(installation)
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Failed to install marketplace agent: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Listing not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to install agent: {str(e)}"
         )
+
+
+@router.get("/listings/{listing_id}/copy-stats")
+async def get_listing_copy_statistics(
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    marketplace_engine: MarketplaceEngine = Depends(get_marketplace_engine)
+):
+    """Get copy statistics for a marketplace listing"""
     
-    # Check if already installed
-    result = await db.execute(select(MarketplaceInstallation).where(
-        and_(
-            MarketplaceInstallation.listing_id == listing_id,
-            MarketplaceInstallation.user_id == current_user.id
+    try:
+        # Verify listing exists
+        result = await marketplace_engine.db.execute(
+            select(MarketplaceListing).where(MarketplaceListing.id == listing_id)
         )
-    ))
-    existing_installation = result.scalar_one_or_none()
-    
-    if existing_installation:
+        listing = result.scalar_one_or_none()
+        
+        if not listing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Listing not found"
+            )
+        
+        # Get statistics using marketplace engine
+        stats = await marketplace_engine.get_copy_statistics_for_listing(listing_id)
+        
+        return {
+            "listing_id": listing_id,
+            "total_installs": stats["total_installs"],
+            "recent_installs": stats["recent_installs"],
+            "unique_users": stats["unique_users"],
+            "listing_title": listing.title
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get copy statistics: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Agent already installed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get statistics: {str(e)}"
         )
+
+
+@router.get("/my-copied-agents")
+async def get_my_copied_agents(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    marketplace_engine: MarketplaceEngine = Depends(get_marketplace_engine)
+):
+    """Get all agents copied by the current user from marketplace"""
     
-    # Get original agent
-    result = await db.execute(select(AgentModel).where(AgentModel.id == listing.agent_id))
-    original_agent = result.scalar_one_or_none()
-    
-    if not original_agent:
+    try:
+        # Get copied agents using marketplace engine
+        copied_agents = await marketplace_engine.get_copied_agents_for_user(
+            current_user.id,
+            page=page,
+            page_size=page_size
+        )
+        
+        # Get installation records for additional metadata
+        agent_ids = [agent.id for agent in copied_agents]
+        installations_result = await marketplace_engine.db.execute(
+            select(MarketplaceInstallation).where(
+                and_(
+                    MarketplaceInstallation.user_id == current_user.id,
+                    MarketplaceInstallation.agent_id.in_(agent_ids)
+                )
+            ).options(
+                joinedload(MarketplaceInstallation.listing)
+            )
+        )
+        installations = installations_result.scalars().all()
+        
+        # Create response with enriched data
+        response = []
+        for agent in copied_agents:
+            installation = next((i for i in installations if i.agent_id == agent.id), None)
+            
+            agent_data = {
+                "agent_id": agent.id,
+                "name": agent.name,
+                "description": agent.description,
+                "status": agent.status,
+                "created_at": agent.created_at,
+                "updated_at": agent.updated_at,
+                "is_copy": True,
+                "metadata": agent.metadata or {}
+            }
+            
+            if installation and installation.listing:
+                agent_data.update({
+                    "listing_id": installation.listing.id,
+                    "listing_title": installation.listing.title,
+                    "original_agent_id": installation.listing.agent_id,
+                    "installed_at": installation.installed_at,
+                    "author_id": installation.listing.author_id
+                })
+            
+            response.append(agent_data)
+        
+        return {
+            "items": response,
+            "total": len(response),
+            "page": page,
+            "page_size": page_size,
+            "has_more": len(response) == page_size
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get copied agents for user {current_user.id}: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Original agent not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get copied agents: {str(e)}"
         )
-    
-    # Create a copy of the agent for the user
-    # This is a simplified version - in production you'd want to copy all related data
-    new_agent = AgentModel(
-        name=f"{original_agent.name} (Copy)",
-        description=original_agent.description,
-        owner_id=current_user.id,
-        status=original_agent.status,
-        config=original_agent.config,
-        schema_data=original_agent.schema_data,
-        is_public=False,
-        tags=original_agent.tags,
-        sub_agent_config=original_agent.sub_agent_config,
-        version=original_agent.version,
-        icon=original_agent.icon,
-        color=original_agent.color,
-        preview_image=original_agent.preview_image
-    )
-    
-    db.add(new_agent)
-    await db.commit()
-    await db.refresh(new_agent)
-    
-    # Create installation record
-    installation = MarketplaceInstallation(
-        listing_id=listing_id,
-        user_id=current_user.id,
-        agent_id=new_agent.id
-    )
-    
-    db.add(installation)
-    
-    # Update listing install count
-    listing.install_count += 1
-    
-    await db.commit()
-    await db.refresh(installation)
-    
-    return MarketplaceInstallationResponse.from_orm(installation)
 
 
 # Marketplace Categories Endpoints
@@ -645,7 +751,7 @@ async def get_marketplace_reviews(
         )
     
     # Get reviews
-    query = select(MarketplaceReview).where(MarketplaceReview.listing_id == listing_id).options(
+    query = select(MarketplaceReview).where(MarketplaceReview.listinging_id == listing_id).options(
         joinedload(MarketplaceReview.user)
     )
     
