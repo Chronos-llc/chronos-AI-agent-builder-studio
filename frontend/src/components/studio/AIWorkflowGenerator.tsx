@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { 
-  Sparkles, Loader2, Copy, Check, 
+  Sparkles, Loader2, Copy, Check,
   RefreshCw, Settings, ChevronDown, ChevronUp 
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
@@ -9,13 +9,11 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { workflowGenerationService } from '../../services/workflowGenerationService';
 import type { 
   WorkflowGenerationRequest, 
   WorkflowGenerationResponse,
-  WorkflowSchema,
-  WorkflowPattern 
+  WorkflowSchema
 } from '../../types/workflowGeneration';
 
 interface AIWorkflowGeneratorProps {
@@ -72,7 +70,7 @@ export const AIWorkflowGenerator: React.FC<AIWorkflowGeneratorProps> = ({
     generateMutation.mutate({
       description: description.trim(),
       parameters: parsedParameters,
-      category: category as any,
+      category: (category || undefined) as any,
     });
   };
 
@@ -147,8 +145,9 @@ export const AIWorkflowGenerator: React.FC<AIWorkflowGeneratorProps> = ({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Category</label>
+                      <label htmlFor="workflow-category" className="block text-sm font-medium mb-1">Category</label>
                       <select
+                        id="workflow-category"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full px-3 py-2 border border-input rounded-md bg-background"
@@ -234,10 +233,19 @@ export const AIWorkflowGenerator: React.FC<AIWorkflowGeneratorProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleCopyToBuilder(generateMutation.data.workflow.workflow_schema)}
+                          onClick={() => handleCopySchema(generateMutation.data.workflow.workflow_schema)}
                         >
-                          <Copy className="w-4 h-4 mr-1" />
-                          Copy Schema
+                          {copiedId === 'schema' ? (
+                            <>
+                              <Check className="w-4 h-4 mr-1" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-1" />
+                              Copy Schema
+                            </>
+                          )}
                         </Button>
                         <Button
                           size="sm"
@@ -366,11 +374,6 @@ export const AIWorkflowGenerator: React.FC<AIWorkflowGeneratorProps> = ({
       </div>
     </div>
   );
-};
-
-// Helper function to copy schema
-const handleCopyToBuilder = async (schema: WorkflowSchema) => {
-  await navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
 };
 
 export default AIWorkflowGenerator;

@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -28,37 +28,37 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Chronos AI Agent Builder Studio")
-     
+      
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-     
+      
     # Initialize AgentEngine for training
     await initialize_agent_engine()
-     
+      
     # Initialize MCP integrations
     await initialize_enhanced_mcp()
-     
+      
     # Initialize MCP server integrations for the Hub Marketplace
     await initialize_mcp_integrations()
-     
+      
     # Initialize AI providers
     await initialize_ai_providers()
-     
+      
     # Initialize integration monitoring
     await initialize_integration_monitoring()
-     
+      
     # Initialize communication channels
     await initialize_communication_channels()
-     
+      
     # Initialize WebChat
     await initialize_webchat()
-    
+     
     yield
-    
+     
     # Shutdown
     logger.info("Shutting down Chronos AI Agent Builder Studio")
-    
+     
     # Cleanup AgentEngine
     await cleanup_agent_engine()
 
@@ -99,6 +99,7 @@ app.include_router(training.router, prefix="/api/v1", tags=["training"])
 app.include_router(meta_agent.router, prefix="/api/v1/meta-agent", tags=["meta-agent"])
 app.include_router(personal_access_tokens.router, prefix="/api/v1/personal-access-tokens", tags=["personal-access-tokens"])
 app.include_router(messaging_api.router, prefix="/api/v1/messaging", tags=["messaging-api"])
+app.include_router(marketplace.router, prefix="/api/v1/marketplace", tags=["marketplace"])
 
 
 @app.get("/")
