@@ -12,7 +12,9 @@ import ConfigManager from './ConfigManager'
 import OptimizationDashboard from './OptimizationDashboard'
 import { ActionsPanel } from './ActionsPanel'
 import { ToolsPanel, ToolIntegration } from './ToolsPanel'
-import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Keyboard, Plus, GitBranch, Send, Zap, Workflow, Settings2, BarChart3 } from 'lucide-react'
+import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Keyboard, Plus, GitBranch, Send, Zap, Workflow, Settings2, BarChart3, ShoppingCart, Copy } from 'lucide-react'
+import { PublishButton } from './PublishButton'
+import CopiedAgentsManager from './CopiedAgentsManager'
 
 // Types
 interface AgentConfig {
@@ -64,8 +66,9 @@ export const StudioLayout = () => {
     const [newMessage, setNewMessage] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions' | 'versions' | 'settings' | 'sub-agents' | 'fuzzy' | 'workflow' | 'optimization'>('instructions')
+    const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions' | 'versions' | 'settings' | 'sub-agents' | 'fuzzy' | 'workflow' | 'optimization' | 'marketplace'>('instructions')
     const [workflowSubTab, setWorkflowSubTab] = useState<'builder' | 'generator' | 'patterns'>('builder')
+    const [marketplaceSubTab, setMarketplaceSubTab] = useState<'copied-agents' | 'browse'>('copied-agents')
 
     // Note: Resizable panel functionality would require implementing panel drag handling
     // and using panelSizes in the component's JSX for width/height styling
@@ -229,6 +232,13 @@ export const StudioLayout = () => {
                         <BarChart3 className="w-4 h-4" />
                         <span>Optimization</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('marketplace')}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'marketplace' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                    >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Marketplace</span>
+                    </button>
                 </div>
             </div>
 
@@ -257,6 +267,11 @@ export const StudioLayout = () => {
                             <Save className="w-4 h-4" />
                             <span>{isSaving ? 'Saving...' : 'Save'}</span>
                         </button>
+                        <PublishButton
+                            agentId={parseInt(id || '0')}
+                            agentName={agentConfig.name || 'Untitled Agent'}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-600/90 disabled:opacity-50"
+                        />
                     </div>
                 </div>
 
@@ -391,6 +406,43 @@ export const StudioLayout = () => {
                                     <span>Send</span>
                                 </button>
                             </div>
+                        </div>
+                    )}
+                    {activeTab === 'marketplace' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-4 mb-4">
+                                <button
+                                    onClick={() => setMarketplaceSubTab('copied-agents')}
+                                    className={`px-4 py-2 rounded-md ${marketplaceSubTab === 'copied-agents' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                                >
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    My Copied Agents
+                                </button>
+                                <button
+                                    onClick={() => setMarketplaceSubTab('browse')}
+                                    className={`px-4 py-2 rounded-md ${marketplaceSubTab === 'browse' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                                >
+                                    <ShoppingCart className="w-4 h-4 mr-2" />
+                                    Browse Marketplace
+                                </button>
+                            </div>
+                            {marketplaceSubTab === 'copied-agents' && <CopiedAgentsManager />}
+                            {marketplaceSubTab === 'browse' && (
+                                <div className="space-y-4">
+                                    <div className="bg-muted p-6 rounded-lg text-center">
+                                        <h3 className="text-xl font-semibold mb-2">Marketplace Browser</h3>
+                                        <p className="text-muted-foreground mb-4">
+                                            Browse and discover agents from the Chronos AI Marketplace
+                                        </p>
+                                        <button
+                                            onClick={() => window.open('/marketplace', '_blank')}
+                                            className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                                        >
+                                            Open Marketplace
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
