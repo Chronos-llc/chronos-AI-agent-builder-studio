@@ -36,6 +36,7 @@ class User(BaseModel):
     integration_reviews = relationship("IntegrationReview", back_populates="user", cascade="all, delete-orphan")
     knowledge_searches = relationship("KnowledgeSearch", back_populates="user", cascade="all, delete-orphan")
     training_sessions = relationship("TrainingSession", back_populates="user", cascade="all, delete-orphan")
+    personal_access_tokens = relationship("PersonalAccessToken", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"

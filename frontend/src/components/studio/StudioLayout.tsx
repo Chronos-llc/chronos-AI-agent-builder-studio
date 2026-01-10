@@ -11,7 +11,7 @@ import PatternVisualizer from './PatternVisualizer'
 import ConfigManager from './ConfigManager'
 import OptimizationDashboard from './OptimizationDashboard'
 import { ActionsPanel } from './ActionsPanel'
-import { ToolsPanel } from './ToolsPanel'
+import { ToolsPanel, ToolIntegration } from './ToolsPanel'
 import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Keyboard, Plus, GitBranch, Send, Zap, Workflow, Settings2, BarChart3 } from 'lucide-react'
 
 // Types
@@ -35,16 +35,6 @@ interface KnowledgeItem {
     content: string
     metadata: any
     created_at: string
-}
-
-interface ToolIntegration {
-    id: string
-    name: string
-    description: string
-    type: string
-    icon: string
-    is_installed: boolean
-    config: any
 }
 
 interface ChatMessage {
@@ -76,18 +66,9 @@ export const StudioLayout = () => {
     const [isSaving, setIsSaving] = useState(false)
     const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions' | 'versions' | 'settings' | 'sub-agents' | 'fuzzy' | 'workflow' | 'optimization'>('instructions')
     const [workflowSubTab, setWorkflowSubTab] = useState<'builder' | 'generator' | 'patterns'>('builder')
-    const [panelSizes, setPanelSizes] = useState({
-        left: 300,
-        center: 500,
-        right: 300
-    })
-    const [isFullScreen, setIsFullScreen] = useState(false)
-    const [darkMode, setDarkMode] = useState(false)
-    const [isDragging, setIsDragging] = useState(false)
-    const [draggingPanel, setDraggingPanel] = useState<'left' | 'right' | null>(null)
-    const [showSidebar, setShowSidebar] = useState(true)
-    const [showToolsPanel, setShowToolsPanel] = useState(true)
-    const [showConfigPanel, setShowConfigPanel] = useState(true)
+
+    // Note: Resizable panel functionality would require implementing panel drag handling
+    // and using panelSizes in the component's JSX for width/height styling
 
     // State for agent data fetching
     useEffect(() => {
@@ -121,7 +102,7 @@ export const StudioLayout = () => {
             setIsSaving(false)
         }
     }
- 
+
     const handleSendMessage = () => {
         if (!newMessage.trim()) return
         const newMessageObj: ChatMessage = {
@@ -366,9 +347,9 @@ export const StudioLayout = () => {
                                     Patterns
                                 </button>
                             </div>
-                            {workflowSubTab === 'builder' && <WorkflowBuilder agentId={parseInt(id || '0')} />}
-                            {workflowSubTab === 'generator' && <AIWorkflowGenerator agentId={parseInt(id || '0')} />}
-                            {workflowSubTab === 'patterns' && <PatternVisualizer agentId={parseInt(id || '0')} />}
+                            {workflowSubTab === 'builder' && <WorkflowBuilder />}
+                            {workflowSubTab === 'generator' && <AIWorkflowGenerator />}
+                            {workflowSubTab === 'patterns' && <PatternVisualizer />}
                         </div>
                     )}
                     {activeTab === 'optimization' && (
@@ -384,7 +365,7 @@ export const StudioLayout = () => {
                     )}
                     {activeTab === 'chat' && (
                         <div className="space-y-4">
-                            <div className="flex-1 overflow-auto space-y-4 p-4 border border-border rounded-lg h-[400px]">
+                            <div className="flex-1 overflow-auto space-y-4 p-4 border border-border rounded-lg h-[400px}">
                                 {chatMessages.map((message) => (
                                     <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>

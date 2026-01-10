@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   OptimizationRecommendation,
   RecommendationType,
   RecommendationStatus,
-  RecommendationApplyRequest,
 } from '../../types/systemOptimization';
 import {
   listRecommendations,
@@ -15,14 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
 import {
   Lightbulb,
   CheckCircle,
   XCircle,
   Clock,
-  TrendingUp,
   Zap,
   DollarSign,
   Shield,
@@ -69,6 +66,7 @@ export function RecommendationPanel({ agentId }: RecommendationPanelProps) {
 
   useEffect(() => {
     fetchRecommendations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId, filterType, filterStatus, filterImpactMin]);
 
   const handleApply = async (recommendation: OptimizationRecommendation) => {
@@ -302,7 +300,7 @@ export function RecommendationPanel({ agentId }: RecommendationPanelProps) {
                       <div className="text-right">
                         <p className="text-sm text-gray-400">Impact Score</p>
                         <p className="text-xl font-bold text-blue-500">
-                          {Math.round(recommendation.impact_score * 100)}%
+                          {Math.round((recommendation.impact_score ?? 0) * 100)}%
                         </p>
                       </div>
                     </div>
@@ -318,23 +316,21 @@ export function RecommendationPanel({ agentId }: RecommendationPanelProps) {
                       <span>Effort</span>
                     </div>
                     <div className="flex gap-1">
-                      <div className="flex-1 bg-gray-700 rounded-full h-2">
+                      <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
                           className="bg-blue-500 h-2 rounded-full transition-all"
-                          style={{ width: `${recommendation.impact_score * 100}%` }}
+                          style={{ width: `${(recommendation.impact_score ?? 0) * 100}%` }}
                         />
                       </div>
-                      <div className="w-20 bg-gray-700 rounded-full h-2">
+                      <div className="w-20 bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
-                          className={`${effortConfig.color} h-2 rounded-full`}
-                          style={{
-                            width:
-                              recommendation.effort_level === 'LOW'
-                                ? '33%'
-                                : recommendation.effort_level === 'MEDIUM'
-                                ? '66%'
-                                : '100%',
-                          }}
+                          className={`${effortConfig.color} h-2 rounded-full transition-all ${
+                            recommendation.effort_level === 'LOW'
+                              ? 'w-[33%]'
+                              : recommendation.effort_level === 'MEDIUM'
+                              ? 'w-[66%]'
+                              : 'w-full'
+                          }`}
                         />
                       </div>
                     </div>

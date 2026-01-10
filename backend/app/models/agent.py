@@ -1,4 +1,4 @@
-from sqlalchemy import Column
+from sqlalchemy import Column, String, Text, Integer, Float, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import ENUM
@@ -54,6 +54,11 @@ class AgentModel(BaseModel):
     knowledge_searches = relationship("KnowledgeSearch", back_populates="agent", cascade="all, delete-orphan")
     communication_channels = relationship("CommunicationChannel", back_populates="agent", cascade="all, delete-orphan")
     training_sessions = relationship("TrainingSession", back_populates="agent", cascade="all, delete-orphan")
+    tables = relationship("AgentTable", back_populates="agent", cascade="all, delete-orphan")
+    memories = relationship("AgentMemory", back_populates="agent", cascade="all, delete-orphan")
+    conversation_contexts = relationship("ConversationContext", back_populates="agent", cascade="all, delete-orphan")
+    voice_configuration = relationship("VoiceConfiguration", back_populates="agent", uselist=False, cascade="all, delete-orphan")
+    voice_sessions = relationship("VoiceSession", back_populates="agent", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"
