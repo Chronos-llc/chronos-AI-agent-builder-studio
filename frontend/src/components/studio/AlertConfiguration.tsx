@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import {
+  useState,
+  useEffect 
+} from 'react';
 import {
   AlertRule,
   AlertRuleCreate,
@@ -30,7 +33,6 @@ import {
   Edit,
   CheckCircle,
   Clock,
-  AlertTriangle,
   History,
   Volume2,
   Settings,
@@ -42,9 +44,10 @@ interface AlertConfigurationProps {
   agentId?: number;
 }
 
-export function AlertConfiguration({ agentId }: AlertConfigurationProps) {
+export function AlertConfiguration({ agentId: _agentId }: AlertConfigurationProps) {
+  // Note: agentId is currently unused but reserved for future agent-specific alert filtering
   const [alerts, setAlerts] = useState<AlertRule[]>([]);
-  const [alertHistory, setAlertHistory] = useState<Record<number, AlertHistory[]>>({});  
+  const [alertHistory, setAlertHistory] = useState<Record<number, AlertHistory[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -120,7 +123,7 @@ export function AlertConfiguration({ agentId }: AlertConfigurationProps) {
 
     try {
       const updateData: AlertRuleUpdate = {
-        name: formData.nam,
+        name: formData.name,
         description: formData.description,
         metric_type: formData.metric_type,
         condition: formData.condition,
@@ -592,5 +595,3 @@ export function AlertConfiguration({ agentId }: AlertConfigurationProps) {
     </div>
   );
 }
-
-export default AlertConfiguration;

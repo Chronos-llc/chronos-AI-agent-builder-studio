@@ -320,8 +320,6 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
                 throw new Error('Failed to submit feedback')
             }
 
-            const correction = await response.json()
-
             // Add feedback message to chat
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),

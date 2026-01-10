@@ -3,7 +3,7 @@
  * Advanced Configuration Management System for Chronos AI Agent Builder Studio
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -18,8 +18,6 @@ import {
   EnvironmentType,
   ValidationError,
   DiffEntry,
-  PaginatedConfigVersionResponse,
-  PaginatedConfigSnapshotResponse,
 } from '../../types/configManagement';
 import {
   listSchemas,
@@ -179,6 +177,21 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
     } catch (error) {
       console.error('Failed to save:', error);
       alert('Failed to save configuration');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const handleSaveEnvironment = async () => {
+    setIsSaving(true);
+    
+    try {
+      await updateEnvironmentConfig(configId, selectedEnvironment, currentConfig);
+      setEnvironmentConfig(currentConfig);
+      alert(`Configuration saved to ${selectedEnvironment} environment successfully!`);
+    } catch (error) {
+      console.error('Failed to save environment config:', error);
+      alert('Failed to save environment configuration');
     } finally {
       setIsSaving(false);
     }
@@ -356,6 +369,13 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
                   onChange={(e) => setChangelog(e.target.value)}
                   className="flex-1"
                 />
+                <Button 
+                  onClick={handleSaveEnvironment} 
+                  disabled={isSaving}
+                  variant="outline"
+                >
+                  {isSaving ? 'Saving...' : `Save to ${selectedEnvironment}`}
+                </Button>
                 <Button onClick={handleSave} disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save Version'}
                 </Button>
@@ -481,7 +501,7 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
                       </div>
                     ))}
                   </div>
-                )}
+                )}              
               </ScrollArea>
             </CardContent>
           </Card>
