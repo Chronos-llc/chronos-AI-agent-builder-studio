@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import AgentsPage from './pages/AgentsPage'
 import AgentBuilderPage from './pages/AgentBuilderPage'
 import SettingsPage from './pages/SettingsPage'
+import AdminPage from './pages/AdminPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -72,6 +73,14 @@ function App() {
                                 element={
                                     <ProtectedRoute>
                                         <SettingsPage />
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/admin/*"
+                                element={
+                                    <ProtectedRoute>
+                                        <AdminPage />
                                     </ProtectedRoute>
                                 }
                             />
