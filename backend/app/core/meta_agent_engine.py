@@ -6,6 +6,8 @@ and executing meta-agent commands.
 """
 import re
 import logging
+import json
+import os
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
@@ -18,6 +20,67 @@ INTENT_PATTERNS = {
         r"(create|build|make|generate)\s+(?:an?\s+)?agent",
         r"new\s+agent",
         r"setup\s+agent"
+    ],
+    "update_agent": [
+        r"(update|modify|change|edit)\s+(?:the\s+)?agent",
+        r"change\s+agent\s+(?:name|description|config)",
+        r"update\s+agent\s+(?:settings|configuration)"
+    ],
+    "delete_agent": [
+        r"(delete|remove|destroy)\s+(?:the\s+)?agent",
+        r"get\s+rid\s+of\s+(?:the\s+)?agent"
+    ],
+    "add_tool": [
+        r"add\s+(?:a\s+)?(?:tool|capability|feature)\s+to",
+        r"give\s+(?:the\s+)?agent\s+(?:the\s+)?(?:ability|capability)\s+to",
+        r"enable\s+(?:the\s+)?agent\s+to"
+    ],
+    "remove_tool": [
+        r"remove\s+(?:the\s+)?(?:tool|capability|feature)\s+from",
+        r"disable\s+(?:the\s+)?(?:tool|capability|feature)"
+    ],
+    "update_instructions": [
+        r"(update|change|modify)\s+(?:the\s+)?(?:instructions|prompt|behavior)",
+        r"make\s+(?:the\s+)?agent\s+(?:more|less)\s+\w+",
+        r"change\s+(?:how|the\s+way)\s+(?:the\s+)?agent\s+(?:behaves|responds)"
+    ],
+    "add_knowledge": [
+        r"add\s+(?:knowledge|document|file)\s+to",
+        r"upload\s+(?:a\s+)?(?:knowledge|document|file)",
+        r"give\s+(?:the\s+)?agent\s+(?:access\s+to|knowledge\s+about)"
+    ],
+    "configure_channel": [
+        r"(connect|configure|setup|integrate)\s+(?:with\s+)?(?:slack|discord|telegram|whatsapp)",
+        r"add\s+(?:a\s+)?(?:communication\s+)?channel",
+        r"publish\s+to\s+(?:slack|discord|telegram|whatsapp)"
+    ],
+    "publish_agent": [
+        r"(publish|deploy|activate|launch)\s+(?:the\s+)?agent",
+        r"make\s+(?:the\s+)?agent\s+(?:live|active|available)"
+    ],
+    "unpublish_agent": [
+        r"(unpublish|deactivate|stop|disable)\s+(?:the\s+)?agent",
+        r"take\s+(?:the\s+)?agent\s+(?:offline|down)"
+    ],
+    "list_agents": [
+        r"(list|show|display)\s+(?:my\s+)?agents",
+        r"what\s+agents\s+do\s+I\s+have",
+        r"show\s+me\s+(?:all\s+)?(?:my\s+)?agents"
+    ],
+    "get_agent_details": [
+        r"(show|display|get)\s+(?:details|info|information)\s+(?:about|for)\s+(?:the\s+)?agent",
+        r"tell\s+me\s+about\s+(?:the\s+)?agent",
+        r"what\s+(?:does|can)\s+(?:the\s+)?agent\s+do"
+    ],
+    "query_tools": [
+        r"what\s+tools\s+(?:are\s+)?available",
+        r"(list|show)\s+available\s+tools",
+        r"what\s+(?:capabilities|features)\s+can\s+I\s+add"
+    ],
+    "query_integrations": [
+        r"what\s+integrations\s+(?:are\s+)?available",
+        r"(list|show)\s+available\s+integrations",
+        r"what\s+(?:services|platforms)\s+can\s+I\s+(?:connect|integrate)"
     ],
     "execute_action": [
         r"(run|execute|perform|do)\s+(?:the\s+)?(action|task)",
@@ -56,7 +119,20 @@ INTENT_PATTERNS = {
 
 # Action types mapping
 ACTION_TYPES = {
-    "create_agent": ["agent:create", "llm:generate"],
+    "create_agent": ["fuzzy:create_agent"],
+    "update_agent": ["fuzzy:update_agent_config"],
+    "delete_agent": ["fuzzy:delete_agent"],
+    "add_tool": ["fuzzy:add_tool_to_agent"],
+    "remove_tool": ["fuzzy:remove_tool_from_agent"],
+    "update_instructions": ["fuzzy:update_agent_instructions"],
+    "add_knowledge": ["fuzzy:add_knowledge_file"],
+    "configure_channel": ["fuzzy:configure_communication_channel"],
+    "publish_agent": ["fuzzy:publish_agent"],
+    "unpublish_agent": ["fuzzy:unpublish_agent"],
+    "list_agents": ["fuzzy:list_user_agents"],
+    "get_agent_details": ["fuzzy:get_agent_details"],
+    "query_tools": ["fuzzy:get_available_tools"],
+    "query_integrations": ["fuzzy:get_available_integrations"],
     "execute_action": ["action:invoke", "hook:trigger"],
     "query_knowledge": ["knowledge:search", "knowledge:retrieve"],
     "manage_session": ["session:manage"],
@@ -70,6 +146,19 @@ ACTION_TYPES = {
 # Permission requirements for each intent
 PERMISSION_REQUIREMENTS = {
     "create_agent": ["editor", "admin", "superuser"],
+    "update_agent": ["editor", "admin", "superuser"],
+    "delete_agent": ["admin", "superuser"],
+    "add_tool": ["editor", "admin", "superuser"],
+    "remove_tool": ["editor", "admin", "superuser"],
+    "update_instructions": ["editor", "admin", "superuser"],
+    "add_knowledge": ["editor", "admin", "superuser"],
+    "configure_channel": ["editor", "admin", "superuser"],
+    "publish_agent": ["editor", "admin", "superuser"],
+    "unpublish_agent": ["editor", "admin", "superuser"],
+    "list_agents": ["viewer", "editor", "admin", "superuser"],
+    "get_agent_details": ["viewer", "editor", "admin", "superuser"],
+    "query_tools": ["viewer", "editor", "admin", "superuser"],
+    "query_integrations": ["viewer", "editor", "admin", "superuser"],
     "execute_action": ["editor", "admin", "superuser"],
     "query_knowledge": ["viewer", "editor", "admin", "superuser"],
     "manage_session": ["editor", "admin", "superuser"],
@@ -99,11 +188,13 @@ class MetaAgentEngine:
     - Planning execution actions
     - Executing planned actions
     - Validating permissions
+    - Loading and using FUZZY studio tools
     """
     
     def __init__(self):
         """Initialize the meta-agent engine"""
         self._compile_patterns()
+        self._load_fuzzy_tools()
         logger.info("MetaAgentEngine initialized")
     
     def _compile_patterns(self):
@@ -114,6 +205,42 @@ class MetaAgentEngine:
                 re.compile(pattern, re.IGNORECASE) for pattern in patterns
             ]
     
+    def _load_fuzzy_tools(self):
+        """Load FUZZY studio tools from JSON definition"""
+        try:
+            tools_path = os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "tools",
+                "fuzzy_studio_tools.json"
+            )
+            
+            if os.path.exists(tools_path):
+                with open(tools_path, 'r') as f:
+                    tools_data = json.load(f)
+                    self.fuzzy_tools = {
+                        tool['name']: tool
+                        for tool in tools_data.get('tools', [])
+                    }
+                    logger.info(f"Loaded {len(self.fuzzy_tools)} FUZZY studio tools")
+            else:
+                self.fuzzy_tools = {}
+                logger.warning(f"FUZZY tools file not found at {tools_path}")
+        except Exception as e:
+            logger.error(f"Error loading FUZZY tools: {e}")
+            self.fuzzy_tools = {}
+    
+    def get_fuzzy_tool(self, tool_name: str) -> Optional[Dict[str, Any]]:
+        """Get FUZZY tool definition by name"""
+        return self.fuzzy_tools.get(tool_name)
+    
+    def list_fuzzy_tools(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List available FUZZY tools, optionally filtered by category"""
+        tools = list(self.fuzzy_tools.values())
+        if category:
+            tools = [t for t in tools if t.get('category') == category]
+        return tools
+
     def parse_command(self, command: str) -> Dict[str, Any]:
         """
         Parse a natural language command into structured components.
@@ -268,11 +395,75 @@ class MetaAgentEngine:
         if intent == "create_agent":
             actions.append({
                 **base_action,
-                "action": "agent:create",
+                "action": "fuzzy:create_agent",
+                "tool": self.get_fuzzy_tool("create_agent"),
                 "steps": [
                     "validate_agent_name",
                     "generate_agent_config",
+                    "call_fuzzy_api",
                     "save_agent"
+                ]
+            })
+        
+        elif intent == "update_agent":
+            actions.append({
+                **base_action,
+                "action": "fuzzy:update_agent_config",
+                "tool": self.get_fuzzy_tool("update_agent_config"),
+                "steps": [
+                    "validate_agent_exists",
+                    "prepare_update_data",
+                    "call_fuzzy_api",
+                    "confirm_update"
+                ]
+            })
+        
+        elif intent == "delete_agent":
+            actions.append({
+                **base_action,
+                "action": "fuzzy:delete_agent",
+                "tool": self.get_fuzzy_tool("delete_agent"),
+                "steps": [
+                    "validate_agent_exists",
+                    "confirm_deletion",
+                    "call_fuzzy_api",
+                    "cleanup"
+                ]
+            })
+        
+        elif intent == "add_tool":
+            actions.append({
+                **base_action,
+                "action": "fuzzy:add_tool_to_agent",
+                "tool": self.get_fuzzy_tool("add_tool_to_agent"),
+                "steps": [
+                    "validate_agent_exists",
+                    "validate_tool_availability",
+                    "call_fuzzy_api",
+                    "confirm_addition"
+                ]
+            })
+        
+        elif intent == "list_agents":
+            actions.append({
+                **base_action,
+                "action": "fuzzy:list_user_agents",
+                "tool": self.get_fuzzy_tool("list_user_agents"),
+                "steps": [
+                    "call_fuzzy_api",
+                    "format_agent_list"
+                ]
+            })
+        
+        elif intent == "get_agent_details":
+            actions.append({
+                **base_action,
+                "action": "fuzzy:get_agent_details",
+                "tool": self.get_fuzzy_tool("get_agent_details"),
+                "steps": [
+                    "validate_agent_exists",
+                    "call_fuzzy_api",
+                    "format_details"
                 ]
             })
         
@@ -330,6 +521,7 @@ class MetaAgentEngine:
                 "action": "system:help",
                 "steps": [
                     "list_available_commands",
+                    "list_fuzzy_tools",
                     "format_help_output"
                 ]
             })
@@ -424,7 +616,13 @@ class MetaAgentEngine:
         elif "search" in step:
             step_result["output"]["results"] = []
         elif "list" in step:
-            step_result["output"]["items"] = []
+            if "fuzzy_tools" in step:
+                step_result["output"]["tools"] = self.list_fuzzy_tools()
+            else:
+                step_result["output"]["items"] = []
+        elif "call_fuzzy_api" in step:
+            step_result["output"]["api_called"] = True
+            step_result["output"]["tool"] = action.get("tool", {}).get("name", "unknown")
         
         return step_result
     
@@ -489,6 +687,19 @@ class MetaAgentEngine:
         """Get description for an intent"""
         descriptions = {
             "create_agent": "Create a new agent with specified configuration",
+            "update_agent": "Update an existing agent's configuration",
+            "delete_agent": "Delete an agent permanently",
+            "add_tool": "Add a tool or capability to an agent",
+            "remove_tool": "Remove a tool from an agent",
+            "update_instructions": "Update agent's system prompt and instructions",
+            "add_knowledge": "Add knowledge files to an agent",
+            "configure_channel": "Configure communication channels for an agent",
+            "publish_agent": "Publish agent to communication channels",
+            "unpublish_agent": "Unpublish agent from channels",
+            "list_agents": "List all user's agents",
+            "get_agent_details": "Get detailed information about an agent",
+            "query_tools": "Query available tools",
+            "query_integrations": "Query available integrations",
             "execute_action": "Execute a specific action or task",
             "query_knowledge": "Search and retrieve knowledge base information",
             "manage_session": "Start, end, or manage agent sessions",

@@ -1,0 +1,891 @@
+{
+    "tools": [
+        {
+            "name": "create_agent",
+            "description": "Create a new agent with specified configuration. Use this when the user wants to build or create a new agent.",
+            "category": "agent_management",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the agent (1-100 characters)",
+                        "required": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of what the agent does",
+                        "required": false
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "System instructions that define the agent's behavior and personality",
+                        "required": false
+                    },
+                    "model_config": {
+                        "type": "object",
+                        "description": "LLM model configuration (model name, temperature, max_tokens, etc.)",
+                        "required": false
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Tags for categorizing the agent",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "integer"
+                            },
+                            "agent_name": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Create a customer support agent",
+                    "parameters": {
+                        "name": "Customer Support Bot",
+                        "description": "Helps customers with product questions and issues",
+                        "system_prompt": "You are a helpful customer support agent. Be polite, professional, and solve customer problems efficiently."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "update_agent_config",
+            "description": "Update an existing agent's configuration including name, description, system prompt, model config, or tags.",
+            "category": "agent_management",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent to update",
+                        "required": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "New name for the agent",
+                        "required": false
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description",
+                        "required": false
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "New system prompt/instructions",
+                        "required": false
+                    },
+                    "model_config": {
+                        "type": "object",
+                        "description": "New model configuration",
+                        "required": false
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "New tags",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "integer"
+                            },
+                            "agent_name": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Update the agent's name to 'Sales Assistant'",
+                    "parameters": {
+                        "agent_id": 123,
+                        "name": "Sales Assistant"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "delete_agent",
+            "description": "Delete an agent permanently. This action cannot be undone.",
+            "category": "agent_management",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent to delete",
+                        "required": true
+                    },
+                    "confirm": {
+                        "type": "boolean",
+                        "description": "Confirmation flag (must be true)",
+                        "required": true
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Delete the test agent",
+                    "parameters": {
+                        "agent_id": 123,
+                        "confirm": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "list_user_agents",
+            "description": "Get a list of all agents owned by the user. Can filter by status and paginate results.",
+            "category": "query",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "active",
+                            "inactive",
+                            "archived"
+                        ],
+                        "description": "Filter agents by status",
+                        "required": false
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of agents to return (1-100)",
+                        "default": 50,
+                        "required": false
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Offset for pagination",
+                        "default": 0,
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "agents": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                },
+                                "tags": {
+                                    "type": "array"
+                                },
+                                "created_at": {
+                                    "type": "string"
+                                },
+                                "updated_at": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "limit": {
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Show me all my active agents",
+                    "parameters": {
+                        "status": "active",
+                        "limit": 50,
+                        "offset": 0
+                    }
+                }
+            ]
+        },
+        {
+            "name": "get_agent_details",
+            "description": "Get detailed information about a specific agent including its tools, knowledge files, and communication channels.",
+            "category": "query",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent",
+                        "required": true
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "system_prompt": {
+                        "type": "string"
+                    },
+                    "model_config": {
+                        "type": "object"
+                    },
+                    "tags": {
+                        "type": "array"
+                    },
+                    "tools": {
+                        "type": "array"
+                    },
+                    "knowledge_files": {
+                        "type": "array"
+                    },
+                    "communication_channels": {
+                        "type": "array"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Show me details about agent 123",
+                    "parameters": {
+                        "agent_id": 123
+                    }
+                }
+            ]
+        },
+        {
+            "name": "add_tool_to_agent",
+            "description": "Add a tool/capability to an agent. Tools enable agents to perform specific actions like web scraping, API calls, etc.",
+            "category": "studio_configuration",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent",
+                        "required": true
+                    },
+                    "tool_name": {
+                        "type": "string",
+                        "description": "Name of the tool",
+                        "required": true
+                    },
+                    "tool_type": {
+                        "type": "string",
+                        "description": "Type of tool (function, api_call, web_scraping, database_query, etc.)",
+                        "required": true
+                    },
+                    "tool_config": {
+                        "type": "object",
+                        "description": "Tool-specific configuration",
+                        "required": false
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "description": "Tool parameters",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "tool_id": {
+                                "type": "integer"
+                            },
+                            "tool_name": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Add web scraping capability to the agent",
+                    "parameters": {
+                        "agent_id": 123,
+                        "tool_name": "Web Scraper",
+                        "tool_type": "web_scraping",
+                        "tool_config": {
+                            "max_pages": 10,
+                            "timeout": 30
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "remove_tool_from_agent",
+            "description": "Remove a tool from an agent's configuration.",
+            "category": "studio_configuration",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent",
+                        "required": true
+                    },
+                    "tool_id": {
+                        "type": "integer",
+                        "description": "ID of the tool to remove",
+                        "required": true
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "tool_id": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Remove the web scraping tool from the agent",
+                    "parameters": {
+                        "agent_id": 123,
+                        "tool_id": 456
+                    }
+                }
+            ]
+        },
+        {
+            "name": "update_agent_instructions",
+            "description": "Update the system prompt and instructions that define how the agent behaves.",
+            "category": "studio_configuration",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent",
+                        "required": true
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "New system prompt/instructions",
+                        "required": true
+                    },
+                    "user_prompt_template": {
+                        "type": "string",
+                        "description": "User prompt template",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Make the agent more friendly and casual",
+                    "parameters": {
+                        "agent_id": 123,
+                        "system_prompt": "You are a friendly and casual assistant. Use a conversational tone and be helpful."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "add_knowledge_file",
+            "description": "Add a knowledge base file to an agent so it can reference specific information.",
+            "category": "studio_configuration",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent",
+                        "required": true
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "Name of the knowledge file",
+                        "required": true
+                    },
+                    "file_type": {
+                        "type": "string",
+                        "description": "Type of file (pdf, txt, docx, etc.)",
+                        "required": true
+                    },
+                    "file_content": {
+                        "type": "string",
+                        "description": "Content of the file (for text files)",
+                        "required": false
+                    },
+                    "file_url": {
+                        "type": "string",
+                        "description": "URL to the file",
+                        "required": false
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Additional metadata",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "knowledge_file_id": {
+                                "type": "integer"
+                            },
+                            "filename": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Add the product documentation to the agent's knowledge base",
+                    "parameters": {
+                        "agent_id": 123,
+                        "file_name": "product_docs.pdf",
+                        "file_type": "pdf",
+                        "file_url": "https://example.com/docs/product.pdf"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "configure_communication_channel",
+            "description": "Configure a communication channel (Slack, Discord, Telegram, etc.) for the agent.",
+            "category": "studio_configuration",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent",
+                        "required": true
+                    },
+                    "channel_type": {
+                        "type": "string",
+                        "description": "Type of channel (slack, discord, telegram, whatsapp, etc.)",
+                        "required": true
+                    },
+                    "channel_config": {
+                        "type": "object",
+                        "description": "Channel-specific configuration (API keys, webhooks, etc.)",
+                        "required": true
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "description": "Whether the channel is active",
+                        "default": true,
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "channel_id": {
+                                "type": "integer"
+                            },
+                            "channel_type": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Connect the agent to our Slack workspace",
+                    "parameters": {
+                        "agent_id": 123,
+                        "channel_type": "slack",
+                        "channel_config": {
+                            "bot_token": "xoxb-...",
+                            "signing_secret": "..."
+                        },
+                        "is_active": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "publish_agent",
+            "description": "Publish an agent to make it active on specified communication channels.",
+            "category": "publishing",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent to publish",
+                        "required": true
+                    },
+                    "channels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of channels to publish to",
+                        "required": true
+                    },
+                    "publish_config": {
+                        "type": "object",
+                        "description": "Publishing configuration",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "integer"
+                            },
+                            "channels": {
+                                "type": "array"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Publish the agent to Slack and Discord",
+                    "parameters": {
+                        "agent_id": 123,
+                        "channels": [
+                            "slack",
+                            "discord"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "unpublish_agent",
+            "description": "Unpublish an agent to make it inactive and remove it from channels.",
+            "category": "publishing",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "integer",
+                        "description": "ID of the agent to unpublish",
+                        "required": true
+                    },
+                    "channels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Specific channels to unpublish from (null = all channels)",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "Unpublish the agent from all channels",
+                    "parameters": {
+                        "agent_id": 123
+                    }
+                }
+            ]
+        },
+        {
+            "name": "get_available_tools",
+            "description": "Get a list of available tools that can be added to agents.",
+            "category": "query",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tool_type": {
+                        "type": "string",
+                        "description": "Filter by tool type",
+                        "required": false
+                    },
+                    "search_query": {
+                        "type": "string",
+                        "description": "Search query for tools",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "tools": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "What tools are available for web scraping?",
+                    "parameters": {
+                        "tool_type": "web_scraping"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "get_available_integrations",
+            "description": "Get a list of available integrations that can be configured for agents.",
+            "category": "query",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "integration_type": {
+                        "type": "string",
+                        "description": "Filter by integration type",
+                        "required": false
+                    },
+                    "search_query": {
+                        "type": "string",
+                        "description": "Search query for integrations",
+                        "required": false
+                    }
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "integrations": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "user_request": "What integrations are available?",
+                    "parameters": {}
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "version": "1.0.0",
+        "last_updated": "2026-01-11",
+        "description": "FUZZY studio manipulation tools for agent building and management",
+        "categories": [
+            "agent_management",
+            "studio_configuration",
+            "publishing",
+            "query"
+        ]
+    }
+}
