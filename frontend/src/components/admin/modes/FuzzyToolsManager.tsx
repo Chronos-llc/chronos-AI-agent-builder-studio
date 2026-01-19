@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Settings,
   BarChart3
 } from 'lucide-react'
 import {
@@ -168,7 +167,7 @@ export const FuzzyToolsManager = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(tools.reduce((sum, t) => sum + t.success_rate, 0) / tools.length).toFixed(1)}%
+              {tools.length > 0 ? (tools.reduce((sum, t) => sum + t.success_rate, 0) / tools.length).toFixed(1) : '0.0'}%
             </div>
             <p className="text-xs text-muted-foreground">
               Across all tools
