@@ -96,6 +96,13 @@ export interface PaymentTransactionList {
   page_size: number;
 }
 
+export interface PaymentStats {
+  active_methods: number;
+  inactive_methods: number;
+  by_provider: Record<string, number>;
+  total_revenue?: number;
+}
+
 // Export all types
 export type PaymentMethod = PaymentMethodResponse;
 export type PaymentSettings = PaymentSettingsResponse;

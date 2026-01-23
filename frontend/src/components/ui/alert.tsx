@@ -1,7 +1,7 @@
 import * as React from "react"
 
 export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
-    variant?: 'default' | 'destructive' | 'warning'
+    variant?: 'default' | 'destructive' | 'warning' | 'success'
 }
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
@@ -9,7 +9,8 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         const variantStyles = {
             default: 'bg-background text-foreground border-border',
             destructive: 'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
-            warning: 'border-yellow-500/50 text-yellow-900 dark:text-yellow-200 [&>svg]:text-yellow-600'
+            warning: 'border-yellow-500/50 text-yellow-900 dark:text-yellow-200 [&>svg]:text-yellow-600',
+            success: 'border-green-500/50 text-green-900 dark:text-green-200 [&>svg]:text-green-600'
         }
 
         return (

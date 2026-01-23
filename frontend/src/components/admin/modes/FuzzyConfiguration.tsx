@@ -158,6 +158,10 @@ export const FuzzyConfiguration = ({ configuration, onUpdate }: FuzzyConfigurati
                         accept=".json"
                         className="hidden"
                         onChange={handleImport}
+                        aria-label="Import configuration file"
+                        title="Import configuration file"
+                        role="button"
+                        tabIndex={-1}
                     />
                     <Button
                         onClick={handleSave}
@@ -356,6 +360,7 @@ export const FuzzyConfiguration = ({ configuration, onUpdate }: FuzzyConfigurati
                             value={formData.logging_level}
                             onChange={(e) => handleInputChange('logging_level', e.target.value)}
                             className="mt-2 w-full px-3 py-2 border border-input rounded-md bg-background"
+                            aria-label="Logging Level"
                         >
                             <option value="debug">Debug</option>
                             <option value="info">Info</option>

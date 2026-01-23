@@ -27,7 +27,11 @@ import {
 } from '../../../services/skillsService'
 import type { Skill, SkillList } from '../../../types/skills'
 
-export const SkillsLibrary = () => {
+interface SkillsLibraryProps {
+  onEditSkill?: (skillId: number) => void
+}
+
+export const SkillsLibrary = ({ onEditSkill }: SkillsLibraryProps) => {
   const [skills, setSkills] = useState<Skill[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -361,7 +365,12 @@ export const SkillsLibrary = () => {
                   
                   {/* Actions */}
                   <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button variant="outline" size="sm" className="flex-1 gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 gap-1"
+                      onClick={() => onEditSkill?.(skill.id)}
+                    >
                       <Edit className="w-3 h-3" />
                       Edit
                     </Button>

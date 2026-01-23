@@ -13,7 +13,8 @@ import type {
   PaymentTransactionBase,
   PaymentTransactionCreate,
   PaymentTransactionResponse,
-  PaymentTransactionList
+  PaymentTransactionList,
+  PaymentStats
 } from '../types/payment';
 
 const API_BASE = '/api/payment';
@@ -153,15 +154,7 @@ export async function createPaymentTransaction(
 }
 
 // Payment Statistics API
-export async function getPaymentStats(): Promise<{
-  active_methods: number;
-  inactive_methods: number;
-  by_provider: Record<string, number>;
-}> {
+export async function getPaymentStats(): Promise<PaymentStats> {
   const response = await fetch(`${API_BASE}/stats`);
-  return handleResponse<{
-    active_methods: number;
-    inactive_methods: number;
-    by_provider: Record<string, number>;
-  }>(response);
+  return handleResponse<PaymentStats>(response);
 }

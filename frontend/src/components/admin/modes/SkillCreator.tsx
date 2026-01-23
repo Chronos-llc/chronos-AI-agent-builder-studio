@@ -18,10 +18,15 @@ import {
   Loader2,
   CheckCircle2
 } from 'lucide-react'
-import { createSkill, updateSkill } from '../../../services/skillsService'
+import { createSkill, updateSkill, getSkill } from '../../../services/skillsService'
 import type { Skill, SkillCreate, SkillUpdate } from '../../../types/skills'
 
-export const SkillCreator = () => {
+interface SkillCreatorProps {
+  editingId?: number | null
+  onEditComplete?: () => void
+}
+
+export const SkillCreator = ({ editingId, onEditComplete }: SkillCreatorProps) => {
   const [skill, setSkill] = useState<Partial<Skill>>({
     name: '',
     display_name: '',
@@ -41,7 +46,44 @@ export const SkillCreator = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // Load skill data when editingId changes
+  useEffect(() => {
+    if (editingId) {
+      loadSkill(editingId)
+    } else {
+      // Reset form when not editing
+      setSkill({
+        name: '',
+        display_name: '',
+        description: '',
+        category: 'analysis',
+        icon: 'Code',
+        version: '1.0.0',
+        parameters: {},
+        tags: [],
+        file_path: '',
+        content_preview: '',
+        is_active: true,
+        is_premium: false
+      })
+    }
+  }, [editingId])
+
+  const loadSkill = async (id: number) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const skillData = await getSkill(id)
+      setSkill(skillData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load skill')
+      console.error('Error loading skill:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Categories for selection
   const categories = [
@@ -129,6 +171,7 @@ export const SkillCreator = () => {
         // Update existing skill
         await updateSkill(editingId, skillData as SkillUpdate)
         setSuccess('Skill updated successfully!')
+        onEditComplete?.()
       } else {
         // Create new skill
         await createSkill(skillData as SkillCreate)
@@ -185,16 +228,32 @@ export const SkillCreator = () => {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading skill details...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Create New Skill</h2>
+          <h2 className="text-2xl font-bold">{editingId ? 'Edit Skill' : 'Create New Skill'}</h2>
           <p className="text-muted-foreground mt-1">
-            Define a new skill for AI agents to use
+            {editingId ? 'Edit existing skill details' : 'Define a new skill for AI agents to use'}
           </p>
         </div>
+        {editingId && (
+          <Button variant="outline" onClick={onEditComplete}>
+            Cancel
+          </Button>
+        )}
       </div>
 
       {/* Error/Success Messages */}
@@ -367,6 +426,7 @@ export const SkillCreator = () => {
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
                       className="ml-1 hover:text-destructive"
+                      aria-label={`Remove tag: ${tag}`}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -418,6 +478,7 @@ export const SkillCreator = () => {
                     onChange={handleFileUpload}
                     className="hidden"
                     id="file-upload"
+                    aria-label="Upload Python skill file"
                   />
                   <Button 
                     type="button"
