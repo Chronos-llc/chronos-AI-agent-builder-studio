@@ -3,27 +3,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Card } from '../../ui/card'
 import { Alert, AlertDescription } from '../../ui/alert'
 import { 
-  Settings, 
-  Activity, 
-  TestTube, 
-  Wrench,
   AlertCircle, 
   Loader2, 
-  BookOpen, 
   PlusCircle, 
   List,
   MessageCircle,
-  Users,
   BarChart2,
   Search,
-  Filter,
   Edit,
   Trash2,
   CheckCircle,
   XCircle,
   Clock,
   Mail,
-  Send,
   User,
   Shield
 } from 'lucide-react'
@@ -32,8 +24,8 @@ import { Input } from '../../ui/input'
 import { Textarea } from '../../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { Badge } from '../../ui/badge'
-import { useToast } from '../../ui/use-toast'
-import type { SupportMessage, SupportStatus, SupportPriority, SupportCategory } from '../../../types/support'
+import { toast } from 'react-hot-toast'
+import { SupportMessage, SupportStatus, SupportPriority, SupportCategory } from '../../../types/support'
 
 // Mock data and functions - these would be replaced with actual API calls
 type TabValue = 'tickets' | 'create' | 'statistics'
@@ -46,15 +38,15 @@ export const SupportMode = () => {
   const [stats, setStats] = useState<any>(null)
   const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(null)
   const [replyText, setReplyText] = useState('')
-  const { toast } = useToast()
+
 
   // Form state for creating/editing messages
   const [formData, setFormData] = useState({
     id: null as number | null,
     subject: '',
     message: '',
-    priority: 'NORMAL' as SupportPriority,
-    category: 'OTHER' as SupportCategory
+    priority: SupportPriority.NORMAL,
+    category: SupportCategory.OTHER
   })
 
   // Filter and search state
@@ -80,9 +72,9 @@ export const SupportMode = () => {
           user_id: 101,
           subject: "Login Issue",
           message: "I can't login to my account. It keeps saying invalid credentials even though I'm sure I'm using the right password.",
-          status: 'OPEN',
-          priority: 'HIGH',
-          category: 'TECHNICAL',
+          status: SupportStatus.OPEN,
+          priority: SupportPriority.HIGH,
+          category: SupportCategory.TECHNICAL,
           assigned_to: null,
           created_at: '2026-01-10T09:30:00Z',
           updated_at: '2026-01-10T09:30:00Z',
@@ -99,9 +91,9 @@ export const SupportMode = () => {
           user_id: 102,
           subject: "Billing Question",
           message: "I was charged twice for my subscription. Can you please check and refund the duplicate charge?",
-          status: 'IN_PROGRESS',
-          priority: 'NORMAL',
-          category: 'BILLING',
+          status: SupportStatus.IN_PROGRESS,
+          priority: SupportPriority.NORMAL,
+          category: SupportCategory.BILLING,
           assigned_to: 1,
           created_at: '2026-01-09T14:15:00Z',
           updated_at: '2026-01-10T10:45:00Z',
@@ -132,9 +124,9 @@ export const SupportMode = () => {
           user_id: 103,
           subject: "Feature Request",
           message: "It would be great if you could add dark mode support to the platform. Many users would appreciate this feature.",
-          status: 'OPEN',
-          priority: 'LOW',
-          category: 'FEATURE_REQUEST',
+          status: SupportStatus.OPEN,
+          priority: SupportPriority.LOW,
+          category: SupportCategory.FEATURE_REQUEST,
           assigned_to: null,
           created_at: '2026-01-08T11:20:00Z',
           updated_at: '2026-01-08T11:20:00Z',
@@ -168,24 +160,24 @@ export const SupportMode = () => {
         resolved_tickets: 3,
         closed_tickets: 1,
         by_status: {
-          OPEN: 5,
-          IN_PROGRESS: 3,
-          RESOLVED: 3,
-          CLOSED: 1
+          [SupportStatus.OPEN]: 5,
+          [SupportStatus.IN_PROGRESS]: 3,
+          [SupportStatus.RESOLVED]: 3,
+          [SupportStatus.CLOSED]: 1
         },
         by_priority: {
-          LOW: 2,
-          NORMAL: 6,
-          HIGH: 3,
-          CRITICAL: 1
+          [SupportPriority.LOW]: 2,
+          [SupportPriority.NORMAL]: 6,
+          [SupportPriority.HIGH]: 3,
+          [SupportPriority.CRITICAL]: 1
         },
         by_category: {
-          BUG: 2,
-          FEATURE_REQUEST: 3,
-          BILLING: 2,
-          TECHNICAL: 3,
-          ACCOUNT: 1,
-          OTHER: 1
+          [SupportCategory.BUG]: 2,
+          [SupportCategory.FEATURE_REQUEST]: 3,
+          [SupportCategory.BILLING]: 2,
+          [SupportCategory.TECHNICAL]: 3,
+          [SupportCategory.ACCOUNT]: 1,
+          [SupportCategory.OTHER]: 1
         }
       }
       
@@ -214,11 +206,7 @@ export const SupportMode = () => {
       // Mock API call
       if (formData.id) {
         // Update existing
-        toast({
-          title: "Message Updated",
-          description: "Support message has been successfully updated.",
-          variant: "success"
-        })
+        toast.success("Support message has been successfully updated.")
       } else {
         // Create new
         const newMessage: SupportMessage = {
@@ -226,7 +214,7 @@ export const SupportMode = () => {
           user_id: 104, // Mock user ID
           subject: formData.subject,
           message: formData.message,
-          status: 'OPEN',
+          status: SupportStatus.OPEN,
           priority: formData.priority,
           category: formData.category,
           assigned_to: null,
@@ -243,30 +231,22 @@ export const SupportMode = () => {
         
         setMessages([...messages, newMessage])
         
-        toast({
-          title: "Message Created",
-          description: "New support message has been successfully created.",
-          variant: "success"
-        })
+        toast.success("New support message has been successfully created.")
         
         // Reset form
         setFormData({
           id: null,
           subject: '',
           message: '',
-          priority: 'NORMAL',
-          category: 'OTHER'
+          priority: SupportPriority.NORMAL,
+          category: SupportCategory.OTHER
         })
       }
       
       setActiveTab('tickets')
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to save message',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to save message')
       console.error('Error saving message:', err)
     } finally {
       setLoading(false)
@@ -291,18 +271,10 @@ export const SupportMode = () => {
         // Mock API call
         setMessages(messages.filter(message => message.id !== id))
         
-        toast({
-          title: "Message Deleted",
-          description: "Support message has been successfully deleted.",
-          variant: "success"
-        })
+        toast.success("Support message has been successfully deleted.")
         
       } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : 'Failed to delete message',
-          variant: "destructive"
-        })
+        toast.error(err instanceof Error ? err.message : 'Failed to delete message')
         console.error('Error deleting message:', err)
       } finally {
         setLoading(false)
@@ -322,18 +294,10 @@ export const SupportMode = () => {
         } : message
       ))
       
-      toast({
-        title: "Status Updated",
-        description: `Message status has been changed to ${newStatus}.`,
-        variant: "success"
-      })
+      toast.success(`Message status has been changed to ${newStatus}.`)
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to update status',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to update status')
       console.error('Error updating status:', err)
     } finally {
       setLoading(false)
@@ -352,18 +316,10 @@ export const SupportMode = () => {
         } : message
       ))
       
-      toast({
-        title: "Assigned",
-        description: "Message has been assigned to you.",
-        variant: "success"
-      })
+      toast.success("Message has been assigned to you.")
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to assign message',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to assign message')
       console.error('Error assigning message:', err)
     } finally {
       setLoading(false)
@@ -397,18 +353,10 @@ export const SupportMode = () => {
       
       setReplyText('')
       
-      toast({
-        title: "Reply Sent",
-        description: "Your reply has been successfully sent.",
-        variant: "success"
-      })
+      toast.success("Your reply has been successfully sent.")
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to send reply',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to send reply')
       console.error('Error sending reply:', err)
     } finally {
       setLoading(false)

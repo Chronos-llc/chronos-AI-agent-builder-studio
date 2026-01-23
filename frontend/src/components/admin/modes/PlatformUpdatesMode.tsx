@@ -3,24 +3,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Card } from '../../ui/card'
 import { Alert, AlertDescription } from '../../ui/alert'
 import { 
-  Settings, 
-  Activity, 
-  TestTube, 
-  Wrench,
   AlertCircle, 
   Loader2, 
-  BookOpen, 
   PlusCircle, 
   List,
   Megaphone,
   Eye,
   Calendar,
-  Users,
   BarChart2,
   Edit,
   Trash2,
   CheckCircle,
-  XCircle,
   Clock
 } from 'lucide-react'
 import { Button } from '../../ui/button'
@@ -29,8 +22,16 @@ import { Textarea } from '../../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { Switch } from '../../ui/switch'
 import { Badge } from '../../ui/badge'
-import { useToast } from '../../ui/use-toast'
-import type { PlatformUpdate, UpdateType, UpdatePriority, TargetAudience } from '../../../types/platformUpdates'
+import { Progress } from '../../ui/progress'
+import { toast } from 'react-hot-toast'
+import type { PlatformUpdate } from '@/types/platformUpdates'
+import { UpdateType, UpdatePriority, TargetAudience } from '@/types/platformUpdates'
+import { 
+  getPlatformUpdates, 
+  createPlatformUpdate, 
+  updatePlatformUpdate, 
+  deletePlatformUpdate 
+} from '@/services/platformUpdatesService'
 
 // Mock data and functions - these would be replaced with actual API calls
 type TabValue = 'updates' | 'create' | 'statistics'
@@ -41,7 +42,7 @@ export const PlatformUpdatesMode = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<any>(null)
-  const { toast } = useToast()
+
 
   // Form state for creating/editing updates
   const [formData, setFormData] = useState({
@@ -71,45 +72,8 @@ export const PlatformUpdatesMode = () => {
       setLoading(true)
       setError(null)
       
-      // Mock API call - replace with actual API
-      const mockUpdates: PlatformUpdate[] = [
-        {
-          id: 1,
-          title: "New AI Features Released",
-          description: "We've added powerful new AI capabilities including advanced natural language processing and improved workflow automation.",
-          update_type: 'FEATURE',
-          priority: 'HIGH',
-          media_type: 'IMAGE',
-          media_urls: ['https://example.com/image1.jpg'],
-          thumbnail_url: 'https://example.com/thumb1.jpg',
-          target_audience: 'ALL',
-          is_published: true,
-          view_count: 42,
-          published_at: '2026-01-10T10:00:00Z',
-          expires_at: null,
-          created_at: '2026-01-09T14:30:00Z',
-          updated_at: '2026-01-10T09:45:00Z'
-        },
-        {
-          id: 2,
-          title: "Scheduled Maintenance",
-          description: "The platform will undergo maintenance on January 15th from 2-4 AM UTC. Expect brief downtime.",
-          update_type: 'MAINTENANCE',
-          priority: 'NORMAL',
-          media_type: 'NONE',
-          media_urls: [],
-          thumbnail_url: '',
-          target_audience: 'ALL',
-          is_published: true,
-          view_count: 28,
-          published_at: '2026-01-08T08:00:00Z',
-          expires_at: '2026-01-16T00:00:00Z',
-          created_at: '2026-01-07T11:15:00Z',
-          updated_at: '2026-01-08T07:50:00Z'
-        }
-      ]
-      
-      setUpdates(mockUpdates)
+      const response = await getPlatformUpdates()
+      setUpdates(response.items)
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load platform updates')
@@ -121,28 +85,31 @@ export const PlatformUpdatesMode = () => {
 
   const loadStatistics = async () => {
     try {
-      // Mock statistics
-      const mockStats = {
-        total_updates: 12,
-        published_updates: 8,
-        draft_updates: 4,
-        total_views: 428,
-        by_type: {
-          FEATURE: 4,
-          BUG_FIX: 2,
-          ANNOUNCEMENT: 3,
-          MAINTENANCE: 2,
-          SECURITY: 1
-        },
-        by_priority: {
-          LOW: 2,
-          NORMAL: 6,
-          HIGH: 3,
-          CRITICAL: 1
-        }
+      // In a real implementation, this would call a specific statistics endpoint
+      // For now, we'll calculate basic stats from the loaded updates
+      const calculatedStats: {
+        total_updates: number;
+        published_updates: number;
+        draft_updates: number;
+        total_views: number;
+        by_type: Record<string, number>;
+        by_priority: Record<string, number>;
+      } = {
+        total_updates: updates.length,
+        published_updates: updates.filter(u => u.is_published).length,
+        draft_updates: updates.filter(u => !u.is_published).length,
+        total_views: updates.reduce((sum, u) => sum + u.view_count, 0),
+        by_type: updates.reduce((acc, u) => {
+          acc[u.update_type] = (acc[u.update_type] || 0) + 1
+          return acc
+        }, {} as Record<string, number>),
+        by_priority: updates.reduce((acc, u) => {
+          acc[u.priority] = (acc[u.priority] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
       }
       
-      setStats(mockStats)
+      setStats(calculatedStats)
       
     } catch (err) {
       console.error('Error loading statistics:', err)
@@ -185,53 +152,28 @@ export const PlatformUpdatesMode = () => {
     try {
       setLoading(true)
       
-      // Mock API call
       if (formData.id) {
         // Update existing
-        toast({
-          title: "Update Updated",
-          description: "Platform update has been successfully updated.",
-          variant: "success"
-        })
+        await updatePlatformUpdate(formData.id, formData)
+        toast.success("Platform update has been successfully updated.")
       } else {
         // Create new
-        const newUpdate: PlatformUpdate = {
-          id: updates.length + 1,
-          title: formData.title,
-          description: formData.description,
-          update_type: formData.update_type,
-          priority: formData.priority,
-          media_type: formData.media_type,
-          media_urls: formData.media_urls,
-          thumbnail_url: formData.thumbnail_url,
-          target_audience: formData.target_audience,
-          is_published: formData.is_published,
-          view_count: 0,
-          published_at: formData.is_published ? new Date().toISOString() : null,
-          expires_at: formData.expires_at,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        
+        const newUpdate = await createPlatformUpdate(formData)
         setUpdates([...updates, newUpdate])
         
-        toast({
-          title: "Update Created",
-          description: "New platform update has been successfully created.",
-          variant: "success"
-        })
+        toast.success("New platform update has been successfully created.")
         
         // Reset form
         setFormData({
           id: null,
           title: '',
           description: '',
-          update_type: 'ANNOUNCEMENT',
-          priority: 'NORMAL',
-          media_type: 'NONE',
+          update_type: UpdateType.ANNOUNCEMENT,
+          priority: UpdatePriority.NORMAL,
+          media_type: 'NONE' as const,
           media_urls: [],
           thumbnail_url: '',
-          target_audience: 'ALL',
+          target_audience: TargetAudience.ALL,
           is_published: false,
           published_at: null,
           expires_at: null
@@ -241,11 +183,7 @@ export const PlatformUpdatesMode = () => {
       setActiveTab('updates')
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to save update',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to save update')
       console.error('Error saving update:', err)
     } finally {
       setLoading(false)
@@ -259,13 +197,13 @@ export const PlatformUpdatesMode = () => {
       description: update.description,
       update_type: update.update_type,
       priority: update.priority,
-      media_type: update.media_type as 'IMAGE' | 'VIDEO' | 'NONE',
-      media_urls: update.media_urls,
-      thumbnail_url: update.thumbnail_url,
+      media_type: (update.media_type || 'NONE') as 'IMAGE' | 'VIDEO' | 'NONE',
+      media_urls: update.media_urls || [],
+      thumbnail_url: update.thumbnail_url || '',
       target_audience: update.target_audience,
       is_published: update.is_published,
-      published_at: update.published_at,
-      expires_at: update.expires_at
+      published_at: update.published_at ?? null,
+      expires_at: update.expires_at ?? null
     })
     setActiveTab('create')
   }
@@ -274,21 +212,13 @@ export const PlatformUpdatesMode = () => {
     if (window.confirm('Are you sure you want to delete this update?')) {
       try {
         setLoading(true)
-        // Mock API call
+        await deletePlatformUpdate(id)
         setUpdates(updates.filter(update => update.id !== id))
         
-        toast({
-          title: "Update Deleted",
-          description: "Platform update has been successfully deleted.",
-          variant: "success"
-        })
+        toast.success("Platform update has been successfully deleted.")
         
       } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : 'Failed to delete update',
-          variant: "destructive"
-        })
+        toast.error(err instanceof Error ? err.message : 'Failed to delete update')
         console.error('Error deleting update:', err)
       } finally {
         setLoading(false)
@@ -299,27 +229,27 @@ export const PlatformUpdatesMode = () => {
   const handlePublishToggle = async (id: number, currentStatus: boolean) => {
     try {
       setLoading(true)
-      // Mock API call
-      setUpdates(updates.map(update => 
-        update.id === id ? {
+      const update = updates.find(u => u.id === id)
+      if (update) {
+        await updatePlatformUpdate(id, {
           ...update,
           is_published: !currentStatus,
           published_at: !currentStatus ? new Date().toISOString() : null
-        } : update
-      ))
-      
-      toast({
-        title: "Update Status Changed",
-        description: `Update has been ${!currentStatus ? 'published' : 'unpublished'}.`,
-        variant: "success"
-      })
+        })
+        
+        setUpdates(updates.map(update => 
+          update.id === id ? {
+            ...update,
+            is_published: !currentStatus,
+            published_at: !currentStatus ? new Date().toISOString() : null
+          } : update
+        ))
+        
+        toast.success(`Update has been ${!currentStatus ? 'published' : 'unpublished'}.`)
+      }
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to change update status',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to change update status')
       console.error('Error changing update status:', err)
     } finally {
       setLoading(false)
@@ -451,7 +381,7 @@ export const PlatformUpdatesMode = () => {
                             </div>
                             {update.media_type !== 'NONE' && (
                               <div className="flex items-center gap-1">
-                                <span>{update.media_type} ({update.media_urls.length})</span>
+                                <span>{update.media_type} ({update.media_urls?.length || 0})</span>
                               </div>
                             )}
                           </div>
@@ -637,11 +567,10 @@ export const PlatformUpdatesMode = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Switch 
-                    id="publish-switch" 
                     checked={formData.is_published} 
                     onCheckedChange={(checked) => handleSwitchChange('is_published', checked)}
                   />
-                  <label htmlFor="publish-switch" className="text-sm font-medium">
+                  <label className="text-sm font-medium">
                     Publish Immediately
                   </label>
                 </div>
@@ -744,22 +673,25 @@ export const PlatformUpdatesMode = () => {
                 <Card className="p-6 md:col-span-2">
                   <h3 className="text-lg font-semibold mb-4">Updates by Type</h3>
                   <div className="space-y-3">
-                    {Object.entries(stats.by_type).map(([type, count]) => (
-                      <div key={type} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium">{type}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-muted-foreground">{count} updates</span>
-                          <div className="w-24 h-2 bg-primary rounded-full">
-                            <div 
-                              className="h-full bg-primary-foreground rounded-full"
-                              style={{ width: `${(count / stats.total_updates) * 100}%` }}
-                            />
+                    {Object.entries(stats.by_type).map(([type, count]) => {
+                      const typedCount = count as number;
+                      return (
+                        <div key={type} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium">{type}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-muted-foreground">{typedCount} updates</span>
+                            <div className="w-24">
+                              <Progress 
+                                value={(typedCount / stats.total_updates) * 100}
+                                className="h-2 bg-primary"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </Card>
 
@@ -767,22 +699,25 @@ export const PlatformUpdatesMode = () => {
                 <Card className="p-6">
                   <h3 className="text-lg font-semibold mb-4">Updates by Priority</h3>
                   <div className="space-y-3">
-                    {Object.entries(stats.by_priority).map(([priority, count]) => (
-                      <div key={priority} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Badge variant={
-                            priority === 'HIGH' ? 'destructive' :
-                            priority === 'CRITICAL' ? 'destructive' :
-                            priority === 'LOW' ? 'secondary' : 'default'
-                          }>
-                            {priority}
-                          </Badge>
+                    {Object.entries(stats.by_priority).map(([priority, count]) => {
+                      const typedCount = count as number;
+                      return (
+                        <div key={priority} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Badge variant={
+                              priority === 'HIGH' ? 'destructive' :
+                              priority === 'CRITICAL' ? 'destructive' :
+                              priority === 'LOW' ? 'secondary' : 'default'
+                            }>
+                              {priority}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">{typedCount} updates</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{count} updates</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </Card>
               </div>

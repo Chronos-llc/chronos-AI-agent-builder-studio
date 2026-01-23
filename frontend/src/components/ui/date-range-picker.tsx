@@ -3,12 +3,10 @@ import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { cn } from "../../lib/utils"
 
-interface DateRangePickerProps?: {
-    {
-  date from: Date; to: Date
-    }
-    onDateChange: (date?: { from: Date; to: Date }) => void
-        className ?: string
+interface DateRangePickerProps {
+  date?: { from: Date; to: Date }
+  onDateChange: (date?: { from: Date; to: Date }) => void
+  className?: string
 }
 
 export function DatePickerWithRange({ date, onDateChange, className }: DateRangePickerProps) {

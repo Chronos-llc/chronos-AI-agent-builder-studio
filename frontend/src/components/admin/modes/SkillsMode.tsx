@@ -3,10 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Card } from '../../ui/card'
 import { Alert, AlertDescription } from '../../ui/alert'
 import { 
-  Settings, 
   Activity, 
-  TestTube, 
-  Wrench,
   AlertCircle,
   Loader2,
   BookOpen,
@@ -15,6 +12,7 @@ import {
 } from 'lucide-react'
 import { SkillsLibrary } from './SkillsLibrary'
 import { SkillCreator } from './SkillCreator'
+import { Progress } from '../../ui/progress'
 import { getSkillsStatistics } from '../../../services/skillsService'
 import type { SkillStatistics } from '../../../types/skills'
 
@@ -25,6 +23,16 @@ export const SkillsMode = () => {
   const [statistics, setStatistics] = useState<SkillStatistics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  const handleEditSkill = (skillId: number) => {
+    setEditingId(skillId)
+    setActiveTab('creator')
+  }
+
+  const handleEditComplete = () => {
+    setEditingId(null)
+  }
 
   useEffect(() => {
     loadStatistics()
@@ -122,11 +130,14 @@ export const SkillsMode = () => {
           </TabsList>
 
           <TabsContent value="library" className="space-y-4">
-            <SkillsLibrary />
+            <SkillsLibrary onEditSkill={handleEditSkill} />
           </TabsContent>
 
           <TabsContent value="creator" className="space-y-4">
-            <SkillCreator />
+            <SkillCreator 
+              editingId={editingId} 
+              onEditComplete={handleEditComplete}
+            />
           </TabsContent>
 
           <TabsContent value="statistics" className="space-y-4">
@@ -176,10 +187,11 @@ export const SkillsMode = () => {
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="text-muted-foreground">{category.count} skills</span>
-                          <div className="w-24 h-2 bg-primary rounded-full">
-                            <div 
-                              className="h-full bg-primary-foreground rounded-full"
-                              style={{ width: `${(category.count / statistics.total_skills) * 100}%` }}
+                          <div className="w-24">
+                            <Progress 
+                              value={(category.count / statistics.total_skills) * 100}
+                              className="h-2 bg-primary"
+                              indicatorClassName="bg-primary-foreground"
                             />
                           </div>
                         </div>

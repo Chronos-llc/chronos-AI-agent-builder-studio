@@ -1,13 +1,13 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import MetaAgentMode from '../MetaAgentMode';
-import PaymentMode from '../PaymentMode';
-import PlatformUpdatesMode from '../PlatformUpdatesMode';
-import SkillCreator from '../SkillCreator';
-import SkillsLibrary from '../SkillsLibrary';
-import SkillsMode from '../SkillsMode';
-import SupportMode from '../SupportMode';
+import '@testing-library/jest-dom';
+import { MetaAgentMode } from '../MetaAgentMode';
+import { PaymentMode } from '../PaymentMode';
+import { PlatformUpdatesMode } from '../PlatformUpdatesMode';
+import { SkillCreator } from '../SkillCreator';
+import { SkillsLibrary } from '../SkillsLibrary';
+import { SkillsMode } from '../SkillsMode';
+import { SupportMode } from '../SupportMode';
 
 // Mock the hooks
 vi.mock('../../../hooks/useMarketplace');

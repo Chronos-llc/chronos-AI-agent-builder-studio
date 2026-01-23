@@ -4,12 +4,8 @@ import { Card } from '../../ui/card'
 import { Alert, AlertDescription } from '../../ui/alert'
 import { 
   Settings, 
-  Activity, 
-  TestTube, 
-  Wrench,
   AlertCircle, 
   Loader2, 
-  BookOpen, 
   PlusCircle, 
   List,
   CreditCard,
@@ -19,20 +15,30 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
-  Shield,
-  Globe,
-  Percent
+  Globe
 } from 'lucide-react'
+import { Progress } from '../../ui/progress'
 import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
 import { Textarea } from '../../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { Switch } from '../../ui/switch'
 import { Badge } from '../../ui/badge'
-import { useToast } from '../../ui/use-toast'
-import type { PaymentMethod, PaymentSettings, PaymentProvider } from '../../../types/payment'
+import { toast } from 'react-hot-toast'
+import { PaymentProvider } from '../../../types/payment'
+import type { PaymentMethod, PaymentSettings, PaymentTransaction, PaymentStats } from '../../../types/payment'
+import {
+  getPaymentMethods,
+  getPaymentSettings,
+  getPaymentStats,
+  getPaymentTransactions,
+  createPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod,
+  updatePaymentSettings
+} from '../../../services/paymentService'
 
-// Mock data and functions - these would be replaced with actual API calls
+// Tab type definition
 type TabValue = 'methods' | 'settings' | 'transactions' | 'statistics'
 
 export const PaymentMode = () => {
@@ -41,14 +47,15 @@ export const PaymentMode = () => {
   const [settings, setSettings] = useState<PaymentSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [stats, setStats] = useState<any>(null)
-  const { toast } = useToast()
+  const [stats, setStats] = useState<PaymentStats | null>(null)
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
+
 
   // Form state for creating/editing payment methods
   const [formData, setFormData] = useState({
     id: null as number | null,
     name: '',
-    provider: 'stripe' as PaymentProvider,
+    provider: PaymentProvider.STRIPE,
     is_active: true,
     configuration: {} as Record<string, any>
   })
@@ -65,6 +72,7 @@ export const PaymentMode = () => {
     loadMethods()
     loadSettings()
     loadStatistics()
+    loadTransactions()
   }, [])
 
   const loadMethods = async () => {
@@ -72,50 +80,8 @@ export const PaymentMode = () => {
       setLoading(true)
       setError(null)
       
-      // Mock API call - replace with actual API
-      const mockMethods: PaymentMethod[] = [
-        {
-          id: 1,
-          name: "Stripe Credit Card",
-          provider: "stripe",
-          is_active: true,
-          configuration: {
-            api_key: "sk_test_123456789",
-            webhook_secret: "whsec_123456789",
-            supported_currencies: ["USD", "EUR", "GBP"]
-          },
-          created_at: '2026-01-01T10:00:00Z',
-          updated_at: '2026-01-01T10:00:00Z'
-        },
-        {
-          id: 2,
-          name: "PayPal",
-          provider: "paypal",
-          is_active: true,
-          configuration: {
-            client_id: "paypal_client_123",
-            client_secret: "paypal_secret_456",
-            sandbox: false
-          },
-          created_at: '2026-01-02T11:30:00Z',
-          updated_at: '2026-01-02T11:30:00Z'
-        },
-        {
-          id: 3,
-          name: "Bank Transfer",
-          provider: "bank",
-          is_active: false,
-          configuration: {
-            account_number: "123456789",
-            routing_number: "987654321",
-            bank_name: "Chase Bank"
-          },
-          created_at: '2026-01-03T09:15:00Z',
-          updated_at: '2026-01-03T09:15:00Z'
-        }
-      ]
-      
-      setMethods(mockMethods)
+      const response = await getPaymentMethods()
+      setMethods(response.items)
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load payment methods')
@@ -127,26 +93,13 @@ export const PaymentMode = () => {
 
   const loadSettings = async () => {
     try {
-      // Mock API call - replace with actual API
-      const mockSettings: PaymentSettings = {
-        id: 1,
-        currency: "USD",
-        tax_rate: 8.5,
-        default_payment_method_id: 1,
-        settings: {
-          auto_invoice: true,
-          invoice_prefix: "INV-",
-          due_days: 30
-        },
-        updated_at: '2026-01-10T08:45:00Z'
-      }
-      
-      setSettings(mockSettings)
+      const response = await getPaymentSettings()
+      setSettings(response)
       setSettingsFormData({
-        currency: mockSettings.currency,
-        tax_rate: mockSettings.tax_rate,
-        default_payment_method_id: mockSettings.default_payment_method_id,
-        settings: mockSettings.settings
+        currency: response.currency,
+        tax_rate: response.tax_rate || 0.0,
+        default_payment_method_id: response.default_payment_method_id ?? null,
+        settings: response.settings || {}
       })
       
     } catch (err) {
@@ -156,69 +109,21 @@ export const PaymentMode = () => {
 
   const loadStatistics = async () => {
     try {
-      // Mock statistics
-      const mockStats = {
-        active_methods: 2,
-        inactive_methods: 1,
-        total_transactions: 42,
-        total_revenue: 12500.75,
-        by_provider: {
-          stripe: 1,
-          paypal: 1,
-          bank: 1,
-          credit_card: 0,
-          crypto: 0
-        },
-        recent_transactions: [
-          {
-            id: 1,
-            user_id: 101,
-            amount: 99.99,
-            currency: "USD",
-            payment_method_id: 1,
-            transaction_type: "SUBSCRIPTION",
-            status: "COMPLETED",
-            created_at: '2026-01-10T14:30:00Z',
-            updated_at: '2026-01-10T14:30:00Z',
-            user: {
-              id: 101,
-              name: 'John Doe',
-              email: 'john@example.com'
-            },
-            method: {
-              id: 1,
-              name: 'Stripe Credit Card',
-              provider: 'stripe'
-            }
-          },
-          {
-            id: 2,
-            user_id: 102,
-            amount: 49.99,
-            currency: "USD",
-            payment_method_id: 2,
-            transaction_type: "ONE_TIME",
-            status: "COMPLETED",
-            created_at: '2026-01-09T10:15:00Z',
-            updated_at: '2026-01-09T10:15:00Z',
-            user: {
-              id: 102,
-              name: 'Jane Smith',
-              email: 'jane@example.com'
-            },
-            method: {
-              id: 2,
-              name: 'PayPal',
-              provider: 'paypal'
-            }
-          }
-        ]
-      }
-      
-      setStats(mockStats)
+      const response = await getPaymentStats()
+      setStats(response)
       
     } catch (err) {
       console.error('Error loading statistics:', err)
+    }
+  }
+
+  const loadTransactions = async () => {
+    try {
+      const response = await getPaymentTransactions()
+      setTransactions(response.items)
+      
+    } catch (err) {
+      console.error('Error loading transactions:', err)
     }
   }
 
@@ -250,52 +155,41 @@ export const PaymentMode = () => {
     try {
       setLoading(true)
       
-      // Mock API call
       if (formData.id) {
         // Update existing
-        toast({
-          title: "Payment Method Updated",
-          description: "Payment method has been successfully updated.",
-          variant: "success"
+        await updatePaymentMethod(formData.id, {
+          name: formData.name,
+          is_active: formData.is_active,
+          configuration: formData.configuration
         })
+        toast.success("Payment method has been successfully updated.")
+        await loadMethods()
       } else {
         // Create new
-        const newMethod: PaymentMethod = {
-          id: methods.length + 1,
+        await createPaymentMethod({
           name: formData.name,
           provider: formData.provider,
           is_active: formData.is_active,
-          configuration: formData.configuration,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        
-        setMethods([...methods, newMethod])
-        
-        toast({
-          title: "Payment Method Created",
-          description: "New payment method has been successfully created.",
-          variant: "success"
+          configuration: formData.configuration
         })
+        
+        toast.success("New payment method has been successfully created.")
         
         // Reset form
         setFormData({
           id: null,
           name: '',
-          provider: 'stripe',
+          provider: PaymentProvider.STRIPE,
           is_active: true,
           configuration: {}
         })
+        await loadMethods()
       }
       
       setActiveTab('methods')
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to save payment method',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to save payment method')
       console.error('Error saving payment method:', err)
     } finally {
       setLoading(false)
@@ -308,30 +202,19 @@ export const PaymentMode = () => {
     try {
       setLoading(true)
       
-      // Mock API call
-      const updatedSettings: PaymentSettings = {
-        id: 1,
+      const updatedSettings = await updatePaymentSettings({
         currency: settingsFormData.currency,
         tax_rate: settingsFormData.tax_rate,
-        default_payment_method_id: settingsFormData.default_payment_method_id,
-        settings: settingsFormData.settings,
-        updated_at: new Date().toISOString()
-      }
+        default_payment_method_id: settingsFormData.default_payment_method_id ?? undefined,
+        settings: settingsFormData.settings
+      })
       
       setSettings(updatedSettings)
       
-      toast({
-        title: "Settings Updated",
-        description: "Payment settings have been successfully updated.",
-        variant: "success"
-      })
+      toast.success("Payment settings have been successfully updated.")
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to update settings',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to update settings')
       console.error('Error updating settings:', err)
     } finally {
       setLoading(false)
@@ -344,7 +227,7 @@ export const PaymentMode = () => {
       name: method.name,
       provider: method.provider,
       is_active: method.is_active,
-      configuration: method.configuration
+      configuration: method.configuration || {}
     })
     setActiveTab('methods')
   }
@@ -353,21 +236,13 @@ export const PaymentMode = () => {
     if (window.confirm('Are you sure you want to delete this payment method?')) {
       try {
         setLoading(true)
-        // Mock API call
-        setMethods(methods.filter(method => method.id !== id))
+        await deletePaymentMethod(id)
+        await loadMethods()
         
-        toast({
-          title: "Payment Method Deleted",
-          description: "Payment method has been successfully deleted.",
-          variant: "success"
-        })
+        toast.success("Payment method has been successfully deleted.")
         
       } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : 'Failed to delete payment method',
-          variant: "destructive"
-        })
+        toast.error(err instanceof Error ? err.message : 'Failed to delete payment method')
         console.error('Error deleting payment method:', err)
       } finally {
         setLoading(false)
@@ -378,23 +253,16 @@ export const PaymentMode = () => {
   const handleToggleActive = async (id: number, currentStatus: boolean) => {
     try {
       setLoading(true)
-      // Mock API call
-      setMethods(methods.map(method => 
-        method.id === id ? { ...method, is_active: !currentStatus } : method
-      ))
-      
-      toast({
-        title: "Status Updated",
-        description: `Payment method has been ${!currentStatus ? 'activated' : 'deactivated'}.`,
-        variant: "success"
-      })
+      const method = methods.find(m => m.id === id)
+      if (method) {
+        await updatePaymentMethod(id, { is_active: !currentStatus })
+        await loadMethods()
+        
+        toast.success(`Payment method has been ${!currentStatus ? 'activated' : 'deactivated'}.`)
+      }
       
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : 'Failed to update status',
-        variant: "destructive"
-      })
+      toast.error(err instanceof Error ? err.message : 'Failed to update status')
       console.error('Error updating status:', err)
     } finally {
       setLoading(false)
@@ -449,11 +317,11 @@ export const PaymentMode = () => {
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
               <DollarSign className="w-4 h-4" />
-              <span className="font-medium">${stats.total_revenue.toLocaleString()}</span>
+              <span className="font-medium">{typeof stats.total_revenue === 'number' ? stats.total_revenue.toLocaleString() : '0'}</span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
               <Globe className="w-4 h-4" />
-              <span className="font-medium">{stats.by_provider.stripe + stats.by_provider.paypal} Gateways</span>
+              <span className="font-medium">{Object.values(stats.by_provider).reduce((a: number, b: any) => a + (typeof b === 'number' ? b : 0), 0)} Gateways</span>
             </div>
           </div>
         )}
@@ -487,7 +355,7 @@ export const PaymentMode = () => {
                 setFormData({
                   id: null,
                   name: '',
-                  provider: 'stripe',
+                  provider: PaymentProvider.STRIPE,
                   is_active: true,
                   configuration: {}
                 })
@@ -530,7 +398,7 @@ export const PaymentMode = () => {
                           <div className="text-sm text-muted-foreground mb-3">
                             <div className="font-medium mb-1">Configuration:</div>
                             <div className="grid grid-cols-2 gap-2">
-                              {Object.entries(method.configuration).map(([key, value]) => (
+                              {Object.entries(method.configuration || {}).map(([key, value]) => (
                                 <div key={key} className="flex items-center gap-1">
                                   <span className="font-medium">{key}:</span>
                                   <span className="truncate">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
@@ -616,7 +484,6 @@ export const PaymentMode = () => {
                       
                       <div className="flex items-center gap-2">
                         <Switch 
-                          id="active-switch" 
                           checked={formData.is_active} 
                           onCheckedChange={(checked) => handleSwitchChange('is_active', checked)}
                         />
@@ -639,7 +506,7 @@ export const PaymentMode = () => {
                               // Keep previous value if JSON is invalid
                             }
                           }} 
-                          placeholder="{\n  \"api_key\": \"your_api_key\",\n  \"webhook_secret\": \"your_secret\"\n}" 
+                          placeholder='{"api_key": "your_api_key", "webhook_secret": "your_secret"}'
                           rows={8}
                         />
                       </div>
@@ -739,7 +606,7 @@ export const PaymentMode = () => {
                             // Keep previous value if JSON is invalid
                           }
                         }} 
-                        placeholder="{\n  \"auto_invoice\": true,\n  \"invoice_prefix\": \"INV-\"\n}" 
+                        placeholder='{"auto_invoice": true, "invoice_prefix": "INV-"}'
                         rows={8}
                       />
                     </div>
@@ -768,13 +635,13 @@ export const PaymentMode = () => {
           <TabsContent value="transactions" className="space-y-4">
             <h3 className="text-xl font-semibold mb-6">Recent Transactions</h3>
             
-            {stats && stats.recent_transactions.length === 0 ? (
+            {transactions.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No recent transactions found</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {stats?.recent_transactions.map((transaction: any) => (
+                {transactions.map((transaction: any) => (
                   <Card key={transaction.id} className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -792,13 +659,8 @@ export const PaymentMode = () => {
                             ${transaction.amount.toFixed(2)} {transaction.currency}
                           </div>
                           <div className="text-muted-foreground">
-                            via {transaction.method.name}
+                            via {methods.find(m => m.id === transaction.payment_method_id)?.name || 'Unknown'}
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="w-3 h-3" />
-                          <span>{transaction.user.name} ({transaction.user.email})</span>
                         </div>
                         
                         <div className="text-sm text-muted-foreground mt-2">
@@ -837,50 +699,32 @@ export const PaymentMode = () => {
                   </div>
                 </Card>
 
-                {/* Total Revenue Card */}
-                <Card className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">Total Revenue</h3>
-                      <p className="text-3xl font-bold mt-2">${stats.total_revenue.toLocaleString()}</p>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-green-500" />
-                  </div>
-                </Card>
-
-                {/* Total Transactions Card */}
-                <Card className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">Total Transactions</h3>
-                      <p className="text-3xl font-bold mt-2">{stats.total_transactions}</p>
-                    </div>
-                    <CreditCard className="w-8 h-8 text-blue-500" />
-                  </div>
-                </Card>
-
                 {/* Methods by Provider */}
                 <Card className="p-6 md:col-span-2">
                   <h3 className="text-lg font-semibold mb-4">Methods by Provider</h3>
                   <div className="space-y-3">
-                    {Object.entries(stats.by_provider).filter(([_, count]) => count > 0).map(([provider, count]) => (
-                      <div key={provider} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline">
-                            {provider.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-muted-foreground">{count} method(s)</span>
-                          <div className="w-24 h-2 bg-primary rounded-full">
-                            <div 
-                              className="h-full bg-primary-foreground rounded-full"
-                              style={{ width: `${(count / Object.values(stats.by_provider).reduce((a, b) => a + b, 0)) * 100}%` }}
-                            />
+                    {Object.entries(stats.by_provider).filter(([_, count]) => typeof count === 'number' && count > 0).map(([provider, count]) => {
+                      const safeCount = typeof count === 'number' ? count : 0;
+                      return (
+                        <div key={provider} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline">
+                              {provider.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-muted-foreground">{safeCount} method(s)</span>
+                            <div className="w-24">
+                              <Progress 
+                                value={(safeCount / Object.values(stats.by_provider).reduce((a: number, b: any) => a + (typeof b === 'number' ? b : 0), 0)) * 100}
+                                indicatorClassName="bg-primary-foreground"
+                                className="bg-primary h-2"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </Card>
 
@@ -888,15 +732,15 @@ export const PaymentMode = () => {
                 <Card className="p-6">
                   <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
                   <div className="space-y-4">
-                    {stats.recent_transactions.slice(0, 3).map((transaction: any) => (
+                    {transactions.slice(0, 3).map((transaction: any) => (
                       <div key={transaction.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg">
                         <div className="flex-1">
                           <div className="font-medium">${transaction.amount.toFixed(2)} {transaction.currency}</div>
-                          <div className="text-sm text-muted-foreground">{transaction.user.name}</div>
+                          <div className="text-sm text-muted-foreground">{new Date(transaction.created_at).toLocaleDateString()}</div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(transaction.created_at).toLocaleDateString()}
-                        </div>
+                        <Badge variant={transaction.status === 'COMPLETED' ? 'success' : 'secondary'}>
+                          {transaction.status}
+                        </Badge>
                       </div>
                     ))}
                   </div>

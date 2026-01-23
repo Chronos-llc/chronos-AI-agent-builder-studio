@@ -53,8 +53,8 @@ export interface PlatformUpdateUpdate {
   thumbnail_url?: string;
   target_audience?: TargetAudience;
   is_published?: boolean;
-  published_at?: string;
-  expires_at?: string;
+  published_at?: string | null;
+  expires_at?: string | null;
 }
 
 // Platform Update Response Type
@@ -62,8 +62,8 @@ export interface PlatformUpdateResponse extends PlatformUpdateBase {
   id: number;
   is_published: boolean;
   view_count: number;
-  published_at?: string;
-  expires_at?: string;
+  published_at?: string | null;
+  expires_at?: string | null;
   created_at: string;
   updated_at: string;
 }
