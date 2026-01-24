@@ -5,12 +5,11 @@
  * and context preservation between commands.
  */
 import React, { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
     FolderOpen,
     Plus,
-    X,
     Clock,
     CheckCircle,
     XCircle,
@@ -28,10 +27,10 @@ import { ScrollArea } from '../ui/scroll-area';
 import metaAgentService from '../../services/metaAgentService';
 import type {
     MetaAgentSession,
-    SessionStatus,
     SessionContext,
     CommandHistoryEntry
 } from '../../types/metaAgent';
+import { SessionStatus } from '../../types/metaAgent';
 
 // ============== Helper Components ==============
 
@@ -44,11 +43,11 @@ const SessionItem: React.FC<{
 }> = ({ session, isSelected, onSelect, onComplete, onDelete }) => {
     const getStatusConfig = (status: SessionStatus) => {
         switch (status) {
-            case 'active':
+            case SessionStatus.ACTIVE:
                 return { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Active' };
-            case 'completed':
+            case SessionStatus.COMPLETED:
                 return { color: 'bg-blue-100 text-blue-800', icon: Archive, label: 'Completed' };
-            case 'timeout':
+            case SessionStatus.TIMEOUT:
                 return { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Timeout' };
             default:
                 return { color: 'bg-gray-100 text-gray-800', icon: Clock, label: status };
@@ -75,7 +74,7 @@ const SessionItem: React.FC<{
                         {config.label}
                     </Badge>
                 </div>
-                {session.status === 'active' && (
+                {session.status === SessionStatus.ACTIVE && (
                     <div className="flex items-center gap-1">
                         <Button
                             variant="ghost"
@@ -175,7 +174,7 @@ export const FuzzySessionManager: React.FC<FuzzySessionManagerProps> = ({
             id: 'sess-001',
             user_id: 1,
             meta_agent_id: 1,
-            status: 'active',
+            status: SessionStatus.ACTIVE,
             context: {
                 history: [
                     { command: 'List all agents', intent: 'list_agents', result: {}, timestamp: new Date().toISOString() }
@@ -188,7 +187,7 @@ export const FuzzySessionManager: React.FC<FuzzySessionManagerProps> = ({
             id: 'sess-002',
             user_id: 1,
             meta_agent_id: 1,
-            status: 'completed',
+            status: SessionStatus.COMPLETED,
             context: {
                 history: [
                     { command: 'Create new agent', intent: 'create_agent', result: {}, timestamp: new Date(Date.now() - 7200000).toISOString() },
@@ -220,7 +219,7 @@ export const FuzzySessionManager: React.FC<FuzzySessionManagerProps> = ({
                 id: `sess-${Date.now()}`,
                 user_id: 1,
                 meta_agent_id: defaultMetaAgentId,
-                status: 'active',
+                status: SessionStatus.ACTIVE,
                 context: { history: [] },
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -241,7 +240,7 @@ export const FuzzySessionManager: React.FC<FuzzySessionManagerProps> = ({
             setSessions(prev =>
                 prev.map(s =>
                     s.id === sessionId
-                        ? { ...s, status: 'completed' as SessionStatus, completed_at: new Date().toISOString() }
+                        ? { ...s, status: SessionStatus.COMPLETED, completed_at: new Date().toISOString() }
                         : s
                 )
             );
@@ -299,8 +298,8 @@ export const FuzzySessionManager: React.FC<FuzzySessionManagerProps> = ({
     const selectedSession = sessions.find(s => s.id === selectedSessionId);
 
     // Active sessions count
-    const activeSessionsCount = sessions.filter(s => s.status === 'active').length;
-    const completedSessionsCount = sessions.filter(s => s.status === 'completed').length;
+    const activeSessionsCount = sessions.filter(s => s.status === SessionStatus.ACTIVE).length;
+    const completedSessionsCount = sessions.filter(s => s.status === SessionStatus.COMPLETED).length;
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground">
@@ -447,7 +446,7 @@ export const FuzzySessionManager: React.FC<FuzzySessionManagerProps> = ({
                                 )}
 
                                 {/* Actions */}
-                                {selectedSession.status === 'active' && (
+                                {selectedSession.status === SessionStatus.ACTIVE && (
                                     <div className="flex gap-2">
                                         <Button
                                             variant="outline"

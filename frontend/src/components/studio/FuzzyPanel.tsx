@@ -10,7 +10,6 @@ import { toast } from 'react-hot-toast';
 import {
     Send,
     Loader2,
-    RefreshCw,
     Terminal,
     Clock,
     CheckCircle,
@@ -24,11 +23,11 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import metaAgentService from '../../services/metaAgentService';
-import type {
+import {
     CommandExecutionResponse,
     MetaAgentSession,
     CommandHistoryItem,
@@ -41,17 +40,17 @@ import type {
 const StatusBadge: React.FC<{ status: CommandStatus | SessionStatus }> = ({ status }) => {
     const getStatusConfig = (status: CommandStatus | SessionStatus) => {
         switch (status) {
-            case 'completed':
-            case 'active':
-                return { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: status };
-            case 'executing':
-            case 'pending':
-                return { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: status };
-            case 'failed':
-            case 'timeout':
-                return { color: 'bg-red-100 text-red-800', icon: XCircle, label: status };
+            case CommandStatus.COMPLETED:
+            case SessionStatus.ACTIVE:
+                return { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: status.toLowerCase() };
+            case CommandStatus.EXECUTING:
+            case CommandStatus.PENDING:
+                return { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: status.toLowerCase() };
+            case CommandStatus.FAILED:
+            case SessionStatus.TIMEOUT:
+                return { color: 'bg-red-100 text-red-800', icon: XCircle, label: status.toLowerCase() };
             default:
-                return { color: 'bg-gray-100 text-gray-800', icon: AlertCircle, label: status };
+                return { color: 'bg-gray-100 text-gray-800', icon: AlertCircle, label: status.toLowerCase() };
         }
     };
 
@@ -107,7 +106,7 @@ export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ agentId = 1 }) => {
                 id: response.command_id || Date.now(),
                 command: command,
                 intent: response.result?.intent as string || 'unknown',
-                status: 'completed',
+                status: CommandStatus.COMPLETED,
                 executionTime: response.execution_time_ms,
                 result: response.result,
                 timestamp: new Date().toISOString(),
@@ -131,7 +130,7 @@ export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ agentId = 1 }) => {
                 id: Date.now(),
                 command: command,
                 intent: 'unknown',
-                status: 'failed',
+                status: CommandStatus.FAILED,
                 executionTime: 0,
                 error: errorMessage,
                 timestamp: new Date().toISOString(),
@@ -151,7 +150,9 @@ export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ agentId = 1 }) => {
             setError(null);
         },
         onError: (err: Error) => {
-            toast.error('Failed to create session');
+            const errorMessage = err.message || 'Failed to create session';
+            setError(errorMessage);
+            toast.error(errorMessage);
         },
     });
 
@@ -164,7 +165,9 @@ export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ agentId = 1 }) => {
             setCommandHistory([]);
         },
         onError: (err: Error) => {
-            toast.error('Failed to complete session');
+            const errorMessage = err.message || 'Failed to complete session';
+            setError(errorMessage);
+            toast.error(errorMessage);
         },
     });
 
@@ -272,7 +275,15 @@ export const FuzzyPanel: React.FC<FuzzyPanelProps> = ({ agentId = 1 }) => {
             </div>
 
             {/* Session Status */}
-            {currentSession && (
+            {currentSessionId && isSessionLoading && (
+                <div className="px-4 py-2 border-b border-border bg-muted/50">
+                    <div className="flex items-center justify-center text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span>Loading session...</span>
+                    </div>
+                </div>
+            )}
+            {currentSession && !isSessionLoading && (
                 <div className="px-4 py-2 border-b border-border bg-muted/50">
                     <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">

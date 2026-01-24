@@ -32,7 +32,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ agentId,
     // Ref to expose updateCursorPosition to parent components
     const cursorUpdateRef = React.useRef<((x: number, y: number) => void) | null>(null);
 
-    const { sendMessage, lastMessage, readyState } = useWebSocket(
+    const { send, lastMessage, readyState } = useWebSocket(
         `ws://localhost:8000/ws/collaboration/${agentId}`
     );
 
@@ -44,9 +44,9 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ agentId,
                 data: { position: { x, y } },
                 timestamp: Date.now()
             };
-            sendMessage(JSON.stringify(message));
+            send(JSON.stringify(message));
         }
-    }, [user, sendMessage]);
+    }, [user, send]);
 
     // Initialize ref with updateCursorPosition
     React.useEffect(() => {
@@ -113,7 +113,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ agentId,
                 data: { text: newMessage },
                 timestamp: Date.now()
             };
-            sendMessage(JSON.stringify(message));
+            send(JSON.stringify(message));
             setNewMessage('');
         }
     };

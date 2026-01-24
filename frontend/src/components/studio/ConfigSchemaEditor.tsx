@@ -15,7 +15,6 @@ import {
   ConfigSchemaCreate,
   ConfigSchemaUpdate,
   SchemaType,
-  JSONSchema,
 } from '../../types/configManagement';
 import {
   listSchemas,
@@ -76,12 +75,13 @@ const ConfigSchemaEditor: React.FC<ConfigSchemaEditorProps> = ({ onSchemaSelect 
     
     try {
       const definition = JSON.parse(formDefinition);
-      await createSchema({
+      const createData: ConfigSchemaCreate = {
         name: formName,
         description: formDescription,
         schema_type: formType,
         schema_definition: definition,
-      });
+      };
+      await createSchema(createData);
       
       setIsCreating(false);
       resetForm();
@@ -98,12 +98,13 @@ const ConfigSchemaEditor: React.FC<ConfigSchemaEditorProps> = ({ onSchemaSelect 
     
     try {
       const definition = JSON.parse(formDefinition);
-      await updateSchema(selectedSchema.id, {
+      const updateData: ConfigSchemaUpdate = {
         name: formName,
         description: formDescription,
         schema_type: formType,
         schema_definition: definition,
-      });
+      };
+      await updateSchema(selectedSchema.id, updateData);
       
       setIsEditing(false);
       loadSchemas();
@@ -216,7 +217,12 @@ const ConfigSchemaEditor: React.FC<ConfigSchemaEditorProps> = ({ onSchemaSelect 
             
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-medium">JSON Schema Definition</label>
+                <label 
+                  htmlFor="schema-definition"
+                  className="text-sm font-medium"
+                >
+                  JSON Schema Definition
+                </label>
                 {jsonError ? (
                   <Badge variant="destructive">{jsonError}</Badge>
                 ) : (
@@ -224,11 +230,14 @@ const ConfigSchemaEditor: React.FC<ConfigSchemaEditorProps> = ({ onSchemaSelect 
                 )}
               </div>
               <textarea
+                id="schema-definition"
                 className={`w-full h-64 p-3 border rounded-md font-mono text-sm ${
                   jsonError ? 'border-red-500 bg-red-50' : 'bg-gray-50'
                 }`}
                 value={formDefinition}
                 onChange={(e) => handleDefinitionChange(e.target.value)}
+                placeholder='{"type": "object", "properties": {}}'
+                aria-label="JSON Schema Definition"
               />
             </div>
             

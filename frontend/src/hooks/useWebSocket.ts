@@ -34,7 +34,7 @@ export const useWebSocket = (url: string | null) => {
         };
     }, [url]);
 
-    const sendMessage = (message: string) => {
+    const send = (message: string) => {
         if (ws.current && ws.current.readyState === WebSocket.OPEN) {
             ws.current.send(message);
         } else {
@@ -42,7 +42,7 @@ export const useWebSocket = (url: string | null) => {
         }
     };
 
-    return { sendMessage, lastMessage, readyState };
+    return { send, lastMessage, readyState };
 };
 
 export default useWebSocket;

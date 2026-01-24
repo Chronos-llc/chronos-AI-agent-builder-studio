@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
@@ -15,6 +15,7 @@ import {
   ConfigTemplate,
   ConfigTemplateCreate,
   SchemaType,
+  ConfigSchema,
 } from '../../types/configManagement';
 import {
   listTemplates,
@@ -117,14 +118,16 @@ const ConfigTemplateGallery: React.FC<ConfigTemplateGalleryProps> = ({
       const templateData = JSON.parse(formTemplateData);
       const paramDefs = JSON.parse(formParameters);
       
-      await createTemplate({
+      const newTemplate: ConfigTemplateCreate = {
         name: formName,
         description: formDescription,
         config_schema_id: formSchemaId,
         template_data: templateData,
         parameters: paramDefs,
         is_public: formIsPublic,
-      });
+      };
+      
+      await createTemplate(newTemplate);
       
       setIsCreating(false);
       resetCreateForm();
@@ -241,20 +244,24 @@ const ConfigTemplateGallery: React.FC<ConfigTemplateGalleryProps> = ({
             </div>
             
             <div className="mb-4">
-              <label className="text-sm font-medium">Template Data (JSON)</label>
+              <label htmlFor="templateData" className="text-sm font-medium">Template Data (JSON)</label>
               <textarea
+                id="templateData"
                 className="w-full h-32 p-3 border rounded-md font-mono text-sm bg-gray-50"
                 value={formTemplateData}
                 onChange={(e) => setFormTemplateData(e.target.value)}
+                placeholder='{"type": "object", "properties": {}}'
               />
             </div>
             
             <div className="mb-4">
-              <label className="text-sm font-medium">Parameters Definition (JSON)</label>
+              <label htmlFor="parameters" className="text-sm font-medium">Parameters Definition (JSON)</label>
               <textarea
+                id="parameters"
                 className="w-full h-32 p-3 border rounded-md font-mono text-sm bg-gray-50"
                 value={formParameters}
                 onChange={(e) => setFormParameters(e.target.value)}
+                placeholder='{"param1": {"type": "string", "description": "Parameter description"}}'
               />
             </div>
             

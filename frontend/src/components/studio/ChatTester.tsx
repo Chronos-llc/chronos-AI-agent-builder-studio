@@ -59,7 +59,7 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
         ? `${WS_BASE_URL}/api/v1/agents/${agentId}/training/real-time?session_id=${trainingSession.id}&token=${token}`
         : null
 
-    const { sendMessage, lastMessage } = useWebSocket(wsUrl)
+    const { send, lastMessage } = useWebSocket(wsUrl)
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -250,7 +250,7 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
                     message: currentInput,
                     type: 'user_message'
                 })
-                sendMessage(messageData)
+                send(messageData)
 
                 // The agent response will come through the WebSocket onmessage handler
                 // which is already set up in the useWebSocket hook

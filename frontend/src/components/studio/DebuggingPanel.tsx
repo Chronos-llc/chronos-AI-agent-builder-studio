@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useWebSocket } from '../../hooks/useWebSocket';
-import { DebugEvent, LogEntry, ExecutionTrace, BreakpointHit, WatchExpressionResult } from '../../types/debugging';
+import { useState, useEffect, useRef } from 'react';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { DebugEvent, LogEntry, ExecutionTrace, BreakpointHit, WatchExpressionResult } from '@/types/debugging';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -43,9 +43,9 @@ export function DebuggingPanel({ agentId, sessionId }: DebuggingPanelProps) {
   
   // Handle incoming debug messages
   useEffect(() => {
-    if (!debugSocket.message) return;
+    if (!debugSocket.lastMessage) return;
     
-    const message = JSON.parse(debugSocket.message);
+    const message = JSON.parse(debugSocket.lastMessage.data);
     
     switch (message.type) {
       case 'log_entry':
@@ -67,18 +67,18 @@ export function DebuggingPanel({ agentId, sessionId }: DebuggingPanelProps) {
         console.log('Command response:', message.data);
         break;
     }
-  }, [debugSocket.message]);
+  }, [debugSocket.lastMessage]);
   
   // Handle incoming log messages
   useEffect(() => {
-    if (!logSocket.message) return;
+    if (!logSocket.lastMessage) return;
     
-    const message = JSON.parse(logSocket.message);
+    const message = JSON.parse(logSocket.lastMessage.data);
     
     if (message.type === 'log_entry') {
       setLogEntries(prev => [...prev, message.data]);
     }
-  }, [logSocket.message]);
+  }, [logSocket.lastMessage]);
   
   const startDebugging = () => {
     if (debugSocket.readyState === WebSocket.OPEN) {
@@ -239,7 +239,7 @@ export function DebuggingPanel({ agentId, sessionId }: DebuggingPanelProps) {
                           </Badge>
                           <div className="flex-1">
                             <div className="text-sm text-gray-400">
-                              {new Date(log.timestamp).toLocaleTimeString()} - {log.context}
+                              {new Date(log.timestamp).toLocaleTimeString()} - {log.context ? JSON.stringify(log.context) : ''}
                             </div>
                             <div className="text-sm">{log.message}</div>
                             {log.details && (
@@ -285,7 +285,7 @@ export function DebuggingPanel({ agentId, sessionId }: DebuggingPanelProps) {
                       ) : (
                         executionTraces.map((trace, index) => (
                           <TableRow key={index}>
-                            <TableCell>{new Date(trace.timestamp).toLocaleTimeString()}</TableCell>
+                            <TableCell>{trace.timestamp ? new Date(trace.timestamp).toLocaleTimeString() : ''}</TableCell>
                             <TableCell>{trace.function_name}</TableCell>
                             <TableCell>{trace.duration_ms}ms</TableCell>
                             <TableCell>
@@ -390,7 +390,7 @@ export function DebuggingPanel({ agentId, sessionId }: DebuggingPanelProps) {
                             <TableCell>{watch.expression}</TableCell>
                             <TableCell>{watch.value}</TableCell>
                             <TableCell>{watch.type}</TableCell>
-                            <TableCell>{new Date(watch.timestamp).toLocaleTimeString()}</TableCell>
+                            <TableCell>{watch.timestamp ? new Date(watch.timestamp).toLocaleTimeString() : ''}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

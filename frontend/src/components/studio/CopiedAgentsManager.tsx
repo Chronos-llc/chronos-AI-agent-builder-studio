@@ -1,19 +1,18 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { Button } from '../ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card'
-import { Badge } from '../ui/badge'
-import { Input } from '../ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { Skeleton } from '../ui/skeleton'
-import { Separator } from '../ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
-import { MoreHorizontal, Search, Filter, Loader2 } from 'lucide-react'
-import { toast } from '../ui/use-toast'
-import { useMarketplace } from '../../hooks/useMarketplace'
-import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { MoreHorizontal, Search, Filter } from 'lucide-react'
+import { toast } from '@/components/ui/use-toast'
+import { useMarketplace } from '@/hooks/useMarketplace'
+import { useNavigate } from 'react-router-dom'
 
 interface CopiedAgent {
     agent_id: number
@@ -41,7 +40,7 @@ export default function CopiedAgentsManager() {
     const [pageSize] = useState(10)
     const [selectedAgent, setSelectedAgent] = useState<CopiedAgent | null>(null)
     const { getMyCopiedAgents } = useMarketplace()
-    const router = useRouter()
+    const navigate = useNavigate()
 
     useEffect(() => {
         const fetchCopiedAgents = async () => {
@@ -85,7 +84,7 @@ export default function CopiedAgentsManager() {
     }
 
     const handleNavigateToAgent = (agentId: number) => {
-        router.push(`/studio/agents/${agentId}`)
+        navigate(`/studio/agents/${agentId}`)
     }
 
     const filteredAgents = copiedAgents.filter(agent => {
@@ -273,7 +272,7 @@ export default function CopiedAgentsManager() {
                                 </div>
 
                                 <Button
-                                    onClick={() => router.push(`/marketplace/listings/${selectedAgent.listing_id}`)}
+                                    onClick={() => navigate(`/marketplace/listings/${selectedAgent.listing_id}`)}
                                     variant="outline"
                                     size="sm"
                                     className="mt-4"
@@ -306,7 +305,7 @@ export default function CopiedAgentsManager() {
                         View Full Agent
                     </Button>
                     <Button
-                        onClick={() => router.push(`/studio/agents/${selectedAgent.agent_id}/edit`)}
+                        onClick={() => navigate(`/studio/agents/${selectedAgent.agent_id}/edit`)}
                         variant="secondary"
                     >
                         Edit Agent
@@ -367,7 +366,7 @@ export default function CopiedAgentsManager() {
                             <div className="text-center py-8">
                                 <p className="text-muted-foreground mb-4">No copied agents found.</p>
                                 <Button
-                                    onClick={() => router.push('/marketplace')}
+                                    onClick={() => navigate('/marketplace')}
                                     variant="outline"
                                 >
                                     Browse Marketplace
@@ -415,10 +414,10 @@ export default function CopiedAgentsManager() {
                                                             <DropdownMenuItem onClick={() => handleNavigateToAgent(agent.agent_id)}>
                                                                 View Full Agent
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => router.push(`/studio/agents/${agent.agent_id}/edit`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/studio/agents/${agent.agent_id}/edit`)}>
                                                                 Edit Agent
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => router.push(`/marketplace/listings/${agent.listing_id}`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/marketplace/listings/${agent.listing_id}`)}>
                                                                 View Original Listing
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>

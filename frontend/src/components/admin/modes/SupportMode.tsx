@@ -24,8 +24,10 @@ import { Input } from '../../ui/input'
 import { Textarea } from '../../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { Badge } from '../../ui/badge'
+import { Progress } from '../../ui/progress'
 import { toast } from 'react-hot-toast'
 import { SupportMessage, SupportStatus, SupportPriority, SupportCategory } from '../../../types/support'
+import { getSupportMessages, getAdminSupportStats, createSupportMessage, updateSupportMessage, deleteSupportMessage } from '../../../services/supportService'
 
 // Mock data and functions - these would be replaced with actual API calls
 type TabValue = 'tickets' | 'create' | 'statistics'
@@ -36,8 +38,6 @@ export const SupportMode = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<any>(null)
-  const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(null)
-  const [replyText, setReplyText] = useState('')
 
 
   // Form state for creating/editing messages
@@ -65,82 +65,16 @@ export const SupportMode = () => {
       setLoading(true)
       setError(null)
       
-      // Mock API call - replace with actual API
-      const mockMessages: SupportMessage[] = [
-        {
-          id: 1,
-          user_id: 101,
-          subject: "Login Issue",
-          message: "I can't login to my account. It keeps saying invalid credentials even though I'm sure I'm using the right password.",
-          status: SupportStatus.OPEN,
-          priority: SupportPriority.HIGH,
-          category: SupportCategory.TECHNICAL,
-          assigned_to: null,
-          created_at: '2026-01-10T09:30:00Z',
-          updated_at: '2026-01-10T09:30:00Z',
-          resolved_at: null,
-          user: {
-            id: 101,
-            name: 'John Doe',
-            email: 'john@example.com'
-          },
-          replies: []
-        },
-        {
-          id: 2,
-          user_id: 102,
-          subject: "Billing Question",
-          message: "I was charged twice for my subscription. Can you please check and refund the duplicate charge?",
-          status: SupportStatus.IN_PROGRESS,
-          priority: SupportPriority.NORMAL,
-          category: SupportCategory.BILLING,
-          assigned_to: 1,
-          created_at: '2026-01-09T14:15:00Z',
-          updated_at: '2026-01-10T10:45:00Z',
-          resolved_at: null,
-          user: {
-            id: 102,
-            name: 'Jane Smith',
-            email: 'jane@example.com'
-          },
-          replies: [
-            {
-              id: 1,
-              message_id: 2,
-              user_id: 1,
-              is_admin: true,
-              reply_text: "Thank you for reporting this. I'll check with our billing team and get back to you shortly.",
-              created_at: '2026-01-10T10:45:00Z',
-              user: {
-                id: 1,
-                name: 'Support Admin',
-                email: 'support@chronos.ai'
-              }
-            }
-          ]
-        },
-        {
-          id: 3,
-          user_id: 103,
-          subject: "Feature Request",
-          message: "It would be great if you could add dark mode support to the platform. Many users would appreciate this feature.",
-          status: SupportStatus.OPEN,
-          priority: SupportPriority.LOW,
-          category: SupportCategory.FEATURE_REQUEST,
-          assigned_to: null,
-          created_at: '2026-01-08T11:20:00Z',
-          updated_at: '2026-01-08T11:20:00Z',
-          resolved_at: null,
-          user: {
-            id: 103,
-            name: 'Bob Johnson',
-            email: 'bob@example.com'
-          },
-          replies: []
-        }
-      ]
+      // Real API call
+      const response = await getSupportMessages(
+        statusFilter !== 'ALL' ? statusFilter : undefined,
+        priorityFilter !== 'ALL' ? priorityFilter : undefined,
+        categoryFilter !== 'ALL' ? categoryFilter : undefined,
+        undefined,
+        searchQuery
+      )
       
-      setMessages(mockMessages)
+      setMessages(response.items)
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load support messages')
@@ -152,36 +86,22 @@ export const SupportMode = () => {
 
   const loadStatistics = async () => {
     try {
-      // Mock statistics
-      const mockStats = {
-        total_tickets: 12,
-        open_tickets: 5,
-        in_progress_tickets: 3,
-        resolved_tickets: 3,
-        closed_tickets: 1,
-        by_status: {
-          [SupportStatus.OPEN]: 5,
-          [SupportStatus.IN_PROGRESS]: 3,
-          [SupportStatus.RESOLVED]: 3,
-          [SupportStatus.CLOSED]: 1
-        },
-        by_priority: {
-          [SupportPriority.LOW]: 2,
-          [SupportPriority.NORMAL]: 6,
-          [SupportPriority.HIGH]: 3,
-          [SupportPriority.CRITICAL]: 1
-        },
-        by_category: {
-          [SupportCategory.BUG]: 2,
-          [SupportCategory.FEATURE_REQUEST]: 3,
-          [SupportCategory.BILLING]: 2,
-          [SupportCategory.TECHNICAL]: 3,
-          [SupportCategory.ACCOUNT]: 1,
-          [SupportCategory.OTHER]: 1
-        }
+      // Real API call
+      const response = await getAdminSupportStats()
+      
+      // Transform API response to match component's expected stats structure
+      const stats = {
+        total_tickets: Object.values(response.by_status).reduce((sum: number, count: number) => sum + count, 0),
+        open_tickets: response.by_status[SupportStatus.OPEN] || 0,
+        in_progress_tickets: response.by_status[SupportStatus.IN_PROGRESS] || 0,
+        resolved_tickets: response.by_status[SupportStatus.RESOLVED] || 0,
+        closed_tickets: response.by_status[SupportStatus.CLOSED] || 0,
+        by_status: response.by_status as Record<string, number>,
+        by_priority: response.by_priority as Record<string, number>,
+        by_category: response.by_category as Record<string, number>
       }
       
-      setStats(mockStats)
+      setStats(stats)
       
     } catch (err) {
       console.error('Error loading statistics:', err)
@@ -203,34 +123,23 @@ export const SupportMode = () => {
     try {
       setLoading(true)
       
-      // Mock API call
       if (formData.id) {
         // Update existing
+        await updateSupportMessage(formData.id, {
+          subject: formData.subject,
+          message: formData.message,
+          priority: formData.priority,
+          category: formData.category
+        })
         toast.success("Support message has been successfully updated.")
       } else {
         // Create new
-        const newMessage: SupportMessage = {
-          id: messages.length + 1,
-          user_id: 104, // Mock user ID
+        await createSupportMessage({
           subject: formData.subject,
           message: formData.message,
-          status: SupportStatus.OPEN,
           priority: formData.priority,
-          category: formData.category,
-          assigned_to: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          resolved_at: null,
-          user: {
-            id: 104,
-            name: 'New User',
-            email: 'newuser@example.com'
-          },
-          replies: []
-        }
-        
-        setMessages([...messages, newMessage])
-        
+          category: formData.category
+        })
         toast.success("New support message has been successfully created.")
         
         // Reset form
@@ -243,6 +152,8 @@ export const SupportMode = () => {
         })
       }
       
+      // Reload messages to get updated data
+      await loadMessages()
       setActiveTab('tickets')
       
     } catch (err) {
@@ -259,7 +170,7 @@ export const SupportMode = () => {
       subject: message.subject,
       message: message.message,
       priority: message.priority,
-      category: message.category
+      category: message.category || SupportCategory.OTHER
     })
     setActiveTab('create')
   }
@@ -268,98 +179,15 @@ export const SupportMode = () => {
     if (window.confirm('Are you sure you want to delete this support message?')) {
       try {
         setLoading(true)
-        // Mock API call
-        setMessages(messages.filter(message => message.id !== id))
-        
+        await deleteSupportMessage(id)
         toast.success("Support message has been successfully deleted.")
-        
+        await loadMessages()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to delete message')
         console.error('Error deleting message:', err)
       } finally {
         setLoading(false)
       }
-    }
-  }
-
-  const handleStatusChange = async (id: number, newStatus: SupportStatus) => {
-    try {
-      setLoading(true)
-      // Mock API call
-      setMessages(messages.map(message => 
-        message.id === id ? {
-          ...message,
-          status: newStatus,
-          resolved_at: newStatus === 'RESOLVED' ? new Date().toISOString() : null
-        } : message
-      ))
-      
-      toast.success(`Message status has been changed to ${newStatus}.`)
-      
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update status')
-      console.error('Error updating status:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAssign = async (id: number) => {
-    try {
-      setLoading(true)
-      // Mock API call - assign to current admin (ID 1)
-      setMessages(messages.map(message => 
-        message.id === id ? {
-          ...message,
-          assigned_to: 1,
-          status: 'IN_PROGRESS'
-        } : message
-      ))
-      
-      toast.success("Message has been assigned to you.")
-      
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to assign message')
-      console.error('Error assigning message:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleReply = async (messageId: number) => {
-    if (!replyText.trim()) return
-    
-    try {
-      setLoading(true)
-      // Mock API call
-      setMessages(messages.map(message => 
-        message.id === messageId ? {
-          ...message,
-          replies: [...message.replies, {
-            id: message.replies.length + 1,
-            message_id: messageId,
-            user_id: 1, // Current admin
-            is_admin: true,
-            reply_text: replyText,
-            created_at: new Date().toISOString(),
-            user: {
-              id: 1,
-              name: 'Support Admin',
-              email: 'support@chronos.ai'
-            }
-          }]
-        } : message
-      ))
-      
-      setReplyText('')
-      
-      toast.success("Your reply has been successfully sent.")
-      
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send reply')
-      console.error('Error sending reply:', err)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -595,7 +423,6 @@ export const SupportMode = () => {
                             variant="outline" 
                             size="sm" 
                             onClick={() => {
-                              setSelectedMessage(message)
                               setActiveTab('tickets')
                             }}
                           >
@@ -802,13 +629,12 @@ export const SupportMode = () => {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-muted-foreground">{count} tickets</span>
-                          <div className="w-24 h-2 bg-primary rounded-full">
-                            <div 
-                              className="h-full bg-primary-foreground rounded-full"
-                              style={{ width: `${(count / stats.total_tickets) * 100}%` }}
-                            />
-                          </div>
+                          <span className="text-muted-foreground">{count as number} tickets</span>
+                          <Progress
+                            className="w-24 h-2 bg-primary"
+                            indicatorClassName="bg-primary-foreground"
+                            value={((count as number) / stats.total_tickets) * 100}
+                          />
                         </div>
                       </div>
                     ))}
@@ -831,7 +657,7 @@ export const SupportMode = () => {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{count} tickets</span>
+                          <span className="text-muted-foreground">{count as number} tickets</span>
                         </div>
                       </div>
                     ))}
@@ -848,7 +674,7 @@ export const SupportMode = () => {
                           <span className="font-medium">{category}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{count} tickets</span>
+                          <span className="text-muted-foreground">{count as number} tickets</span>
                         </div>
                       </div>
                     ))}

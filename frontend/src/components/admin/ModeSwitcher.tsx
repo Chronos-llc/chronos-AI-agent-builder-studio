@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { AdminMode } from '../../types/admin'
 import { Button } from '../ui/button'
 import { 
@@ -66,6 +65,12 @@ export const ModeSwitcher = ({
             label: 'Payments',
             icon: <CreditCard className="w-4 h-4" />,
             description: 'Handle billing, payments, and subscriptions'
+        },
+        {
+            mode: 'settings',
+            label: 'Settings',
+            icon: <Settings className="w-4 h-4" />,
+            description: 'Configure system settings and preferences'
         }
     ]
 

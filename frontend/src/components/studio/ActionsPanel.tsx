@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Zap, GitBranch, Terminal, Plus, Edit, Trash2, Play, Save, X, Search, Filter, Code, Globe, CheckCircle, AlertTriangle, Clock, GitMerge, Cpu, Database, Loader2 } from 'lucide-react'
+import { Zap, GitBranch, Terminal, Plus, Edit, Trash2, Play, Save, X, Search, Code, Globe, CheckCircle, AlertTriangle, Clock, GitMerge, Loader2 } from 'lucide-react'
 
 // Types
 interface Action {
@@ -225,13 +225,13 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     {getStatusBadge(action.status)}
-                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground">
+                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground" aria-label="Run action">
                                                         <Play className="w-4 h-4" />
                                                     </button>
-                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground">
+                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground" aria-label="Edit action">
                                                         <Edit className="w-4 h-4" />
                                                     </button>
-                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground">
+                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground" aria-label="Delete action">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -300,13 +300,13 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                                     {hook.is_global && (
                                                         <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">Global</span>
                                                     )}
-                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground">
+                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground" aria-label="Run hook">
                                                         <Play className="w-4 h-4" />
                                                     </button>
-                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground">
+                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground" aria-label="Edit hook">
                                                         <Edit className="w-4 h-4" />
                                                     </button>
-                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground">
+                                                    <button className="p-1 rounded-md hover:bg-accent text-muted-foreground" aria-label="Delete hook">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -345,6 +345,7 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             <button
                                 onClick={() => setShowActionForm(false)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                aria-label="Close modal"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -361,8 +362,11 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Type</label>
-                                    <select className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                    <label htmlFor="actionType" className="block text-sm font-medium mb-1">Type</label>
+                                    <select 
+                                        id="actionType"
+                                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                    >
                                         <option value="function">Function</option>
                                         <option value="api_call">API Call</option>
                                         <option value="code_execution">Code Execution</option>
@@ -395,6 +399,7 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                         type="number"
                                         defaultValue={30}
                                         className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                        placeholder="Timeout in seconds"
                                     />
                                 </div>
                                 <div>
@@ -439,6 +444,7 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             <button
                                 onClick={() => setShowHookForm(false)}
                                 className="p-1 rounded-md hover:bg-accent"
+                                aria-label="Close modal"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -455,8 +461,11 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Type</label>
-                                    <select className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                    <label htmlFor="hookType" className="block text-sm font-medium mb-1">Type</label>
+                                    <select 
+                                        id="hookType"
+                                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                    >
                                         <option value="validation">Validation</option>
                                         <option value="logging">Logging</option>
                                         <option value="error_handler">Error Handler</option>
@@ -474,8 +483,11 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Trigger</label>
-                                    <select className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground">
+                                    <label htmlFor="hookTrigger" className="block text-sm font-medium mb-1">Trigger</label>
+                                    <select 
+                                        id="hookTrigger"
+                                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                    >
                                         <option value="before_action">Before Action</option>
                                         <option value="after_action">After Action</option>
                                         <option value="on_error">On Error</option>
@@ -487,6 +499,7 @@ export const ActionsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                         type="number"
                                         defaultValue={0}
                                         className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                                        placeholder="Priority level"
                                     />
                                 </div>
                             </div>
