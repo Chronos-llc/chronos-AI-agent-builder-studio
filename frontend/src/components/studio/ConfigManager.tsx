@@ -50,19 +50,17 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
   const [versions, setVersions] = useState<ConfigVersion[]>([]);
   const [snapshots, setSnapshots] = useState<ConfigSnapshot[]>([]);
   const [selectedEnvironment, setSelectedEnvironment] = useState<EnvironmentType>('DEVELOPMENT');
-  const [environmentConfig, setEnvironmentConfig] = useState<Record<string, unknown>>({});
   
   // UI state
-  const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [changelog, setChangelog] = useState('');
   const [jsonEditorValue, setJsonEditorValue] = useState('');
   const [selectedVersion, setSelectedVersion] = useState<ConfigVersion | null>(null);
-  const [compareMode, setCompareMode] = useState(false);
   const [compareConfig, setCompareConfig] = useState<Record<string, unknown>>({});
   const [differences, setDifferences] = useState<DiffEntry[]>([]);
+  const [activeTab, setActiveTab] = useState('editor');
   
   // Load schemas on mount
   useEffect(() => {
@@ -110,7 +108,6 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
   const loadEnvironmentConfig = async () => {
     try {
       const config = await getEnvironmentConfig(configId, selectedEnvironment);
-      setEnvironmentConfig(config.config_data || {});
       setCurrentConfig(config.config_data || initialConfig);
     } catch (error) {
       // Environment config might not exist yet
@@ -122,7 +119,6 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
     setSelectedEnvironment(env);
     try {
       const config = await getEnvironmentConfig(configId, env);
-      setEnvironmentConfig(config.config_data || {});
       setCurrentConfig(config.config_data || {});
     } catch (error) {
       setCurrentConfig({});
@@ -187,7 +183,6 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
     
     try {
       await updateEnvironmentConfig(configId, selectedEnvironment, currentConfig);
-      setEnvironmentConfig(currentConfig);
       alert(`Configuration saved to ${selectedEnvironment} environment successfully!`);
     } catch (error) {
       console.error('Failed to save environment config:', error);
@@ -250,7 +245,6 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
     try {
       const response = await compareConfigs(currentConfig, compareConfig);
       setDifferences(response.differences);
-      setCompareMode(false);
     } catch (error) {
       console.error('Compare failed:', error);
     }
@@ -281,7 +275,7 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
         </div>
       </div>
       
-      <Tabs defaultValue="editor" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="versions">Versions</TabsTrigger>
@@ -430,7 +424,7 @@ const ConfigManager: React.FC<ConfigManagerProps> = ({
                               onClick={() => {
                                 setSelectedVersion(version);
                                 loadVersionToCompare(version);
-                                setCompareMode(true);
+                                setActiveTab('compare');
                               }}
                             >
                               Compare

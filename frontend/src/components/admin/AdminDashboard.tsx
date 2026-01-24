@@ -6,12 +6,12 @@ import {
     ShoppingCart,
     MessageSquare,
     CreditCard,
-    BarChart3,
     AlertTriangle,
     CheckCircle,
     TrendingUp,
     TrendingDown,
-    Activity
+    Activity,
+    Settings
 } from 'lucide-react'
 
 export const AdminDashboard = ({

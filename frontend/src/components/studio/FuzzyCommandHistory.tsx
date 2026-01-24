@@ -15,26 +15,25 @@ import {
     AlertCircle,
     ChevronDown,
     ChevronUp,
-    ExternalLink,
     Copy,
     Search,
     Filter,
-    Calendar,
     Terminal,
     Loader2,
     Eye
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import metaAgentService from '../../services/metaAgentService';
 import type {
     MetaAgentCommand,
-    CommandStatus,
-    CommandFilters
+    CommandFilters,
+    CommandListResponse
 } from '../../types/metaAgent';
+import { CommandStatus } from '../../types/metaAgent';
 
 // ============== Helper Components ==============
 
@@ -66,20 +65,27 @@ const StatusIndicator: React.FC<{ status: CommandStatus }> = ({ status }) => {
     );
 };
 
-const ResultPreview: React.FC<{ result?: Record<string, unknown>; maxHeight?: number }> = ({
+const ResultPreview: React.FC<{ result?: Record<string, unknown>; maxHeight?: 'sm' | 'md' | 'lg' | 'xl' }> = ({
     result,
-    maxHeight = 100
+    maxHeight = 'sm'
 }) => {
     if (!result) {
         return <span className="text-muted-foreground text-sm">No result</span>;
     }
 
     const preview = JSON.stringify(result, null, 2);
+    
+    // Map predefined height options to Tailwind classes
+    const heightClass = {
+        sm: 'max-h-[100px]',
+        md: 'max-h-[150px]',
+        lg: 'max-h-[200px]',
+        xl: 'max-h-[300px]'
+    }[maxHeight];
 
     return (
         <pre
-            className="text-xs bg-muted p-2 rounded overflow-hidden"
-            style={{ maxHeight }}
+            className={`text-xs bg-muted p-2 rounded overflow-hidden ${heightClass}`}
         >
             {preview.length > 200 ? preview.slice(0, 200) + '...' : preview}
         </pre>
@@ -322,7 +328,7 @@ const CommandListItem: React.FC<CommandListItemProps> = ({
                         {command.result && (
                             <div>
                                 <p className="text-xs text-muted-foreground mb-1">Result Preview</p>
-                                <ResultPreview result={command.result} />
+                                <ResultPreview result={command.result} maxHeight="sm" />
                             </div>
                         )}
 
@@ -347,8 +353,7 @@ interface FuzzyCommandHistoryProps {
 
 export const FuzzyCommandHistory: React.FC<FuzzyCommandHistoryProps> = ({
     sessionId,
-    filters,
-    onCommandSelect
+    filters
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<CommandStatus | 'all'>('all');
@@ -361,7 +366,7 @@ export const FuzzyCommandHistory: React.FC<FuzzyCommandHistoryProps> = ({
         isLoading,
         error,
         refetch
-    } = useQuery({
+    } = useQuery<CommandListResponse>({
         queryKey: ['meta-agent-commands', sessionId, filters],
         queryFn: async () => {
             const params: CommandFilters = {
@@ -371,8 +376,14 @@ export const FuzzyCommandHistory: React.FC<FuzzyCommandHistoryProps> = ({
                 limit: 100,
                 offset: 0
             };
-            return metaAgentService.listCommands(params);
-        },
+            try {
+                return await metaAgentService.listCommands(params);
+            } catch (err: unknown) {
+                toast.error('Failed to load commands');
+                console.error('Error fetching commands:', err);
+                throw err;
+            }
+        }
     });
 
     // Toggle command expansion
@@ -400,7 +411,7 @@ export const FuzzyCommandHistory: React.FC<FuzzyCommandHistoryProps> = ({
     }, []);
 
     // Get unique statuses for filter
-    const statuses: (CommandStatus | 'all')[] = ['all', 'pending', 'executing', 'completed', 'failed'];
+    const statuses: (CommandStatus | 'all')[] = ['all', CommandStatus.PENDING, CommandStatus.EXECUTING, CommandStatus.COMPLETED, CommandStatus.FAILED];
 
     return (
         <div className="flex flex-col h-full bg-background text-foreground">

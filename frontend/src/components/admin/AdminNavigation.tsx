@@ -1,5 +1,6 @@
 import { AdminNavigationItem } from '../../types/admin'
 import { Button } from '../ui/button'
+import { ScrollArea } from '../ui/scroll-area'
 import {
     ChevronDown,
     ChevronRight,
@@ -71,7 +72,7 @@ export const AdminNavigation = ({
 
                 {hasSubItems && isExpanded && (
                     <div className="mt-1 space-y-1">
-                        {item.subItems.map(subItem => renderNavigationItem(subItem, level + 1))}
+                        {(item.subItems || []).map(subItem => renderNavigationItem(subItem, level + 1))}
                     </div>
                 )}
             </div>
@@ -251,10 +252,12 @@ export const AdminNavigation = ({
     const navigationItems = items.length > 0 ? items : defaultItems
 
     return (
-        <nav className="w-full h-full overflow-y-auto">
-            <div className="p-2 space-y-1">
-                {navigationItems.map(item => renderNavigationItem(item))}
-            </div>
-        </nav>
+        <ScrollArea className="w-full h-full">
+            <nav className="w-full h-full">
+                <div className="p-2 space-y-1">
+                    {navigationItems.map(item => renderNavigationItem(item))}
+                </div>
+            </nav>
+        </ScrollArea>
     )
 }

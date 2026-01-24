@@ -9,15 +9,12 @@ import { Button } from '../ui/button'
 import {
     PanelLeftClose,
     PanelLeftOpen,
-    Home,
     Users,
     UserPlus,
     ShoppingCart,
     BrainCircuit,
     Package,
-    MessageSquare,
-    CreditCard
-} from 'lucide-react'
+    MessageSquare} from 'lucide-react'
 import '../../components/admin/AdminStudio.css'
 
 export const AdminStudioLayout = () => {
@@ -205,6 +202,13 @@ export const AdminStudioLayout = () => {
                     <div className="p-6">
                         <h2 className="text-xl font-bold mb-4">Payments & Billing</h2>
                         <p>Billing, transactions, and subscriptions management.</p>
+                    </div>
+                )
+            case 'settings':
+                return (
+                    <div className="p-6">
+                        <h2 className="text-xl font-bold mb-4">System Settings</h2>
+                        <p>Configure system-wide settings and preferences.</p>
                     </div>
                 )
             default:

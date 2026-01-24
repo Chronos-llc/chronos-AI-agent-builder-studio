@@ -5,7 +5,8 @@ export type AdminMode =
     'skills' |
     'platform-updates' |
     'support' |
-    'payments'
+    'payments' |
+    'settings'
 
 export interface AdminUser {
     id: string

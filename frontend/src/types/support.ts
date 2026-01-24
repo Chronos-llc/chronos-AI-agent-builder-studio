@@ -48,6 +48,7 @@ export interface SupportMessageUpdate {
   priority?: SupportPriority;
   assigned_to?: number;
   category?: SupportCategory;
+  resolved_at?: string;
 }
 
 // Support Message Response Type
@@ -59,6 +60,12 @@ export interface SupportMessageResponse extends SupportMessageBase {
   created_at: string;
   updated_at: string;
   resolved_at?: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  replies: SupportMessageReplyResponse[];
 }
 
 // Support Message List Type (paginated results)
@@ -84,6 +91,11 @@ export interface SupportMessageReplyResponse extends SupportMessageReplyBase {
   user_id: number;
   is_admin: boolean;
   created_at: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
 }
 
 // Support Message Reply List Type (paginated results)

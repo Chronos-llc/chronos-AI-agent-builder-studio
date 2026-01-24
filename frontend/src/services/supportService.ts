@@ -131,6 +131,16 @@ export async function getMySupportStats(): Promise<{
   return handleResponse<{ open: number; in_progress: number; resolved: number; closed: number; total: number }>(response);
 }
 
+export async function deleteSupportMessage(messageId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/messages/${messageId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(error.detail || `HTTP error ${response.status}`);
+  }
+}
+
 export async function getAdminSupportStats(): Promise<{
   by_status: Record<string, number>;
   by_priority: Record<string, number>;
