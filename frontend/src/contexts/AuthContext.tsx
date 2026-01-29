@@ -21,7 +21,7 @@ interface AuthContextType {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (userData: RegisterData) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   updateUser: (userData: Partial<User>) => Promise<void>
 }
 
@@ -48,14 +48,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL
 axios.defaults.headers.common['Content-Type'] = 'application/json'
+axios.defaults.withCredentials = true  // Send cookies with requests
 
-// Add auth token to requests
+// Add auth token to requests (if not already in cookies)
 axios.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+    // Cookies are automatically sent with axios.defaults.withCredentials = true
     return config
   },
   (error) => Promise.reject(error)
@@ -71,23 +69,12 @@ axios.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (refreshToken) {
-          const response = await axios.post('/api/v1/auth/refresh', {
-            refresh_token: refreshToken
-          })
+        const response = await axios.post('/api/v1/auth/refresh', {})
 
-          const { access_token, refresh_token } = response.data
-          localStorage.setItem('access_token', access_token)
-          localStorage.setItem('refresh_token', refresh_token)
-
-          // Retry original request
-          return axios(originalRequest)
-        }
+        // Retry original request
+        return axios(originalRequest)
       } catch (refreshError) {
         // Refresh failed, redirect to login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
         window.location.href = '/login'
         return Promise.reject(refreshError)
       }
@@ -107,15 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('access_token')
-      if (token) {
-        const response = await axios.get('/api/v1/auth/me')
-        setUser(response.data)
-      }
+      const response = await axios.get('/api/v1/auth/me')
+      setUser(response.data)
     } catch (error) {
       console.error('Auth check failed:', error)
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
     } finally {
       setLoading(false)
     }
@@ -132,10 +114,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       })
-
-      const { access_token, refresh_token } = response.data
-      localStorage.setItem('access_token', access_token)
-      localStorage.setItem('refresh_token', refresh_token)
 
       // Get user info
       const userResponse = await axios.get('/api/v1/auth/me')
@@ -160,11 +138,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    setUser(null)
-    toast.success('Logged out successfully')
+  const logout = async () => {
+    try {
+      await axios.post('/api/v1/auth/logout')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      setUser(null)
+      toast.success('Logged out successfully')
+    }
   }
 
   const updateUser = async (userData: Partial<User>) => {

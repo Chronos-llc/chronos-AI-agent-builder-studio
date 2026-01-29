@@ -227,7 +227,8 @@ export async function uploadFile(file: File): Promise<string> {
   });
   
   if (!response.ok) {
-    throw new Error('File upload failed');
+    const error = await response.json().catch(() => ({ detail: 'File upload failed' }));
+    throw new Error(error.detail || 'File upload failed');
   }
   
   const result = await response.json();

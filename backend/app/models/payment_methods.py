@@ -39,3 +39,27 @@ class PaymentSettings(BaseModel):
     
     def __repr__(self):
         return f"<PaymentSettings(id={self.id}, currency='{self.currency}', tax_rate={self.tax_rate})>"
+
+
+class PaymentTransaction(BaseModel):
+    """Payment transaction record"""
+    __tablename__ = "payment_transactions"
+    
+    user_id = Column(Integer, nullable=False)
+    amount = Column(Numeric(precision=10, scale=2), nullable=False)
+    currency = Column(String(3), server_default='USD', nullable=False)
+    payment_method_id = Column(Integer, ForeignKey("payment_methods.id", ondelete="SET NULL"), nullable=True)
+    transaction_type = Column(String(50), nullable=False)  # e.g., "purchase", "refund", "subscription"
+    status = Column(String(50), server_default='pending', nullable=False)  # e.g., "pending", "completed", "failed", "refunded"
+    metadata = Column(JSONB, nullable=True)
+    external_transaction_id = Column(String(255), nullable=True)  # Transaction ID from payment processor
+    
+    # Relationships
+    payment_method = relationship("PaymentMethod", back_populates="transactions")
+    
+    def __repr__(self):
+        return f"<PaymentTransaction(id={self.id}, user_id={self.user_id}, amount={self.amount}, status='{self.status}')>"
+
+
+# Add relationship to PaymentMethod
+PaymentMethod.transactions = relationship("PaymentTransaction", back_populates="payment_method")
