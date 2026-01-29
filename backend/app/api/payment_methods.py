@@ -8,7 +8,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.models.user import User
-from app.models.payment_methods import PaymentMethod, PaymentSettings
+from app.models.payment_methods import PaymentMethod, PaymentSettings, PaymentTransaction
 from app.api.auth import get_current_user
 from app.schemas.payment_methods import (
     PaymentMethodCreate, PaymentMethodUpdate, PaymentMethodResponse, PaymentMethodList,
@@ -292,17 +292,45 @@ async def get_payment_transactions(
         # Non-admins can only see their own transactions
         user_id = current_user.id
     
-    # Note: We would need a PaymentTransaction model for this to work
-    # For now, this is a placeholder implementation
+    query = select(PaymentTransaction)
     
-    # In a real implementation, we would:
-    # 1. Create a PaymentTransaction model
-    # 2. Query the database with appropriate filters
-    # 3. Return paginated results
+    if user_id:
+        query = query.where(PaymentTransaction.user_id == user_id)
+    
+    if method_id:
+        query = query.where(PaymentTransaction.payment_method_id == method_id)
+    
+    if status:
+        query = query.where(PaymentTransaction.status == status)
+    
+    if transaction_type:
+        query = query.where(PaymentTransaction.transaction_type == transaction_type)
+    
+    # Sorting
+    sort_field = PaymentTransaction.created_at
+    if sort_by == "amount":
+        sort_field = PaymentTransaction.amount
+    elif sort_by == "status":
+        sort_field = PaymentTransaction.status
+    
+    if sort_order == "asc":
+        query = query.order_by(asc(sort_field))
+    else:
+        query = query.order_by(desc(sort_field))
+    
+    # Pagination
+    total_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(total_query)
+    total = total_result.scalar_one()
+    
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    
+    result = await db.execute(query)
+    transactions = result.scalars().all()
     
     return {
-        "items": [],
-        "total": 0,
+        "items": [PaymentTransactionResponse.from_orm(tx) for tx in transactions],
+        "total": total,
         "page": page,
         "page_size": page_size
     }
@@ -315,13 +343,6 @@ async def create_payment_transaction(
     db: AsyncSession = Depends(get_db)
 ):
     """Create new payment transaction"""
-    
-    # Note: This is a placeholder implementation
-    # In a real implementation, we would:
-    # 1. Validate the payment method
-    # 2. Process the payment with the payment gateway
-    # 3. Create a transaction record
-    # 4. Handle success/failure cases
     
     if not current_user.is_superuser and transaction_data.user_id != current_user.id:
         raise HTTPException(
@@ -345,23 +366,23 @@ async def create_payment_transaction(
             detail="Payment method is not active"
         )
     
-    # Note: We would need a PaymentTransaction model for this to work
-    # For now, return a mock response
+    # Create transaction record
+    transaction = PaymentTransaction(
+        user_id=transaction_data.user_id,
+        amount=transaction_data.amount,
+        currency=transaction_data.currency,
+        payment_method_id=transaction_data.payment_method_id,
+        transaction_type=transaction_data.transaction_type,
+        status=transaction_data.status,
+        metadata=transaction_data.metadata,
+        external_transaction_id=transaction_data.metadata.get("external_id") if transaction_data.metadata else None
+    )
     
-    mock_transaction = {
-        "id": 1,
-        "user_id": transaction_data.user_id,
-        "amount": transaction_data.amount,
-        "currency": transaction_data.currency,
-        "payment_method_id": transaction_data.payment_method_id,
-        "transaction_type": transaction_data.transaction_type,
-        "status": transaction_data.status,
-        "metadata": transaction_data.metadata or {},
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
+    db.add(transaction)
+    await db.commit()
+    await db.refresh(transaction)
     
-    return PaymentTransactionResponse(**mock_transaction)
+    return PaymentTransactionResponse.from_orm(transaction)
 
 
 @router.get("/stats", response_model=Dict[str, Any])

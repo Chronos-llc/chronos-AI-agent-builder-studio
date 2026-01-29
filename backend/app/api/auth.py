@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -17,7 +17,7 @@ from app.core.security import (
     verify_password_reset_token,
     generate_password_reset_token
 )
-from app.core.redis import blacklist_token
+from app.core.redis import blacklist_token, is_token_blacklisted, get_redis_client
 from app.models.user import User
 from app.schemas.auth import (
     UserCreate, UserLogin, UserResponse, Token,
@@ -30,7 +30,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis_client = Depends(get_redis_client)
 ) -> User:
     """Get current authenticated user"""
     credentials_exception = HTTPException(
@@ -52,7 +53,7 @@ async def get_current_user(
     
     # Check if token is blacklisted
     jti = payload.get("jti", "")
-    if jti and await blacklist_token(jti):
+    if jti and await is_token_blacklisted(jti):
         raise credentials_exception
     
     result = await db.execute(select(User).where(User.id == int(user_id)))
@@ -121,7 +122,8 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/login", response_model=Token)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    response: Response = Depends()
 ):
     """Login user and return tokens"""
     
@@ -149,6 +151,24 @@ async def login(
     )
     refresh_token = create_refresh_token(subject=user.id)
     
+    # Set tokens as HTTP-only cookies
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+    
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -159,10 +179,20 @@ async def login(
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
-    refresh_token: str,
+    request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db)
 ):
-    """Refresh access token using refresh token"""
+    """Refresh access token using refresh token cookie"""
+    
+    # Get refresh token from cookie
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     payload = verify_refresh_token(refresh_token)
     if not payload:
@@ -197,6 +227,24 @@ async def refresh_token(
     )
     new_refresh_token = create_refresh_token(subject=user.id)
     
+    # Set new tokens as cookies
+    response.set_cookie(
+        key="access_token",
+        value=new_access_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+    
     return {
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
@@ -206,10 +254,26 @@ async def refresh_token(
 
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
-    """Logout user (blacklist current token)"""
-    # In a more complete implementation, you would blacklist the current token
-    # For now, we'll just return success
+async def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+    redis_client = Depends(get_redis_client),
+    response: Response = Depends()
+):
+    """Logout user (blacklist current token and clear cookies)"""
+    # Verify and decode token
+    payload = verify_token(token)
+    if payload:
+        jti = payload.get("jti")
+        if jti:
+            # Blacklist token until expiration
+            expire = payload["exp"] - datetime.utcnow().timestamp()
+            await blacklist_token(jti, int(expire))
+    
+    # Clear cookies
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    
     return {"message": "Successfully logged out"}
 
 

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     API_HOST: str = Field(default="0.0.0.0", env="API_HOST")
     API_PORT: int = Field(default=8000, env="API_PORT")
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
-    DEBUG: bool = Field(default=True, env="DEBUG")
+    DEBUG: bool = Field(default=False, env="DEBUG")
     
     # Database
     DATABASE_URL: str = Field(..., env="DATABASE_URL")

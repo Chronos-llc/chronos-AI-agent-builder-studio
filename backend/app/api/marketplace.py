@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc, asc
 from sqlalchemy.orm import joinedload, selectinload
@@ -26,6 +26,47 @@ from app.core.marketplace_engine import MarketplaceEngine, get_marketplace_engin
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# File Upload Endpoint
+@router.post("/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a file to the marketplace (e.g., preview images, demo videos)"""
+    try:
+        # Validate file type and size (in a real implementation, you would add more validation)
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "video/mp4", "video/avi", "video/mov"]
+        max_size = 10 * 1024 * 1024  # 10MB
+        
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type"
+            )
+        
+        # Check file size
+        contents = await file.read()
+        if len(contents) > max_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File size exceeds maximum limit (10MB)"
+            )
+        
+        # In a real implementation, you would upload the file to cloud storage (like S3)
+        # For now, we'll just return a mock URL
+        file_url = f"/uploads/{file.filename}"
+        
+        logger.info(f"File uploaded successfully by user {current_user.id}: {file.filename}")
+        
+        return {"url": file_url}
+        
+    except Exception as e:
+        logger.error(f"Failed to upload file: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload file"
+        )
 
 
 def is_admin(user: User) -> bool:
@@ -751,7 +792,7 @@ async def get_marketplace_reviews(
         )
     
     # Get reviews
-    query = select(MarketplaceReview).where(MarketplaceReview.listinging_id == listing_id).options(
+    query = select(MarketplaceReview).where(MarketplaceReview.listing_id == listing_id).options(
         joinedload(MarketplaceReview.user)
     )
     

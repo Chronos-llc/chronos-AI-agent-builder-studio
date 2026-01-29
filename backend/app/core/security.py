@@ -3,6 +3,7 @@ from typing import Any, Union, Optional
 from jose import jwt
 from passlib.context import CryptContext
 from passlib.hash import bcrypt
+import uuid
 
 from app.core.config import settings
 
@@ -22,7 +23,8 @@ def create_access_token(
     to_encode = {
         "exp": expire,
         "sub": str(subject),
-        "type": "access"
+        "type": "access",
+        "jti": str(uuid.uuid4())  # Add JWT ID for token blacklisting
     }
     
     encoded_jwt = jwt.encode(
@@ -41,7 +43,8 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
     to_encode = {
         "exp": expire,
         "sub": str(subject),
-        "type": "refresh"
+        "type": "refresh",
+        "jti": str(uuid.uuid4())  # Add JWT ID for token blacklisting
     }
     
     encoded_jwt = jwt.encode(
@@ -86,7 +89,7 @@ def verify_refresh_token(token: str) -> Optional[dict]:
 
 def generate_password_reset_token(email: str) -> str:
     """Generate password reset token"""
-    delta = timedelta(hours=24)  # 24 hour expiry
+    delta = timedelta(hours=1)  # 1 hour expiry
     now = datetime.utcnow()
     expires = now + delta
     exp = expires.timestamp()

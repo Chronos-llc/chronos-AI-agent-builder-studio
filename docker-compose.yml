@@ -36,7 +36,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://chronos_user:chronos_pass@postgres:5432/chronos_db
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=your-secret-key-here
+      - SECRET_KEY=${SECRET_KEY}
       - ENVIRONMENT=development
       - PLAYWRIGHT_BROWSERS_PATH=/app/browser-cache
       - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0

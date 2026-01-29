@@ -5,10 +5,11 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
-import { AlertTriangle, Info, Upload, X } from 'lucide-react';
+import { AlertTriangle, Info, Upload, X, Loader2 } from 'lucide-react';
 import MarketplaceCategorySelector from './MarketplaceCategorySelector';
 import MarketplaceTagSelector from './MarketplaceTagSelector';
 import type { MarketplaceCategory, MarketplaceTag, MarketplaceListingCreate } from '../../types/marketplace';
+import { uploadFile } from '../../services/marketplaceService';
 
 interface MarketplacePublishingFormProps {
   agentId: number;
@@ -99,7 +100,7 @@ export const MarketplacePublishingForm = ({
     setFileUploads(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isValid) {
@@ -107,9 +108,30 @@ export const MarketplacePublishingForm = ({
       return;
     }
     
-    // In a real implementation, we would upload files first
-    // For now, we'll just submit the form data
-    onSubmit(formData);
+    setIsUploading(true);
+    
+    try {
+      // Upload files
+      const uploadedImages = [];
+      for (const file of fileUploads) {
+        const url = await uploadFile(file);
+        uploadedImages.push(url);
+      }
+      
+      // Update form data with uploaded image URLs
+      const formDataWithImages = {
+        ...formData,
+        preview_images: uploadedImages
+      };
+      
+      // Submit the form data
+      onSubmit(formDataWithImages);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      // In a real implementation, you would show an error message to the user
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (

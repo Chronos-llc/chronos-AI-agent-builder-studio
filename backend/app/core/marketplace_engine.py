@@ -235,6 +235,8 @@ class MarketplaceEngine:
         try:
             logger.debug(f"Copying integrations for agent {original_agent.id}")
             
+            integration_mapping = {}  # Map original integration id to copied integration id
+            
             # Copy integrations
             result = await self.db.execute(
                 select(Integration).where(Integration.agent_id == original_agent.id)
@@ -263,8 +265,10 @@ class MarketplaceEngine:
                     agent_id=agent_copy.id
                 )
                 self.db.add(integration_copy)
+                await self.db.flush()
+                integration_mapping[integration.id] = integration_copy.id
             
-            # Copy integration configs
+            # Copy integration configs with mapping
             result = await self.db.execute(
                 select(IntegrationConfig).where(IntegrationConfig.agent_id == original_agent.id)
             )
@@ -272,7 +276,7 @@ class MarketplaceEngine:
             
             for integration_config in integration_configs:
                 integration_config_copy = IntegrationConfig(
-                    integration_id=integration_config.integration_id,  # This would need mapping if integrations were copied
+                    integration_id=integration_mapping[integration_config.integration_id],
                     user_id=integration_config.user_id,
                     config=integration_config.config.copy() if integration_config.config else None,
                     credentials=integration_config.credentials.copy() if integration_config.credentials else None,
