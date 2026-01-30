@@ -1,0 +1,36 @@
+import React from 'react'
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs'
+import { MessageSquare, Mic } from 'lucide-react'
+
+interface PlatformSwitcherProps {
+  value: 'text' | 'voice'
+  onChange: (value: 'text' | 'voice') => void
+  className?: string
+}
+
+export const PlatformSwitcher: React.FC<PlatformSwitcherProps> = ({
+  value,
+  onChange,
+  className
+}) => {
+  return (
+    <Tabs value={value} onValueChange={onChange} className={className}>
+      <TabsList className="bg-gray-100 p-1">
+        <TabsTrigger
+          value="text"
+          className="flex items-center gap-2 px-4 py-2 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+        >
+          <MessageSquare className="w-4 h-4 text-blue-600" />
+          <span>Text Agents</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="voice"
+          className="flex items-center gap-2 px-4 py-2 rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+        >
+          <Mic className="w-4 h-4 text-purple-600" />
+          <span>Voice Agents</span>
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  )
+}

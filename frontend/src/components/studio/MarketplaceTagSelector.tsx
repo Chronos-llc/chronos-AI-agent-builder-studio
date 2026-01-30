@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
-import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
-import type { MarketplaceTag } from '../../types/marketplace';
+import type { MarketplaceTag } from '@/types/marketplace';
 
 interface MarketplaceTagSelectorProps {
   tags: MarketplaceTag[];
