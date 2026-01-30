@@ -14,7 +14,8 @@ import type {
   TargetAudience
 } from '../types/platformUpdates';
 
-const API_BASE = '/api/updates';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = `${API_BASE_URL}/api/updates`;
 
 // Helper Functions
 async function handleResponse<T>(response: Response): Promise<T> {

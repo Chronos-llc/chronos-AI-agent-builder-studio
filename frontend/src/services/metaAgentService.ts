@@ -19,11 +19,12 @@ import type {
     MetaAgentUpdate
 } from '../types/metaAgent';
 
-const API_BASE_URL = '/api/meta-agent';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_ENDPOINT = '/api/meta-agent';
 
 // Create axios instance with default config
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: `${API_BASE_URL}${API_ENDPOINT}`,
     headers: {
         'Content-Type': 'application/json',
     },
