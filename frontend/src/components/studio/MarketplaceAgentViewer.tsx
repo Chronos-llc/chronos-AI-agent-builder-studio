@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -158,9 +158,9 @@ export default function MarketplaceAgentViewer({
               <Badge variant="secondary" className="text-sm">
                 {listing.listing_type}
               </Badge>
-              <Badge variant="outline" className="text-sm">
-                {listing.category || 'General'}
-              </Badge>
+               <Badge variant="outline" className="text-sm">
+                 {listing.category?.display_name || listing.category?.name || 'General'}
+               </Badge>
               {listing.tags && listing.tags.length > 0 && (
                 <div className="flex gap-1 flex-wrap">
                   {listing.tags.slice(0, 3).map((tag) => (
@@ -309,14 +309,23 @@ export default function MarketplaceAgentViewer({
                     <div>
                       <h5 className="font-medium mb-2">Sub-Agent Configuration</h5>
                       <div className="space-y-2">
-                        {Object.keys(originalAgent.sub_agent_config).map((subAgentKey) => (
-                          <div key={subAgentKey} className="flex items-center gap-2">
-                            <span className="capitalize">{subAgentKey.replace('_agent', '')}</span>
-                            <Badge variant={originalAgent.sub_agent_config[subAgentKey].enabled ? 'success' : 'secondary'}>
-                              {originalAgent.sub_agent_config[subAgentKey].enabled ? 'Enabled' : 'Disabled'}
-                            </Badge>
-                          </div>
-                        ))}
+                        {(() => {
+                          const subAgentConfig = originalAgent.sub_agent_config!;
+                          return Object.keys(subAgentConfig).map((subAgentKey) => {
+                            const subAgent = subAgentConfig[subAgentKey];
+                            // Check if subAgent has enabled property
+                            const isEnabled = subAgent && typeof subAgent === 'object' && 'enabled' in subAgent ? Boolean(subAgent.enabled) : false;
+                            
+                            return (
+                              <div key={subAgentKey} className="flex items-center gap-2">
+                                <span className="capitalize">{subAgentKey.replace('_agent', '')}</span>
+                                <Badge variant={isEnabled ? 'success' : 'secondary'}>
+                                  {isEnabled ? 'Enabled' : 'Disabled'}
+                                </Badge>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   )}
