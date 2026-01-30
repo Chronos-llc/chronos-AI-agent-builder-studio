@@ -14,6 +14,12 @@ class AgentStatus(enum.Enum):
     ARCHIVED = "archived"
 
 
+class AgentType(str, enum.Enum):
+    """Agent type for platform switching between text and voice agents"""
+    TEXT = "text"
+    VOICE = "voice"
+
+
 class AgentModel(BaseModel):
     __tablename__ = "agents"
     
@@ -21,6 +27,9 @@ class AgentModel(BaseModel):
     name = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=True)
     status = Column(Enum(AgentStatus), default=AgentStatus.DRAFT, nullable=False)
+    
+    # Agent type for platform switching (text/voice)
+    agent_type = Column(Enum(AgentType), default=AgentType.TEXT, nullable=False, index=True)
     
     # Configuration
     model_config = Column(JSON, nullable=True)  # LLM configuration

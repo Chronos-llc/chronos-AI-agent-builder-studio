@@ -237,6 +237,7 @@ export interface Agent {
     name: string;
     description?: string;
     status: string;
+    agent_type: 'text' | 'voice';
     model_config?: Record<string, unknown>;
     system_prompt?: string;
     user_prompt_template?: string;

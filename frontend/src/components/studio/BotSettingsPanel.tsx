@@ -24,6 +24,7 @@ interface BotSettings {
     name: string;
     description: string;
     avatar_url?: string;
+    agent_type: 'text' | 'voice';
 
     // LLM Configuration
     llm_model: string;
@@ -110,6 +111,7 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const [botSettings, setBotSettings] = useState<BotSettings>({
         name: '',
         description: '',
+        agent_type: 'text',
         llm_model: 'gpt-4',
         llm_temperature: 0.7,
         llm_max_tokens: 1000,
@@ -272,6 +274,36 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 rows={4}
                                 placeholder="Describe your bot's purpose and capabilities"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Agent Type
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                                    <input
+                                        type="radio"
+                                        value="text"
+                                        checked={botSettings.agent_type === 'text'}
+                                        onChange={(e) => updateSetting('agent_type', e.target.value)}
+                                        className="mr-2 text-blue-600"
+                                    />
+                                    <span className="font-medium">Text Agent</span>
+                                    <p className="text-xs text-gray-500 ml-2">For chat and text-based interactions</p>
+                                </label>
+                                <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                                    <input
+                                        type="radio"
+                                        value="voice"
+                                        checked={botSettings.agent_type === 'voice'}
+                                        onChange={(e) => updateSetting('agent_type', e.target.value)}
+                                        className="mr-2 text-purple-600"
+                                    />
+                                    <span className="font-medium">Voice Agent</span>
+                                    <p className="text-xs text-gray-500 ml-2">For voice and speech-based interactions</p>
+                                </label>
+                            </div>
                         </div>
 
                         <div>
