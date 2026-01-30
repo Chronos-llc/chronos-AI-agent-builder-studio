@@ -17,7 +17,7 @@ import type {
   PaymentStats
 } from '../types/payment';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_BASE = `${API_BASE_URL}/api/payment`;
 
 // Helper Functions
