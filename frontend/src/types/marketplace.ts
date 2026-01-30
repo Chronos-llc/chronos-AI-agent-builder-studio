@@ -97,7 +97,7 @@ export interface MarketplaceListing {
     version?: string;
     preview_images?: string[];
     demo_video_url?: string;
-    schema_data?: Record<string, unknown>;
+    schema_data?: MarketplaceListingSchemaData;
     moderation_status: ModerationStatus;
     moderation_notes?: string;
     install_count: number;
@@ -109,10 +109,25 @@ export interface MarketplaceListing {
     updated_at: string;
 }
 
+export interface MarketplaceListingSchemaData {
+    /**
+     * Price of the listing in USD (optional for free listings)
+     */
+    price?: number;
+    /**
+     * License type for the listing (e.g., MIT, Apache-2.0, GPL-3.0, Proprietary, Other)
+     */
+    license?: string;
+    /**
+     * Support information for the listing (e.g., contact details, documentation links)
+     */
+    support?: string;
+}
+
 export interface MarketplaceListingCreate {
     agent_id: number;
     title: string;
-    description?: string;
+    description: string; // Changed from optional to required
     category_id?: number;
     tags?: string[];
     listing_type?: ListingType;
@@ -120,7 +135,7 @@ export interface MarketplaceListingCreate {
     version?: string;
     preview_images?: string[];
     demo_video_url?: string;
-    schema_data?: Record<string, unknown>;
+    schema_data?: MarketplaceListingSchemaData;
 }
 
 export interface MarketplaceListingUpdate {
@@ -132,7 +147,7 @@ export interface MarketplaceListingUpdate {
     version?: string;
     preview_images?: string[];
     demo_video_url?: string;
-    schema_data?: Record<string, unknown>;
+    schema_data?: MarketplaceListingSchemaData;
 }
 
 export interface MarketplaceListingList {

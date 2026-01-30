@@ -5,9 +5,9 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
-import { AlertTriangle, Info, Upload, X, Loader2 } from 'lucide-react';
-import MarketplaceCategorySelector from './MarketplaceCategorySelector';
-import MarketplaceTagSelector from './MarketplaceTagSelector';
+import { AlertTriangle, Upload, X, Loader2 } from 'lucide-react';
+import { MarketplaceCategorySelector } from './MarketplaceCategorySelector';
+import { MarketplaceTagSelector } from './MarketplaceTagSelector';
 import type { MarketplaceCategory, MarketplaceTag, MarketplaceListingCreate } from '../../types/marketplace';
 import { uploadFile } from '../../services/marketplaceService';
 
@@ -37,7 +37,9 @@ export const MarketplacePublishingForm = ({
     version: '1.0.0',
     preview_images: [],
     demo_video_url: '',
-    schema_data: {}
+    schema_data: {
+      license: 'MIT'
+    }
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -371,9 +373,9 @@ export const MarketplacePublishingForm = ({
                 type="number" 
                 min="0" 
                 step="0.01" 
-                value={formData.schema_data.price || ''} 
+                value={formData.schema_data.price ?? ''} 
                 onChange={(e) => {
-                  const price = parseFloat(e.target.value);
+                  const price = e.target.value ? parseFloat(e.target.value) : undefined;
                   setFormData(prev => ({
                     ...prev,
                     schema_data: { ...prev.schema_data, price }
@@ -388,7 +390,7 @@ export const MarketplacePublishingForm = ({
           <Label htmlFor="license">License Type</Label>
           <Select 
             name="license" 
-            value={formData.schema_data?.license || 'MIT'} 
+            value={formData.schema_data?.license || ''} 
             onValueChange={(value) => {
               setFormData(prev => ({
                 ...prev,

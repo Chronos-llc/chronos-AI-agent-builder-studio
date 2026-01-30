@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, FileText, Image, Video, Code, Trash2, Search, Filter, Eye, Edit, Download, Folder, Database, X, AlertTriangle, Loader2 } from 'lucide-react'
+import { Progress } from '../ui/progress'
 
 interface KnowledgeItem {
     id: string
@@ -234,7 +235,11 @@ export const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                                     {getFileIcon(getFileType(file))}
                                 </div>
                                 <span className="text-sm flex-1 truncate">{file.name}</span>
-                                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden" style={{width: `${uploadProgress[index] ?? 0}%`}}/>
+                                <Progress 
+                                    value={uploadProgress[index] ?? 0} 
+                                    className="w-20 h-2"
+                                    indicatorClassName="rounded-full duration-300"
+                                />
                                 <span className="text-xs text-muted-foreground w-8 text-right">
                                     {uploadProgress[index]}%
                                 </span>

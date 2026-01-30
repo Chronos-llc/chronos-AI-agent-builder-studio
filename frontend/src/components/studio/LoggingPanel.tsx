@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { LogEntry, LogFilter, LogExportFormat } from '../../types/logging';
+import { LogEntry, LogExportFormat } from '../../types/logging';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Download, FileText, Search, Trash2, Filter, Clock, AlertCircle, Info, CheckCircle2 } from 'lucide-react';
+import { Download, FileText, Search, Trash2, Clock, AlertCircle, Info, CheckCircle2 } from 'lucide-react';
 import { DatePickerWithRange } from '../ui/date-range-picker';
 
 
@@ -29,7 +28,9 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
     const [error, setError] = useState<string | null>(null);
 
     const logEndRef = useRef<HTMLDivElement>(null);
-    const logSocket = useWebSocket(`ws://localhost:8000/ws/logs/${agentId}`);
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
+    const logSocket = useWebSocket(`${WS_BASE_URL}/ws/logs/${agentId}`);
 
     // Scroll to bottom when new logs arrive
     useEffect(() => {
@@ -92,7 +93,7 @@ export function LoggingPanel({ agentId, sessionId }: LoggingPanelProps) {
             setIsLoading(true);
             setError(null);
 
-            const response = await fetch(`http://localhost:8000/api/logs/export`, {
+            const response = await fetch(`${API_BASE_URL}/api/logs/export`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

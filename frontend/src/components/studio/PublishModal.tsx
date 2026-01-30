@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Checkbox } from '../ui/checkbox';
 import { Loader2, Upload, X, Check, AlertTriangle } from 'lucide-react';
-import MarketplacePublishingForm from './MarketplacePublishingForm';
+import { MarketplacePublishingForm } from './MarketplacePublishingForm';
 import { getCategories, getTags, createListing } from '../../services/marketplaceService';
 import type { MarketplaceCategory, MarketplaceTag, MarketplaceListingCreate } from '../../types/marketplace';
 
