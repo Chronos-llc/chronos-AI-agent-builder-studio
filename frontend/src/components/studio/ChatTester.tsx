@@ -51,7 +51,7 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
 
     const messagesEndRef = useRef<HTMLDivElement>(null)
     
-    const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000'
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws')
     const token = localStorage.getItem('access_token')
     
