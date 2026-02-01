@@ -13,8 +13,14 @@ export const PlatformSwitcher: React.FC<PlatformSwitcherProps> = ({
   onChange,
   className
 }) => {
+  const handleValueChange = (newValue: string) => {
+    if (newValue === 'text' || newValue === 'voice') {
+      onChange(newValue)
+    }
+  }
+
   return (
-    <Tabs value={value} onValueChange={onChange} className={className}>
+    <Tabs value={value} onValueChange={handleValueChange} className={className}>
       <TabsList className="bg-gray-100 p-1">
         <TabsTrigger
           value="text"

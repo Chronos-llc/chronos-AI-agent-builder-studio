@@ -103,14 +103,14 @@ const AgentsPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleStatusToggle = (agentId: string, currentStatus: string) => {
+  const handleStatusToggle = (agentId: number, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'paused' : 'active';
     setAgents(prev => prev.map(agent => 
       agent.id === agentId ? { ...agent, status: newStatus as 'active' | 'paused' } : agent
     ));
   };
 
-  const handleDeleteAgent = (agentId: string) => {
+  const handleDeleteAgent = (agentId: number) => {
     if (confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
       setAgents(prev => prev.filter(agent => agent.id !== agentId));
     }
@@ -200,6 +200,7 @@ const AgentsPage: React.FC = () => {
               className="input pl-10 pr-8 appearance-none bg-white min-w-[150px]"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter by status"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -248,7 +249,12 @@ const AgentsPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="relative">
-                  <button className="p-1 hover:bg-gray-100 rounded">
+                  <button 
+                    type="button"
+                    className="p-1 hover:bg-gray-100 rounded"
+                    title="More options"
+                    aria-label="More options"
+                  >
                     <MoreVertical className="w-4 h-4 text-gray-600" />
                   </button>
                 </div>
@@ -284,6 +290,7 @@ const AgentsPage: React.FC = () => {
               {/* Actions */}
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => handleStatusToggle(agent.id, agent.status)}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
                     agent.status === 'active'
@@ -306,12 +313,17 @@ const AgentsPage: React.FC = () => {
                 <Link
                   to={`/agents/${agent.id}/edit`}
                   className="flex items-center justify-center px-3 py-2 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 transition-colors"
+                  title="Settings"
+                  aria-label="Settings"
                 >
                   <Settings className="w-4 h-4" />
                 </Link>
                 <button
+                  type="button"
                   onClick={() => handleDeleteAgent(agent.id)}
                   className="flex items-center justify-center px-3 py-2 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+                  title="Delete agent"
+                  aria-label="Delete agent"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

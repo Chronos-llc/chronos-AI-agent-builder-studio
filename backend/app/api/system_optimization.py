@@ -39,6 +39,7 @@ async def get_system_metrics(
     end_time: Optional[datetime] = None,
     aggregation: AggregationType = AggregationType.AVG,
     limit: int = Query(default=1000, ge=1, le=10000),
+    agent_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     engine: SystemOptimizationEngine = Depends(get_optimization_engine)
 ):
@@ -54,7 +55,8 @@ async def get_system_metrics(
         start_time=start_time,
         end_time=end_time,
         aggregation=aggregation.value,
-        limit=limit
+        limit=limit,
+        agent_id=agent_id
     )
     
     return metrics

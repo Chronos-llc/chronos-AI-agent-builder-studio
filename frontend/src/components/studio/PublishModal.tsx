@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Checkbox } from '../ui/checkbox';
-import { Loader2, Upload, X, Check, AlertTriangle } from 'lucide-react';
+import { Loader2, Upload, X, AlertTriangle } from 'lucide-react';
 import { MarketplacePublishingForm } from './MarketplacePublishingForm';
 import { getCategories, getTags, createListing } from '../../services/marketplaceService';
 import type { MarketplaceCategory, MarketplaceTag, MarketplaceListingCreate } from '../../types/marketplace';
@@ -206,13 +206,3 @@ export const PublishModal = ({
     );
 };
 
-// Helper component for loading states
-const LoadingSkeleton = () => {
-    return (
-        <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-        </div>
-    );
-};
