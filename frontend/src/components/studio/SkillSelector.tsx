@@ -19,7 +19,7 @@ import {
 import { getSkills, getSkillCategories } from '../../services/skillsService'
 import type { Skill } from '../../types/skills'
 
-export const SkillSelector = () => {
+export const SkillSelector = ({ onSkillsAdded }: { onSkillsAdded?: () => void }) => {
   const [skills, setSkills] = useState<Skill[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -107,6 +107,7 @@ export const SkillSelector = () => {
     // This would be handled by the parent component
     console.log('Adding skills:', selectedSkillIds)
     // In a real implementation, this would call a prop like onSkillsSelected(selectedSkillIds)
+    onSkillsAdded?.()
   }
 
   const getCategoryIcon = (category?: string) => {

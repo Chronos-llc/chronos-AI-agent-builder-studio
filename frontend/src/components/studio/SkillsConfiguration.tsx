@@ -5,15 +5,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Alert, AlertDescription } from '../ui/alert'
 import { 
   PlusCircle, 
-  Settings, 
   List, 
   AlertCircle,
   Loader2,
   CheckCircle2,
   XCircle,
-  Edit
+  Edit,
+  RefreshCw
 } from 'lucide-react'
 import { SkillSelector } from './SkillSelector'
+import { Badge } from '../ui/badge'
 import { 
   getAgentSkills, 
   uninstallSkillFromAgent,
@@ -266,7 +267,7 @@ export const SkillsConfiguration = () => {
           </TabsContent>
 
           <TabsContent value="add" className="space-y-4">
-            <SkillSelector />
+            <SkillSelector onSkillsAdded={handleSkillsAdded} />
           </TabsContent>
         </Tabs>
       </Card>
