@@ -155,12 +155,12 @@ export default function MarketplaceAgentViewer({
           {/* Agent Info */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <Badge variant="secondary" className="text-sm">
+               <Badge variant="secondary" className="text-sm">
                 {listing.listing_type}
               </Badge>
-               <Badge variant="outline" className="text-sm">
-                 {listing.category?.display_name || listing.category?.name || 'General'}
-               </Badge>
+              <Badge variant="outline" className="text-sm">
+                {listing.category?.display_name || listing.category?.name || 'General'}
+              </Badge>
               {listing.tags && listing.tags.length > 0 && (
                 <div className="flex gap-1 flex-wrap">
                   {listing.tags.slice(0, 3).map((tag) => (
