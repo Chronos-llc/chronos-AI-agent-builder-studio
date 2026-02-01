@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { 
-  Plus, Trash2, Edit, Play, Pause, 
+  Plus, Trash2, Play, 
   ArrowUp, ArrowDown, Copy, Settings, 
   Zap, GitBranch, Loader2
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
@@ -31,7 +31,6 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
 }) => {
   const [schema, setSchema] = useState<WorkflowSchema>(initialSchema || defaultSchema);
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -99,7 +98,6 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent, stepName: string) => {
-    setIsDragging(true);
     setDraggedStep(stepName);
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -111,7 +109,6 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
 
   const handleDrop = (e: React.DragEvent, targetStepName: string) => {
     e.preventDefault();
-    setIsDragging(false);
 
     if (!draggedStep || draggedStep === targetStepName) return;
 
@@ -389,8 +386,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                   return (
                     <>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Name</label>
+                        <label htmlFor="step-name" className="block text-sm font-medium mb-1">Name</label>
                         <Input
+                          id="step-name"
                           value={step.name}
                           onChange={(e) =>
                             handleStepUpdate(step.name, { name: e.target.value })
@@ -398,8 +396,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Type</label>
+                        <label htmlFor="step-type" className="block text-sm font-medium mb-1">Type</label>
                         <select
+                          id="step-type"
                           value={step.type}
                           onChange={(e) =>
                             handleStepUpdate(step.name, { type: e.target.value })
@@ -417,8 +416,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <label htmlFor="step-description" className="block text-sm font-medium mb-1">Description</label>
                         <textarea
+                          id="step-description"
                           value={step.description || ''}
                           onChange={(e) =>
                             handleStepUpdate(step.name, { description: e.target.value })
@@ -428,8 +428,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Depends On</label>
+                        <label htmlFor="step-depends-on" className="block text-sm font-medium mb-1">Depends On</label>
                         <select
+                          id="step-depends-on"
                           multiple
                           value={step.depends_on || []}
                           onChange={(e) => {

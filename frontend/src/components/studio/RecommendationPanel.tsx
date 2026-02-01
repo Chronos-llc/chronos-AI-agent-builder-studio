@@ -321,7 +321,7 @@ export function RecommendationPanel({ agentId }: RecommendationPanelProps) {
                       <span>Effort</span>
                     </div>
                     <div className="flex gap-1">
-                       <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
+                      <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
                           className="bg-blue-500 h-2 rounded-full transition-all recommendation-impact-bar"
                           style={{ width: getImpactWidth(recommendation.impact_score ?? 0) }}
