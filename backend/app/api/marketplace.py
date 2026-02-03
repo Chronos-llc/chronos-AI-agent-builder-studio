@@ -171,6 +171,14 @@ async def get_marketplace_listings(
     listing_responses = []
     for listing in listings:
         response = MarketplaceListingResponse.from_orm(listing)
+        # Map category_obj to category field
+        if listing.category_obj:
+            response.category = MarketplaceCategoryResponse.from_orm(listing.category_obj)
+        # Set author name from user relationship
+        if listing.author:
+            response.author_name = listing.author.username  # Use username as author name
+        else:
+            response.author_name = 'Unknown Author'
         listing_responses.append(response)
     
     return {
@@ -220,7 +228,14 @@ async def get_marketplace_listing(
     await db.commit()
     await db.refresh(listing)
     
-    return MarketplaceListingResponse.from_orm(listing)
+    response = MarketplaceListingResponse.from_orm(listing)
+    if listing.category_obj:
+        response.category = MarketplaceCategoryResponse.from_orm(listing.category_obj)
+    if listing.author:
+        response.author_name = listing.author.username  # Use username as author name
+    else:
+        response.author_name = 'Unknown Author'
+    return response
 
 
 @router.post("/listings", response_model=MarketplaceListingResponse, status_code=status.HTTP_201_CREATED)
@@ -282,7 +297,14 @@ async def create_marketplace_listing(
     if listing_data.tags:
         await _add_tags_to_listing(listing.id, listing_data.tags, db)
     
-    return MarketplaceListingResponse.from_orm(listing)
+    response = MarketplaceListingResponse.from_orm(listing)
+    if listing.category_obj:
+        response.category = MarketplaceCategoryResponse.from_orm(listing.category_obj)
+    if listing.author:
+        response.author_name = listing.author.username  # Use username as author name
+    else:
+        response.author_name = 'Unknown Author'
+    return response
 
 
 @router.put("/listings/{listing_id}", response_model=MarketplaceListingResponse)
@@ -295,7 +317,7 @@ async def update_marketplace_listing(
     """Update marketplace listing"""
     
     # Get listing
-    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id))
+    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id).options(joinedload(MarketplaceListing.category_obj), joinedload(MarketplaceListing.author)))
     listing = result.scalar_one_or_none()
     
     if not listing:
@@ -345,7 +367,14 @@ async def update_marketplace_listing(
     if "tags" in update_data:
         await _update_listing_tags(listing.id, update_data["tags"], db)
     
-    return MarketplaceListingResponse.from_orm(listing)
+    response = MarketplaceListingResponse.from_orm(listing)
+    if listing.category_obj:
+        response.category = MarketplaceCategoryResponse.from_orm(listing.category_obj)
+    if listing.author:
+        response.author_name = listing.author.username  # Use username as author name
+    else:
+        response.author_name = 'Unknown Author'
+    return response
 
 
 @router.delete("/listings/{listing_id}")
@@ -357,7 +386,7 @@ async def delete_marketplace_listing(
     """Delete marketplace listing"""
     
     # Get listing
-    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id))
+    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id).options(joinedload(MarketplaceListing.category_obj), joinedload(MarketplaceListing.author)))
     listing = result.scalar_one_or_none()
     
     if not listing:
@@ -713,7 +742,7 @@ async def create_marketplace_review(
     """Create review for marketplace listing"""
     
     # Get listing
-    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id))
+    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id).options(joinedload(MarketplaceListing.category_obj), joinedload(MarketplaceListing.author)))
     listing = result.scalar_one_or_none()
     
     if not listing:
@@ -782,7 +811,7 @@ async def get_marketplace_reviews(
     """Get reviews for marketplace listing"""
     
     # Verify listing exists
-    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id))
+    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id).options(joinedload(MarketplaceListing.category_obj), joinedload(MarketplaceListing.author)))
     listing = result.scalar_one_or_none()
     
     if not listing:
@@ -836,7 +865,7 @@ async def moderate_listing(
         )
     
     # Get listing
-    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id))
+    result = await db.execute(select(MarketplaceListing).where(MarketplaceListing.id == listing_id).options(joinedload(MarketplaceListing.category_obj), joinedload(MarketplaceListing.author)))
     listing = result.scalar_one_or_none()
     
     if not listing:
@@ -855,7 +884,14 @@ async def moderate_listing(
     await db.commit()
     await db.refresh(listing)
     
-    return {"message": "Listing moderation status updated", "listing": MarketplaceListingResponse.from_orm(listing)}
+    response = MarketplaceListingResponse.from_orm(listing)
+    if listing.category_obj:
+        response.category = MarketplaceCategoryResponse.from_orm(listing.category_obj)
+    if listing.author:
+        response.author_name = listing.author.username  # Use username as author name
+    else:
+        response.author_name = 'Unknown Author'
+    return {"message": "Listing moderation status updated", "listing": response}
 
 
 # Search and Discovery Endpoint
@@ -919,8 +955,21 @@ async def search_marketplace(
     result = await db.execute(query)
     listings = result.scalars().unique().all()
     
+    # Convert to response format
+    listing_responses = []
+    for listing in listings:
+        response = MarketplaceListingResponse.from_orm(listing)
+        if listing.category_obj:
+            response.category = MarketplaceCategoryResponse.from_orm(listing.category_obj)
+        # Set author name from user relationship
+        if listing.author:
+            response.author_name = listing.author.username  # Use username as author name
+        else:
+            response.author_name = 'Unknown Author'
+        listing_responses.append(response)
+    
     return {
-        "items": [MarketplaceListingResponse.from_orm(listing) for listing in listings],
+        "items": listing_responses,
         "total": total,
         "page": search_params.page,
         "page_size": search_params.page_size,

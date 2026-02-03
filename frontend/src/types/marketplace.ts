@@ -88,9 +88,11 @@ export interface MarketplaceListing {
     id: number;
     agent_id: number;
     author_id: number;
+    author_name: string;  // Added author name field
     title: string;
     description?: string;
     category_id?: number;
+    category?: MarketplaceCategory;
     tags?: string[];
     listing_type: ListingType;
     visibility: Visibility;
@@ -225,15 +227,21 @@ export interface MarketplaceSearchParams {
 
 // ============== Agent Types ==============
 
+export interface SubAgentConfig {
+    enabled: boolean;
+    [key: string]: any; // Allow additional properties
+}
+
 export interface Agent {
     id: number;
     name: string;
     description?: string;
     status: string;
+    agent_type: 'text' | 'voice';
     model_config?: Record<string, unknown>;
     system_prompt?: string;
     user_prompt_template?: string;
-    sub_agent_config?: Record<string, unknown>;
+    sub_agent_config?: Record<string, SubAgentConfig>;
     tags?: string[];
     metadata?: Record<string, unknown>;
     usage_count: number;

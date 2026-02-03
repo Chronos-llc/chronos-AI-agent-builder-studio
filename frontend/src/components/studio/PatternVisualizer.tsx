@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   RefreshCw, TrendingUp, Zap, BarChart3,
-  ChevronRight, Info, Loader2, AlertCircle
+  ChevronRight, Loader2, AlertCircle
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -181,7 +181,6 @@ export const PatternVisualizer: React.FC<PatternVisualizerProps> = ({
                       pattern={pattern}
                       isSelected={selectedPattern?.id === pattern.id}
                       onSelect={() => handlePatternSelect(pattern)}
-                      onApply={() => handleApplyPattern(pattern)}
                       getSuccessRateColor={getSuccessRateColor}
                       getSuccessRateLabel={getSuccessRateLabel}
                       formatUsageCount={formatUsageCount}
@@ -190,42 +189,40 @@ export const PatternVisualizer: React.FC<PatternVisualizerProps> = ({
                 )}
               </TabsContent>
 
-              <TabsContent value="popular" className="mt-4 space-y-2">
-                {patterns
-                  .sort((a, b) => b.usage_count - a.usage_count)
-                  .slice(0, 5)
-                  .map((pattern) => (
-                    <PatternCard
-                      key={pattern.id}
-                      pattern={pattern}
-                      isSelected={selectedPattern?.id === pattern.id}
-                      onSelect={() => handlePatternSelect(pattern)}
-                      onApply={() => handleApplyPattern(pattern)}
-                      getSuccessRateColor={getSuccessRateColor}
-                      getSuccessRateLabel={getSuccessRateLabel}
-                      formatUsageCount={formatUsageCount}
-                    />
-                  ))}
-              </TabsContent>
+               <TabsContent value="popular" className="mt-4 space-y-2">
+                 {patterns
+                   .sort((a, b) => b.usage_count - a.usage_count)
+                   .slice(0, 5)
+                   .map((pattern) => (
+                     <PatternCard
+                       key={pattern.id}
+                       pattern={pattern}
+                       isSelected={selectedPattern?.id === pattern.id}
+                       onSelect={() => handlePatternSelect(pattern)}
+                       getSuccessRateColor={getSuccessRateColor}
+                       getSuccessRateLabel={getSuccessRateLabel}
+                       formatUsageCount={formatUsageCount}
+                     />
+                   ))}
+               </TabsContent>
 
-              <TabsContent value="recommended" className="mt-4 space-y-2">
-                {patterns
-                  .filter((p) => p.success_rate >= 0.8)
-                  .sort((a, b) => b.success_rate - a.success_rate)
-                  .slice(0, 5)
-                  .map((pattern) => (
-                    <PatternCard
-                      key={pattern.id}
-                      pattern={pattern}
-                      isSelected={selectedPattern?.id === pattern.id}
-                      onSelect={() => handlePatternSelect(pattern)}
-                      onApply={() => handleApplyPattern(pattern)}
-                      getSuccessRateColor={getSuccessRateColor}
-                      getSuccessRateLabel={getSuccessRateLabel}
-                      formatUsageCount={formatUsageCount}
-                    />
-                  ))}
-              </TabsContent>
+               <TabsContent value="recommended" className="mt-4 space-y-2">
+                 {patterns
+                   .filter((p) => p.success_rate >= 0.8)
+                   .sort((a, b) => b.success_rate - a.success_rate)
+                   .slice(0, 5)
+                   .map((pattern) => (
+                     <PatternCard
+                       key={pattern.id}
+                       pattern={pattern}
+                       isSelected={selectedPattern?.id === pattern.id}
+                       onSelect={() => handlePatternSelect(pattern)}
+                       getSuccessRateColor={getSuccessRateColor}
+                       getSuccessRateLabel={getSuccessRateLabel}
+                       formatUsageCount={formatUsageCount}
+                     />
+                   ))}
+               </TabsContent>
             </Tabs>
 
             {/* Pattern Stats */}
@@ -306,7 +303,6 @@ interface PatternCardProps {
   pattern: WorkflowPattern;
   isSelected: boolean;
   onSelect: () => void;
-  onApply: () => void;
   getSuccessRateColor: (rate: number) => string;
   getSuccessRateLabel: (rate: number) => string;
   formatUsageCount: (count: number) => string;
@@ -316,16 +312,15 @@ const PatternCard: React.FC<PatternCardProps> = ({
   pattern,
   isSelected,
   onSelect,
-  onApply,
   getSuccessRateColor,
   getSuccessRateLabel,
   formatUsageCount,
 }) => {
   return (
     <Card
-      className={`cursor-pointer transition-all hover:shadow-md ${
-        isSelected ? 'ring-2 ring-primary' : ''
-      }`}
+       className={`cursor-pointer transition-all hover:shadow-md ${
+         isSelected ? 'ring-2 ring-primary' : ''
+       }`}
       onClick={onSelect}
     >
       <CardContent className="p-4">

@@ -1,30 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  MetricsQueryResponse,
   TimeSeriesDataPoint,
   MetricType,
   AggregationType,
 } from '../../types/systemOptimization';
 import {
-  queryMetrics,
   getMetrics,
 } from '../../services/systemOptimizationService';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Input } from '../ui/input';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  BarChart,
-  Bar,
-} from 'recharts';
+
 import {
   RefreshCw,
   Download,
@@ -35,17 +21,16 @@ import {
   BarChart3,
   TrendingUp,
   Activity,
+  LineChart as LineChartIcon,
 } from 'lucide-react';
 
 // Custom simple chart components since recharts isn't installed
 function SimpleLineChart({
   data,
-  dataKey,
   strokeColor = '#3b82f6',
   height = 300,
 }: {
   data: TimeSeriesDataPoint[];
-  dataKey: string;
   strokeColor?: string;
   height?: number;
 }) {
@@ -53,8 +38,8 @@ function SimpleLineChart({
   const minValue = Math.min(...data.map((d) => d.value), 0);
 
   return (
-    <div style={{ height }} className="w-full">
-      <svg width="100%" height={height} className="overflow-visible">
+    <div className={`w-full h-[${height}px]`}>
+      <svg width="100%" height="100%" className="overflow-visible">
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
           <line
@@ -96,7 +81,7 @@ function SimpleLineChart({
               fill={strokeColor}
               stroke="#1f2937"
               strokeWidth="2"
-              className="cursor-pointer hover:r-6 transition-all"
+              className="cursor-pointer hover:scale-125 transition-all"
             >
               <title>
                 {new Date(d.timestamp).toLocaleString()}: {d.value}
@@ -151,8 +136,8 @@ function SimpleBarChart({
   const maxValue = Math.max(...data.map((d) => d.value), 1);
 
   return (
-    <div style={{ height }} className="w-full">
-      <svg width="100%" height={height} className="overflow-visible">
+    <div className={`w-full h-[${height}px]`}>
+      <svg id="comparison-chart" width="100%" height="100%" className="overflow-visible">
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
           <line
@@ -293,7 +278,8 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
         start.toISOString(),
         end.toISOString(),
         aggregation,
-        100
+        100,
+        agentId
       );
 
       const dataPoints: TimeSeriesDataPoint[] = metrics.map((m) => ({
@@ -305,12 +291,12 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
 
       // Fetch comparison data for all metric types
       const comparisonResults = await Promise.all([
-        getMetrics('CPU', undefined, start.toISOString(), end.toISOString(), 'avg', 1),
-        getMetrics('MEMORY', undefined, start.toISOString(), end.toISOString(), 'avg', 1),
-        getMetrics('DISK', undefined, start.toISOString(), end.toISOString(), 'avg', 1),
-        getMetrics('NETWORK', undefined, start.toISOString(), end.toISOString(), 'avg', 1),
-        getMetrics('RESPONSE_TIME', undefined, start.toISOString(), end.toISOString(), 'avg', 1),
-        getMetrics('THROUGHPUT', undefined, start.toISOString(), end.toISOString(), 'avg', 1),
+        getMetrics('CPU', undefined, start.toISOString(), end.toISOString(), 'avg', 1, agentId),
+        getMetrics('MEMORY', undefined, start.toISOString(), end.toISOString(), 'avg', 1, agentId),
+        getMetrics('DISK', undefined, start.toISOString(), end.toISOString(), 'avg', 1, agentId),
+        getMetrics('NETWORK', undefined, start.toISOString(), end.toISOString(), 'avg', 1, agentId),
+        getMetrics('RESPONSE_TIME', undefined, start.toISOString(), end.toISOString(), 'avg', 1, agentId),
+        getMetrics('THROUGHPUT', undefined, start.toISOString(), end.toISOString(), 'avg', 1, agentId),
       ]);
 
       setComparisonData({
@@ -330,7 +316,7 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
 
   useEffect(() => {
     fetchData();
-  }, [metricType, aggregation, timeRange]);
+  }, [metricType, aggregation, timeRange, agentId]);
 
   const handleZoomIn = () => setZoomLevel((z) => Math.min(z + 0.25, 2));
   const handleZoomOut = () => setZoomLevel((z) => Math.max(z - 0.25, 0.5));
@@ -449,7 +435,7 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LineChart className="w-4 h-4" />
+            <LineChartIcon className="w-4 h-4" />
             {metricType.replace('_', ' ')} Over Time
           </CardTitle>
         </CardHeader>
@@ -457,14 +443,13 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
           {chartData.length > 0 ? (
             <div
               id="main-chart"
-              style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}
+              className="origin-top-left transition-transform duration-200"
             >
-              <SimpleLineChart
-                data={chartData}
-                dataKey="value"
-                strokeColor={chartColors[metricType]}
-                height={300}
-              />
+               <SimpleLineChart
+                  data={chartData}
+                  strokeColor={chartColors[metricType]}
+                  height={300 * zoomLevel}
+                />
             </div>
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-400">
@@ -529,7 +514,7 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-red-500" style={{ transform: 'rotate(180deg)' }} />
+                <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />
                 <span className="text-sm text-gray-400">Minimum</span>
               </div>
               <p className="text-2xl font-bold">
@@ -553,4 +538,3 @@ export function PerformanceCharts({ agentId, defaultMetricType }: PerformanceCha
   );
 }
 
-export default PerformanceCharts;

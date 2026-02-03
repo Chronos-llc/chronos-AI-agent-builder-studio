@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
-import { Label } from '../ui/label';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import type { MarketplaceCategory } from '../../types/marketplace';
 
@@ -26,11 +25,17 @@ export const MarketplaceCategorySelector = ({
     const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
 
     return (
-        <Select open={isOpen} onOpenChange={setIsOpen} value={selectedCategoryId?.toString() || 'none'}>
+        <Select 
+            open={isOpen} 
+            onOpenChange={setIsOpen} 
+            value={selectedCategoryId?.toString() || 'none'}
+            onValueChange={handleSelect}
+        >
             <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a category">
                     {selectedCategory ? selectedCategory.display_name : 'Select a category'}
                 </SelectValue>
+                <ChevronsUpDown className="w-4 h-4 opacity-50" />
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="none">

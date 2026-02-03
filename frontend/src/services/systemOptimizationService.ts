@@ -31,7 +31,7 @@ import type {
   AggregationType,
 } from '../types/systemOptimization';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_BASE = `${API_BASE_URL}/api/system-optimization`;
 
 // ============== Helper Functions ==============
@@ -62,13 +62,15 @@ export async function getMetrics(
   startTime?: string,
   endTime?: string,
   aggregation: AggregationType = 'avg',
-  limit = 1000
+  limit = 1000,
+  agentId?: number
 ): Promise<SystemMetrics[]> {
   const params: Record<string, unknown> = { aggregation, limit };
   if (metricType) params.metric_type = metricType;
   if (metricName) params.metric_name = metricName;
   if (startTime) params.start_time = startTime;
   if (endTime) params.end_time = endTime;
+  if (agentId) params.agent_id = agentId;
 
   const queryString = buildQueryString(params);
   const response = await fetch(`${API_BASE}/metrics${queryString}`);

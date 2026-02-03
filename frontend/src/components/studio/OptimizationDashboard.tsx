@@ -5,14 +5,10 @@ import {
     ActiveAlert,
     OptimizationRecommendation,
     SystemMetrics,
-    MetricType,
-    SystemHealthStatus,
 } from '../../types/systemOptimization';
 import {
     getDashboardSummary,
     getSystemHealth,
-    getActiveAlerts,
-    listRecommendations,
     getMetrics,
 } from '../../services/systemOptimizationService';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -20,6 +16,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea } from '../ui/scroll-area';
+import { Progress } from '../ui/progress';
 import {
     Activity,
     AlertTriangle,
@@ -27,8 +24,6 @@ import {
     Clock,
     Cpu,
     Database,
-    HardDrive,
-    Network,
     RefreshCw,
     TrendingUp,
     Zap,
@@ -120,12 +115,11 @@ function SimpleBarChart({
                                 <span>{item.label}</span>
                                 <span>{item.value.toFixed(1)}%</span>
                             </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                                <div
-                                    className={`h-2 rounded-full ${item.color}`}
-                                    style={{ width: `${(item.value / maxValue) * 100}%` }}
-                                />
-                            </div>
+                            <Progress
+                                value={(item.value / maxValue) * 100}
+                                className="h-2 bg-gray-700"
+                                indicatorClassName={item.color}
+                            />
                         </div>
                     ))}
                 </div>
@@ -282,12 +276,11 @@ function RecommendationsList({ recommendations }: { recommendations: Optimizatio
                                         </Badge>
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <div className="flex-1 bg-gray-700 rounded-full h-1">
-                                            <div
-                                                className="bg-blue-500 h-1 rounded-full"
-                                                style={{ width: `${rec.impact_score * 100}%` }}
-                                            />
-                                        </div>
+                                        <Progress
+                                            value={rec.impact_score * 100}
+                                            className="flex-1 h-1 bg-gray-700"
+                                            indicatorClassName="bg-blue-500"
+                                        />
                                         <span className="text-xs text-gray-400">
                                             {Math.round(rec.impact_score * 100)}% impact
                                         </span>
@@ -310,6 +303,35 @@ export function OptimizationDashboard() {
     const [timeRange, setTimeRange] = useState('24h');
     const [metrics, setMetrics] = useState<SystemMetrics[]>([]);
 
+    // Calculate time range based on selected option
+    const getTimeRange = () => {
+        const now = new Date();
+        const endTime = now.toISOString();
+        let startTime: Date;
+
+        switch (timeRange) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '24h':
+                startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case '30d':
+                startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            default:
+                startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        }
+
+        return {
+            startTime: startTime.toISOString(),
+            endTime,
+        };
+    };
+
     const fetchData = async () => {
         setIsLoading(true);
         setError(null);
@@ -321,8 +343,9 @@ export function OptimizationDashboard() {
             setSummary(summaryData);
             setHealth(healthData);
 
-            // Fetch metrics for charts
-            const metricsData = await getMetrics(undefined, undefined, undefined, undefined, 'avg', 20);
+            // Fetch metrics for charts with time range
+            const { startTime, endTime } = getTimeRange();
+            const metricsData = await getMetrics(undefined, undefined, startTime, endTime, 'avg', 20);
             setMetrics(metricsData);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
@@ -371,7 +394,6 @@ export function OptimizationDashboard() {
     const cpuMetrics = metrics.filter((m) => m.metric_type === 'CPU');
     const memoryMetrics = metrics.filter((m) => m.metric_type === 'MEMORY');
     const responseTimeMetrics = metrics.filter((m) => m.metric_type === 'RESPONSE_TIME');
-    const throughputMetrics = metrics.filter((m) => m.metric_type === 'THROUGHPUT');
 
     const avgCpu = cpuMetrics.length > 0
         ? cpuMetrics.reduce((sum, m) => sum + m.metric_value, 0) / cpuMetrics.length
