@@ -1,0 +1,23 @@
+/* RecommendationPanel styles */
+.recommendation-effort-bar {
+  width: var(--effort-width, 0%);
+}
+
+.recommendation-impact-bar {
+  width: var(--impact-width, 0%);
+}
+
+/* Effort bar width classes */
+.recommendation-effort-bar--low {
+  width: 33%;
+}
+
+.recommendation-effort-bar--medium {
+  width: 66%;
+}
+
+.recommendation-effort-bar--high {
+  width: 100%;
+}
+
+

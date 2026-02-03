@@ -7,24 +7,29 @@ const Progress = React.forwardRef<
         value?: number; 
         indicatorClassName?: string 
     }
->(({ className, value = 0, indicatorClassName, ...props }, ref) => (
-    <div
-        ref={ref}
-        className={cn(
-            "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
-            className
-        )}
-        {...props}
-    >
+>(({ className, value = 0, indicatorClassName, ...props }, ref) => {
+    // Constrain value between 0 and 100
+    const constrainedValue = Math.max(0, Math.min(100, value));
+    
+    return (
         <div
+            ref={ref}
             className={cn(
-                "h-full w-full flex-1 bg-primary transition-all",
-                indicatorClassName
+                "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+                className
             )}
-            style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-        />
-    </div>
-))
+            {...props}
+        >
+            <div
+                className={cn(
+                    "h-full bg-primary transition-all",
+                    indicatorClassName
+                )}
+                style={{ width: `${constrainedValue}%` }}
+            />
+        </div>
+    )
+})
 Progress.displayName = "Progress"
 
 export { Progress }

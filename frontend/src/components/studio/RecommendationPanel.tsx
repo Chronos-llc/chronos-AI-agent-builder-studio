@@ -31,6 +31,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import './RecommendationPanel.css';
 
 interface RecommendationPanelProps {
   agentId?: number;
@@ -129,11 +130,15 @@ export function RecommendationPanel({ agentId }: RecommendationPanelProps) {
 
   const getEffortConfig = (effort: string) => {
     const configs = {
-      LOW: { color: 'bg-green-500', label: 'Low Effort' },
-      MEDIUM: { color: 'bg-yellow-500', label: 'Medium Effort' },
-      HIGH: { color: 'bg-red-500', label: 'High Effort' },
+      LOW: { color: 'bg-green-500', label: 'Low Effort', barWidthClass: 'recommendation-effort-bar--low' },
+      MEDIUM: { color: 'bg-yellow-500', label: 'Medium Effort', barWidthClass: 'recommendation-effort-bar--medium' },
+      HIGH: { color: 'bg-red-500', label: 'High Effort', barWidthClass: 'recommendation-effort-bar--high' },
     };
     return configs[effort as keyof typeof configs];
+  };
+
+  const getImpactWidth = (impactScore: number) => {
+    return `${Math.round(impactScore * 100)}%`;
   };
 
   const filteredRecommendations = recommendations.filter((r) => {
@@ -318,19 +323,13 @@ export function RecommendationPanel({ agentId }: RecommendationPanelProps) {
                     <div className="flex gap-1">
                       <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
-                          className="bg-blue-500 h-2 rounded-full transition-all"
-                          style={{ width: `${(recommendation.impact_score ?? 0) * 100}%` }}
+                          className="bg-blue-500 h-2 rounded-full transition-all recommendation-impact-bar"
+                          style={{ width: getImpactWidth(recommendation.impact_score ?? 0) }}
                         />
                       </div>
                       <div className="w-20 bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
-                          className={`${effortConfig.color} h-2 rounded-full transition-all ${
-                            recommendation.effort_level === 'LOW'
-                              ? 'w-[33%]'
-                              : recommendation.effort_level === 'MEDIUM'
-                              ? 'w-[66%]'
-                              : 'w-full'
-                          }`}
+                          className={`${effortConfig.color} h-2 rounded-full transition-all recommendation-effort-bar ${effortConfig.barWidthClass}`}
                         />
                       </div>
                     </div>
