@@ -11,10 +11,17 @@ class AgentStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class AgentType(str, Enum):
+    """Agent type for platform switching between text and voice agents"""
+    TEXT = "text"
+    VOICE = "voice"
+
+
 class AgentBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     status: AgentStatus = AgentStatus.DRAFT
+    agent_type: AgentType = AgentType.TEXT
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
     tags: Optional[List[str]] = None
@@ -29,6 +36,7 @@ class AgentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     status: Optional[AgentStatus] = None
+    agent_type: Optional[AgentType] = None
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
     model_config: Optional[Dict[str, Any]] = None

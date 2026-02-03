@@ -28,6 +28,7 @@ This project uses a modern monorepo architecture with:
 - Docker and Docker Compose
 - Node.js 18+ (for local development)
 - Python 3.10-3.12 (64-bit recommended for local development; required for prebuilt database driver wheels like `psycopg2-binary`)
+- Python 3.10-3.12 (64-bit recommended for local development)
 
 ### MCP Server Integrations
 
