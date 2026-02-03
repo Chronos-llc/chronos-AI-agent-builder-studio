@@ -64,7 +64,8 @@ class SystemOptimizationEngine:
         start_time: datetime = None,
         end_time: datetime = None,
         aggregation: str = "avg",
-        limit: int = 1000
+        limit: int = 1000,
+        agent_id: Optional[int] = None
     ) -> List[SystemMetrics]:
         """Get system metrics with filtering and aggregation"""
         query = select(SystemMetrics)
@@ -77,6 +78,9 @@ class SystemOptimizationEngine:
             query = query.where(SystemMetrics.timestamp >= start_time)
         if end_time:
             query = query.where(SystemMetrics.timestamp <= end_time)
+        if agent_id:
+            # Filter system metrics by agent_id using tags
+            query = query.where(SystemMetrics.tags.contains({"agent_id": agent_id}))
         
         query = query.order_by(desc(SystemMetrics.timestamp)).limit(limit)
         

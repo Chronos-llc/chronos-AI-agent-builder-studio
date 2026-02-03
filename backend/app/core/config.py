@@ -11,11 +11,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
     DEBUG: bool = Field(default=False, env="DEBUG")
     
-    # Database
-    DATABASE_URL: str = Field(..., env="DATABASE_URL")
+    # Database - Use SQLite for development by default
+    DATABASE_URL: str = Field(default="sqlite+aiosqlite:///./chronos.db", env="DATABASE_URL")
     
     # Redis
-    REDIS_URL: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
+    REDIS_URL: str = Field(default="redis-11166.c277.us-east-1-3.ec2.cloud.redislabs.com:11166", env="REDIS_URL")
     
     # JWT Configuration
     SECRET_KEY: str = Field(..., env="SECRET_KEY")

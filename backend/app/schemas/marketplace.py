@@ -132,6 +132,7 @@ class MarketplaceListingResponse(MarketplaceListingBase):
     id: int
     agent_id: int
     author_id: int
+    author_name: str  # Added author name field
     moderation_status: ModerationStatus
     moderation_notes: Optional[str] = None
     schema_data: Optional[Dict[str, Any]] = None
@@ -142,6 +143,9 @@ class MarketplaceListingResponse(MarketplaceListingBase):
     published_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    
+    # Include category information
+    category: Optional[MarketplaceCategoryResponse] = None
     
     class Config:
         from_attributes = True

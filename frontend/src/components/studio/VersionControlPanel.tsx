@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     GitBranch,
     GitCommit,
     GitPullRequest,
     Clock,
-    Download,
-    Upload,
     RotateCcw,
     Eye,
     Plus,
-    Tag,
-    FileText,
     Users,
     CheckCircle,
     AlertCircle,
@@ -117,11 +113,6 @@ const VersionControlPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
         } catch (error) {
             console.error('Comparison failed:', error);
         }
-    };
-
-    const getVersionStatus = (version: AgentVersion) => {
-        if (version.is_current) return 'current';
-        return 'historical';
     };
 
     const getVersionIcon = (version: AgentVersion) => {

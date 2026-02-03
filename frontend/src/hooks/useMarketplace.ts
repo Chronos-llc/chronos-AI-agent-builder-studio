@@ -12,7 +12,7 @@ export const useMarketplace = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000'
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000')
 
   const getListingDetails = async (listingId: number): Promise<MarketplaceListing> => {
     try {

@@ -256,6 +256,7 @@ export interface DashboardSummary {
         metric_name: string;
         metric_value: number;
         timestamp: string;
+        unit?: string;
     }>;
     top_recommendations: Array<{
         id: number;
@@ -264,6 +265,8 @@ export interface DashboardSummary {
         impact_score: number;
         effort_level: EffortLevel;
         status: RecommendationStatus;
+        description: string;
+        created_at: string;
     }>;
     active_alerts: ActiveAlert[];
     generated_at: string;

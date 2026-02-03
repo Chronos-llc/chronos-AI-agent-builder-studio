@@ -1,42 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    Settings,
-    User,
     Shield,
-    Zap,
-    Database,
-    Key,
-    Gauge,
     Brain,
     Globe,
-    Clock,
     AlertTriangle,
-    CheckCircle,
     Info,
-    Upload,
-    Download,
-    Copy,
     Eye,
-    EyeOff,
-    Plus,
-    Trash2,
-    Edit,
     Save,
-    X,
-    ResetIcon,
+    RotateCcw,
     Sliders,
     BookOpen,
     Image as ImageIcon,
     Video as VideoIcon,
-    Camera,
-    Mic,
-    Volume2,
-    Smile,
-    GitBranch,
-    GitCommit,
-    GitMerge,
-    GitPullRequest
+    Smile
 } from 'lucide-react';
 
 interface SubAgentConfig {
@@ -223,7 +200,7 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             disabled={resetConfigMutation.isPending}
                             className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50"
                         >
-                            <ResetIcon className="w-4 h-4" />
+                            <RotateCcw className="w-4 h-4" />
                             <span>{resetConfigMutation.isPending ? 'Resetting...' : 'Reset to Defaults'}</span>
                         </button>
                         <button
@@ -297,17 +274,22 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label 
+                                    className="block text-sm font-medium text-gray-700 mb-2"
+                                    htmlFor="summary-max-tokens"
+                                >
                                     Summary Max Tokens: {config.summary_agent.summary_max_tokens}
                                 </label>
                                 <input
                                     type="range"
+                                    id="summary-max-tokens"
                                     min="50"
                                     max="500"
                                     step="10"
                                     value={config.summary_agent.summary_max_tokens}
                                     onChange={(e) => updateConfig('summary_agent', { summary_max_tokens: parseInt(e.target.value) })}
                                     className="w-full"
+                                    aria-label="Summary Max Tokens"
                                 />
                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                                     <span>50</span>
@@ -317,17 +299,22 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label 
+                                    className="block text-sm font-medium text-gray-700 mb-2"
+                                    htmlFor="transcript-max-lines"
+                                >
                                     Transcript Max Lines: {config.summary_agent.transcript_max_lines}
                                 </label>
                                 <input
                                     type="range"
+                                    id="transcript-max-lines"
                                     min="5"
                                     max="50"
                                     step="1"
                                     value={config.summary_agent.transcript_max_lines}
                                     onChange={(e) => updateConfig('summary_agent', { transcript_max_lines: parseInt(e.target.value) })}
                                     className="w-full"
+                                    aria-label="Transcript Max Lines"
                                 />
                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                                     <span>5</span>
@@ -338,10 +325,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="summary-model"
+                            >
                                 Summary Generation Model
                             </label>
                             <select
+                                id="summary-model"
                                 value={config.summary_agent.model}
                                 onChange={(e) => updateConfig('summary_agent', { model: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -423,10 +414,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="translator-model"
+                            >
                                 Translation Model
                             </label>
                             <select
+                                id="translator-model"
                                 value={config.translator_agent.model}
                                 onChange={(e) => updateConfig('translator_agent', { model: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -434,7 +429,7 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                                 <option value="gpt-4">GPT-4</option>
                                 <option value="claude-3">Claude 3</option>
-                                <option value="gemini-pro">Gemini Pro</option>
+                                <option value="gemini-pro">Gemini-2.5-Pro</option>
                             </select>
                         </div>
 
@@ -508,10 +503,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="knowledge-model-strategy"
+                            >
                                 Model Strategy
                             </label>
                             <select
+                                id="knowledge-model-strategy"
                                 value={config.knowledge_agent.model_strategy}
                                 onChange={(e) => updateConfig('knowledge_agent', { model_strategy: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -524,10 +523,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label 
+                                    className="block text-sm font-medium text-gray-700 mb-2"
+                                    htmlFor="knowledge-fastest-model"
+                                >
                                     Fastest Model
                                 </label>
                                 <select
+                                    id="knowledge-fastest-model"
                                     value={config.knowledge_agent.fastest_model}
                                     onChange={(e) => updateConfig('knowledge_agent', { fastest_model: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -539,10 +542,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label 
+                                    className="block text-sm font-medium text-gray-700 mb-2"
+                                    htmlFor="knowledge-best-model"
+                                >
                                     Best Model
                                 </label>
                                 <select
+                                    id="knowledge-best-model"
                                     value={config.knowledge_agent.best_model}
                                     onChange={(e) => updateConfig('knowledge_agent', { best_model: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -555,10 +562,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="knowledge-question-extractor-model"
+                            >
                                 Question Extractor Model
                             </label>
                             <select
+                                id="knowledge-question-extractor-model"
                                 value={config.knowledge_agent.question_extractor_model}
                                 onChange={(e) => updateConfig('knowledge_agent', { question_extractor_model: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -570,17 +581,22 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="chunks-count"
+                            >
                                 Chunks Count: {config.knowledge_agent.chunks_count}
                             </label>
                             <input
                                 type="range"
+                                id="chunks-count"
                                 min="5"
                                 max="50"
                                 step="1"
                                 value={config.knowledge_agent.chunks_count}
-                                onChange={(e) => updateConfig('knowledge_agent', { chunks_count: parseFloat(e.target.value) })}
+                                onChange={(e) => updateConfig('knowledge_agent', { chunks_count: parseInt(e.target.value) })}
                                 className="w-full"
+                                aria-label="Chunks Count"
                             />
                             <div className="flex justify-between text-xs text-gray-500 mt-1">
                                 <span>5</span>
@@ -827,10 +843,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="personality-tone-style"
+                            >
                                 Tone Style
                             </label>
                             <select
+                                id="personality-tone-style"
                                 value={config.personality_agent.tone_style}
                                 onChange={(e) => updateConfig('personality_agent', { tone_style: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -848,11 +868,15 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             <div className="space-y-4">
                                 {Object.entries(config.personality_agent.personality_traits).map(([trait, value]) => (
                                     <div key={trait} className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700 capitalize">
+                                        <label 
+                                            className="block text-sm font-medium text-gray-700 capitalize"
+                                            htmlFor={`personality-${trait}`}
+                                        >
                                             {trait}: {value}
                                         </label>
                                         <input
                                             type="range"
+                                            id={`personality-${trait}`}
                                             min="0"
                                             max="1"
                                             step="0.1"
@@ -864,6 +888,7 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                                 }
                                             })}
                                             className="w-full"
+                                            aria-label={`Personality trait: ${trait}`}
                                         />
                                         <div className="flex justify-between text-xs text-gray-500">
                                             <span>0.0</span>
