@@ -1,6 +1,7 @@
 # FastAPI and ASGI
 fastapi==0.104.1
-uvicorn[standard]==0.24.0
+uvicorn==0.24.0; platform_system == "Windows"
+uvicorn[standard]==0.24.0; platform_system != "Windows"
 
 # Database
 sqlalchemy==2.0.23
@@ -16,7 +17,7 @@ python-multipart==0.0.6
 fastapi-cors==0.0.6
 
 # Redis
-redis==5.0.1
+redis==4.6.0
 celery[redis]==5.3.4
 
 # Data Validation & Serialization
