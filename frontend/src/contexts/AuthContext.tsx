@@ -69,7 +69,7 @@ axios.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const response = await axios.post('/api/v1/auth/refresh', {})
+        await axios.post('/api/v1/auth/refresh', {})
 
         // Retry original request
         return axios(originalRequest)
@@ -109,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       formData.append('username', email)
       formData.append('password', password)
 
-      const response = await axios.post('/api/v1/auth/login', formData, {
+      await axios.post('/api/v1/auth/login', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
