@@ -135,6 +135,16 @@ If you see wheel build errors for `pydantic-core`, `greenlet`, or `httptools` on
 
 These packages do not currently ship wheels for Python 3.14 32-bit, so that combination will fail to build from source.
 
+<<<<<<< ours
+=======
+If you see `pg_config executable not found` while installing `psycopg2` or `psycopg2-binary`:
+
+1. Confirm you're installing **`psycopg2-binary`**, not `psycopg2` (the backend uses `psycopg2-binary` in `backend/requirements.txt`).
+2. Make sure you're using **Python 3.10-3.12 (64-bit)** so pip can download prebuilt wheels.
+3. If you must build from source, install **PostgreSQL** and add its `bin` directory (which contains `pg_config`) to your `PATH`.
+4. Re-run `pip install -r backend/requirements.txt`.
+
+>>>>>>> theirs
 ### Frontend Build Issues
 
 If frontend fails to build:
