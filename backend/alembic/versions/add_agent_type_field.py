@@ -35,11 +35,13 @@ def upgrade():
     
     if voice_agent_ids:
         # Update these agents to have agent_type = 'voice'
-        connection.execute(sa.text("""
+        update_voice_agents_stmt = sa.text("""
             UPDATE agents
             SET agent_type = 'voice'
             WHERE id IN :agent_ids
-        """), {'agent_ids': tuple(voice_agent_ids)})
+        """).bindparams(sa.bindparam('agent_ids', expanding=True))
+
+        connection.execute(update_voice_agents_stmt, {'agent_ids': voice_agent_ids})
     
     # Set default for remaining agents
     connection.execute(sa.text("""
