@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,9 +121,9 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
-    response: Response = Depends()
+    db: AsyncSession = Depends(get_db)
 ):
     """Login user and return tokens"""
     
@@ -255,10 +255,10 @@ async def refresh_token(
 
 @router.post("/logout")
 async def logout(
+    response: Response,
     current_user: User = Depends(get_current_user),
     token: str = Depends(oauth2_scheme),
-    redis_client = Depends(get_redis_client),
-    response: Response = Depends()
+    redis_client = Depends(get_redis_client)
 ):
     """Logout user (blacklist current token and clear cookies)"""
     # Verify and decode token

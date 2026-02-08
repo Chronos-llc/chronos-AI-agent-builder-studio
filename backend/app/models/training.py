@@ -3,7 +3,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum as PyEnum
-from backend.app.models.base import Base
+from app.models.base import Base
 
 class TrainingSessionStatus(PyEnum):
     active = 'active'

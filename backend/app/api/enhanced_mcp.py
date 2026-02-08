@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 from app.core.enhanced_mcp_manager import enhanced_mcp_manager
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.api.auth import get_current_user
 from app.models.user import User as UserModel
 from app.models.mcp_server import (
     MCPServer, MCPOperationLog, MCPServerMetric, 

@@ -51,7 +51,7 @@ class PaymentTransaction(BaseModel):
     payment_method_id = Column(Integer, ForeignKey("payment_methods.id", ondelete="SET NULL"), nullable=True)
     transaction_type = Column(String(50), nullable=False)  # e.g., "purchase", "refund", "subscription"
     status = Column(String(50), server_default='pending', nullable=False)  # e.g., "pending", "completed", "failed", "refunded"
-    metadata = Column(JSONB, nullable=True)
+    additional_metadata = Column(JSONB, nullable=True)
     external_transaction_id = Column(String(255), nullable=True)  # Transaction ID from payment processor
     
     # Relationships
