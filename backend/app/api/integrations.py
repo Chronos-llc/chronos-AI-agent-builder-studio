@@ -13,7 +13,7 @@ from app.schemas.integration import (
     IntegrationMarketplaceSearch, IntegrationUsageStats
 )
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.api.auth import get_current_user
 from app.models.integration import IntegrationConfig as IntegrationConfigModel
 from app.models.integration import IntegrationReview as IntegrationReviewModel
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -138,6 +138,7 @@ class TranslatorAgentConfig(BaseModel):
 
 
 class KnowledgeAgentConfig(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     enabled: bool = Field(default=True, description="Enable Knowledge Agent")
     answer_manually: bool = Field(default=False, description="Allow manual answers")
     additional_context: bool = Field(default=True, description="Use additional context")

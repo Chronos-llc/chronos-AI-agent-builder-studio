@@ -221,7 +221,7 @@ class MCPIntegrationManager:
             del self.servers[server_id]
             
             # Update default server if needed
-            if self.default_server === server_id:
+            if self.default_server == server_id:
                 self.default_server = next(iter(self.servers.keys()), None)
 
     async def get_server(self, server_id: Optional[str] = None) -> MCPClient:

@@ -41,7 +41,7 @@ class AgentModel(BaseModel):
     
     # Metadata
     tags = Column(JSON, nullable=True)  # List of tags
-    metadata = Column(JSON, nullable=True)  # Additional metadata
+    additional_metadata = Column(JSON, nullable=True)  # Additional metadata
     
     # Statistics
     usage_count = Column(Integer, default=0)

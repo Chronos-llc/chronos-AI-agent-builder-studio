@@ -32,7 +32,7 @@ class UsageRecord(BaseModel):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Metadata
-    metadata = Column(String(1000), nullable=True)  # JSON string for additional data
+    additional_metadata = Column(String(1000), nullable=True)  # JSON string for additional data
     
     # Relationships
     agent = relationship("AgentModel", back_populates="usage_records")

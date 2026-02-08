@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -152,6 +152,7 @@ class WebChatConfig(BaseModel):
 
 
 class AIModelProviderConfig(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     provider_type: str = Field(..., description="openai, anthropic, ollama, custom")
     api_key: Optional[str] = None
     base_url: Optional[str] = None

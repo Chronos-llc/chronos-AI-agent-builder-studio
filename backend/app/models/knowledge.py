@@ -41,7 +41,7 @@ class KnowledgeFile(BaseModel):
     processing_error = Column(Text, nullable=True)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)  # Additional file metadata
+    additional_metadata = Column(JSON, nullable=True)  # Additional file metadata
     tags = Column(JSON, nullable=True)  # User-defined tags
     
     # Agent association
