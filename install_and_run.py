@@ -9,14 +9,17 @@ import time
 import asyncio
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parent
+
 def run_command(command, cwd=None, shell=False, capture_output=True):
     """Run a command and return the result"""
     try:
+        resolved_cwd = str(cwd or ROOT_DIR)
         if shell:
-            result = subprocess.run(command, shell=True, cwd=cwd, 
+            result = subprocess.run(command, shell=True, cwd=resolved_cwd, 
                                   capture_output=capture_output, text=True, timeout=30)
         else:
-            result = subprocess.run(command, cwd=cwd, 
+            result = subprocess.run(command, cwd=resolved_cwd, 
                                   capture_output=capture_output, text=True, timeout=30)
         
         return result.returncode == 0, result.stdout, result.stderr
@@ -79,7 +82,7 @@ def install_frontend_deps():
     """Install frontend dependencies"""
     print("\n📦 Installing frontend dependencies...")
     
-    success, stdout, stderr = run_command(["npm", "install"], cwd="frontend")
+    success, stdout, stderr = run_command(["npm", "install"], cwd=ROOT_DIR / "frontend")
     
     if not success:
         print(f"❌ Failed to install frontend dependencies: {stderr}")
@@ -106,7 +109,7 @@ def create_uploads_directory():
     """Create uploads directory"""
     print("\n📁 Creating uploads directory...")
     
-    uploads_dir = Path("backend/uploads")
+    uploads_dir = ROOT_DIR / "backend" / "uploads"
     uploads_dir.mkdir(parents=True, exist_ok=True)
     
     print("✅ Uploads directory created")
@@ -119,11 +122,13 @@ def start_backend():
         # Start uvicorn server
         process = subprocess.Popen([
             sys.executable, "-m", "uvicorn", 
-            "app.main:app", 
+            "app.main:app",
+            "--app-dir", "backend",
+            "--reload-dir", "backend",
             "--host", "0.0.0.0", 
             "--port", "8000", 
             "--reload"
-        ], cwd="backend", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ], cwd=str(ROOT_DIR), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         # Wait a moment for startup
         time.sleep(3)
@@ -151,7 +156,7 @@ def start_frontend():
         # Start npm dev server
         process = subprocess.Popen([
             "npm", "run", "dev"
-        ], cwd="frontend", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ], cwd=str(ROOT_DIR / "frontend"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         # Wait a moment for startup
         time.sleep(5)

@@ -22,6 +22,10 @@ class TrainingSessionCreate(BaseModel):
     agent_id: str = Field(..., description='ID of the agent being trained')
     training_mode: TrainingMode = Field(default=TrainingMode.standard, description='Training mode')
 
+class TrainingSessionUpdate(BaseModel):
+    status: Optional[TrainingSessionStatus] = Field(None, description='Updated status of the training session')
+    training_mode: Optional[TrainingMode] = Field(None, description='Updated training mode')
+
 class TrainingSessionResponse(BaseModel):
     id: str
     agent_id: str

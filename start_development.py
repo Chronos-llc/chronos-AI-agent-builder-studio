@@ -9,6 +9,8 @@ import time
 import signal
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parent
+
 
 def run_command(command, cwd=None, description=""):
     """Run a command and handle errors"""
@@ -20,7 +22,7 @@ def run_command(command, cwd=None, description=""):
     try:
         process = subprocess.Popen(
             command,
-            cwd=cwd,
+            cwd=str(cwd or ROOT_DIR),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -59,14 +61,14 @@ def setup_environment():
     print("🔧 Setting up development environment...")
     
     # Create uploads directory
-    uploads_dir = Path("backend/uploads")
+    uploads_dir = ROOT_DIR / "backend" / "uploads"
     uploads_dir.mkdir(parents=True, exist_ok=True)
     print(f"✅ Created uploads directory: {uploads_dir}")
     
     # Create .env file if it doesn't exist
-    env_file = Path(".env")
+    env_file = ROOT_DIR / ".env"
     if not env_file.exists():
-        env_example = Path(".env.example")
+        env_example = ROOT_DIR / ".env.example"
         if env_example.exists():
             import shutil
             shutil.copy(env_example, env_file)
@@ -88,7 +90,7 @@ def install_dependencies():
     # Install Python dependencies
     success = run_command(
         [sys.executable, "-m", "pip", "install", "-r", "backend/requirements.txt"],
-        cwd=".",
+        cwd=ROOT_DIR,
         description="Installing Python dependencies"
     )
     
@@ -99,7 +101,7 @@ def install_dependencies():
     # Install Node.js dependencies
     success = run_command(
         ["npm", "install"],
-        cwd="frontend",
+        cwd=ROOT_DIR / "frontend",
         description="Installing Node.js dependencies"
     )
     
@@ -118,6 +120,7 @@ def start_services():
     print("🐳 Starting database and Redis...")
     success = run_command(
         ["docker-compose", "up", "-d", "postgres", "redis"],
+        cwd=ROOT_DIR,
         description="Starting PostgreSQL and Redis"
     )
     
@@ -139,7 +142,7 @@ def run_migrations():
     # Create database tables
     success = run_command(
         [sys.executable, "-m", "app.main"],
-        cwd="backend",
+        cwd=ROOT_DIR / "backend",
         description="Creating database tables"
     )
     
@@ -154,17 +157,19 @@ def start_applications():
     print("🔥 Starting backend server...")
     backend_process = subprocess.Popen([
         sys.executable, "-m", "uvicorn", 
-        "app.main:app", 
+        "app.main:app",
+        "--app-dir", "backend",
+        "--reload-dir", "backend",
         "--host", "0.0.0.0", 
         "--port", "8000", 
         "--reload"
-    ], cwd="backend")
+    ], cwd=str(ROOT_DIR))
     
     # Start frontend
     print("⚛️  Starting frontend server...")
     frontend_process = subprocess.Popen([
         "npm", "run", "dev"
-    ], cwd="frontend")
+    ], cwd=str(ROOT_DIR / "frontend"))
     
     return backend_process, frontend_process
 
