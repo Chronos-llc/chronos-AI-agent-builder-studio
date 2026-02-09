@@ -18,6 +18,7 @@ import {
     Save,
     Globe
 } from 'lucide-react';
+import { useModelCatalog, groupModelsByProvider } from '../../hooks/useModelCatalog';
 
 interface BotSettings {
     // Basic Settings
@@ -80,6 +81,9 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const [showAddEnvVar, setShowAddEnvVar] = useState(false);
 
     const queryClient = useQueryClient();
+    const { data: modelCatalog } = useModelCatalog();
+    const chatModels = modelCatalog?.models?.chat || [];
+    const modelGroups = groupModelsByProvider(chatModels, modelCatalog?.providers || []);
 
     // Fetch current settings
     const { data: settings, isLoading } = useQuery({
@@ -364,10 +368,25 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 onChange={(e) => updateSetting('llm_model', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="claude-3">Claude 3</option>
-                                <option value="gemini-pro">Gemini Pro</option>
+                                {!modelGroups.length && (
+                                    <option value="" disabled>
+                                        Install an AI provider to see models
+                                    </option>
+                                )}
+                                {!!botSettings.llm_model && !chatModels.some(model => model.model === botSettings.llm_model) && (
+                                    <option value={botSettings.llm_model}>
+                                        Current: {botSettings.llm_model}
+                                    </option>
+                                )}
+                                {modelGroups.map(group => (
+                                    <optgroup key={group.provider} label={group.label}>
+                                        {group.models.map(model => (
+                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 

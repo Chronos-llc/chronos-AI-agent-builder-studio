@@ -43,11 +43,39 @@ class Settings(BaseSettings):
     # External API Keys
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    FIREWORKS_API_KEY: Optional[str] = Field(default=None, env="FIREWORKS_API_KEY")
+    XAI_API_KEY: Optional[str] = Field(default=None, env="XAI_API_KEY")
+    OPENROUTER_API_KEY: Optional[str] = Field(default=None, env="OPENROUTER_API_KEY")
+    
+    # Voice and Speech Provider Keys
+    ELEVENLABS_API_KEY: Optional[str] = Field(default=None, env="ELEVENLABS_API_KEY")
+    GOOGLE_CLOUD_API_KEY: Optional[str] = Field(default=None, env="GOOGLE_CLOUD_API_KEY")
+    AZURE_SPEECH_KEY: Optional[str] = Field(default=None, env="AZURE_SPEECH_KEY")
+    AWS_ACCESS_KEY_ID: Optional[str] = Field(default=None, env="AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: Optional[str] = Field(default=None, env="AWS_SECRET_ACCESS_KEY")
+    AWS_REGION: Optional[str] = Field(default=None, env="AWS_REGION")
+    DEEPGRAM_API_KEY: Optional[str] = Field(default=None, env="DEEPGRAM_API_KEY")
+    ASSEMBLYAI_API_KEY: Optional[str] = Field(default=None, env="ASSEMBLYAI_API_KEY")
     
     # MCP Server Configuration
     MCP_SERVER_URL: Optional[str] = Field(default=None, env="MCP_SERVER_URL")
     MCP_SERVER_API_KEY: Optional[str] = Field(default=None, env="MCP_SERVER_API_KEY")
     MCP_SERVER_TIMEOUT: int = Field(default=30, env="MCP_SERVER_TIMEOUT")
+
+    # File Storage Configuration
+    UPLOAD_MAX_SIZE: int = Field(default=10 * 1024 * 1024, env="UPLOAD_MAX_SIZE")
+    ALLOWED_FILE_TYPES: List[str] = Field(
+        default=["txt", "pdf", "doc", "docx", "png", "jpg", "jpeg", "gif", "mp4", "avi", "mov"],
+        env="ALLOWED_FILE_TYPES"
+    )
+
+    # WebSocket Configuration
+    WEBSOCKET_HEARTBEAT_INTERVAL: int = Field(default=30, env="WEBSOCKET_HEARTBEAT_INTERVAL")
+    WEBSOCKET_PING_TIMEOUT: int = Field(default=10, env="WEBSOCKET_PING_TIMEOUT")
+
+    # Development Server Configuration
+    RELOAD: bool = Field(default=False, env="RELOAD")
+    WORKERS: int = Field(default=1, env="WORKERS")
     
     # Logging
     LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")

@@ -9,8 +9,11 @@ from app.core.ai_providers import (
     get_default_model_config,
     validate_model_config
 )
+from app.core.database import get_db
+from app.core.model_catalog import build_model_catalog_response
 from app.api.auth import get_current_user
 from app.models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -29,6 +32,22 @@ async def get_ai_providers(current_user: User = Depends(get_current_user)):
         })
     
     return {"providers": providers}
+
+
+@router.get("/catalog")
+async def get_model_catalog(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get model catalog for installed providers and available credentials."""
+    try:
+        return await build_model_catalog_response(db, current_user.id)
+    except Exception as e:
+        logger.error(f"Error building model catalog: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to build model catalog"
+        )
 
 
 @router.get("/models")

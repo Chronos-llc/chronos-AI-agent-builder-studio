@@ -1,16 +1,17 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
 
 
 class AgentTemplateBase(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     category: str = Field(..., min_length=1, max_length=50)
     system_prompt: str = Field(..., min_length=1)
     user_prompt_template: Optional[str] = None
-    model_config: Optional[dict] = None
+    model_config_data: Optional[dict] = Field(None, alias="model_config")
     tags: Optional[List[str]] = None
     preview_image_url: Optional[str] = None
 
@@ -21,12 +22,13 @@ class AgentTemplateCreate(AgentTemplateBase):
 
 
 class AgentTemplateUpdate(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     category: Optional[str] = Field(None, min_length=1, max_length=50)
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
-    model_config: Optional[dict] = None
+    model_config_data: Optional[dict] = Field(None, alias="model_config")
     tags: Optional[List[str]] = None
     preview_image_url: Optional[str] = None
     is_featured: Optional[bool] = None

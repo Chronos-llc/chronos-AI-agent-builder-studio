@@ -23,6 +23,7 @@ import {
     downloadConfigurationFile,
     uploadConfigurationFile
 } from '../../../services/fuzzyService'
+import { useModelCatalog } from '../../../hooks/useModelCatalog'
 import type {
     FuzzyConfiguration as FuzzyConfigType,
     FuzzyConfigurationUpdate
@@ -39,6 +40,12 @@ export const FuzzyConfiguration = ({ configuration, onUpdate }: FuzzyConfigurati
     const [exporting, setExporting] = useState(false)
     const [importing, setImporting] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+    const { data: modelCatalog } = useModelCatalog()
+    const availableProviders = (modelCatalog?.providers || []).filter(provider => provider.available)
+    const chatModels = modelCatalog?.models?.chat || []
+    const providerModels = formData.provider
+        ? chatModels.filter(model => model.provider === formData.provider)
+        : []
 
     const handleInputChange = (field: keyof FuzzyConfigType, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -235,21 +242,53 @@ export const FuzzyConfiguration = ({ configuration, onUpdate }: FuzzyConfigurati
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="provider">Provider</Label>
-                            <Input
+                            <select
                                 id="provider"
                                 value={formData.provider}
                                 onChange={(e) => handleInputChange('provider', e.target.value)}
-                                className="mt-2"
-                            />
+                                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                                {!availableProviders.length && (
+                                    <option value="" disabled>
+                                        Install an AI provider to see options
+                                    </option>
+                                )}
+                                {!!formData.provider && !availableProviders.some(provider => provider.id === formData.provider) && (
+                                    <option value={formData.provider}>
+                                        Current: {formData.provider}
+                                    </option>
+                                )}
+                                {availableProviders.map(provider => (
+                                    <option key={provider.id} value={provider.id}>
+                                        {provider.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <Label htmlFor="model">Model</Label>
-                            <Input
+                            <select
                                 id="model"
                                 value={formData.model}
                                 onChange={(e) => handleInputChange('model', e.target.value)}
-                                className="mt-2"
-                            />
+                                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                                {!providerModels.length && (
+                                    <option value="" disabled>
+                                        Select a provider to see models
+                                    </option>
+                                )}
+                                {!!formData.model && !providerModels.some(model => model.model === formData.model) && (
+                                    <option value={formData.model}>
+                                        Current: {formData.model}
+                                    </option>
+                                )}
+                                {providerModels.map(model => (
+                                    <option key={`${model.provider}-${model.model}`} value={model.model}>
+                                        {model.label}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
