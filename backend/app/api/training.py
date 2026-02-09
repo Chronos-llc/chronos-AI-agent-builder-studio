@@ -364,14 +364,12 @@ async def get_training_test_history(
         )
     
     # Build query
-    query = select(TrainingInteraction).join(TrainingSession).
-        where(TrainingSession.agent_id == agent_id)
+    query = select(TrainingInteraction).join(TrainingSession).where(TrainingSession.agent_id == agent_id)
     
     if session_id:
         query = query.where(TrainingInteraction.session_id == session_id)
     
-    query = query.offset(skip).limit(limit).
-        order_by(TrainingInteraction.created_at.desc())
+    query = query.offset(skip).limit(limit).order_by(TrainingInteraction.created_at.desc())
     
     result = await db.execute(query)
     interactions = result.scalars().all()
@@ -463,8 +461,7 @@ async def create_training_correction(
     
     # Verify interaction exists
     result = await db.execute(
-        select(TrainingInteraction).join(TrainingSession).
-        where(
+        select(TrainingInteraction).join(TrainingSession).where(
             and_(
                 TrainingInteraction.id == correction_data.interaction_id,
                 TrainingSession.agent_id == agent_id
@@ -522,8 +519,7 @@ async def get_training_corrections(
         )
     
     # Build query
-    query = select(TrainingCorrection).join(TrainingInteraction).join(TrainingSession).
-        where(TrainingSession.agent_id == agent_id)
+    query = select(TrainingCorrection).join(TrainingInteraction).join(TrainingSession).where(TrainingSession.agent_id == agent_id)
     
     if session_id:
         query = query.where(TrainingSession.id == session_id)
@@ -531,8 +527,7 @@ async def get_training_corrections(
     if status:
         query = query.where(TrainingCorrection.status == status)
     
-    query = query.offset(skip).limit(limit).
-        order_by(TrainingCorrection.created_at.desc())
+    query = query.offset(skip).limit(limit).order_by(TrainingCorrection.created_at.desc())
     
     result = await db.execute(query)
     corrections = result.scalars().all()
@@ -610,8 +605,7 @@ async def reject_training_correction(
     
     # Get correction
     result = await db.execute(
-        select(TrainingCorrection).join(TrainingInteraction).join(TrainingSession).
-        where(
+        select(TrainingCorrection).join(TrainingInteraction).join(TrainingSession).where(
             and_(
                 TrainingCorrection.id == correction_id,
                 TrainingSession.agent_id == agent_id

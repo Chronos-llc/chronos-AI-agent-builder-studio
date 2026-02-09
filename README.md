@@ -27,11 +27,7 @@ This project uses a modern monorepo architecture with:
 
 - Docker and Docker Compose
 - Node.js 18+ (for local development)
-<<<<<<< ours
-- Python 3.10-3.12 (64-bit recommended for local development)
-=======
 - Python 3.10-3.12 (64-bit recommended for local development; required for prebuilt database driver wheels like `psycopg2-binary`)
->>>>>>> theirs
 
 ### MCP Server Integrations
 
@@ -98,10 +94,11 @@ pip install -r requirements.txt
 alembic upgrade head
 ```
 
-1. Start the server:
+1. Start the server (from repo root):
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd ..
+python -m uvicorn app.main:app --app-dir backend --reload-dir backend --host 0.0.0.0 --port 8000 --reload
 ```
 
 #### Frontend Setup
