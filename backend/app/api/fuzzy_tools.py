@@ -21,7 +21,7 @@ from app.schemas.fuzzy_tools import (
     GetAgentDetailsRequest, GetAvailableToolsRequest, GetAvailableIntegrationsRequest,
     FuzzyToolResponse, AgentDetailsResponse, ToolListResponse,
     IntegrationListResponse, AgentListResponse, FuzzySessionCreate,
-    FuzzySessionResponse, FuzzyActionListResponse, RateLimitStatus
+    FuzzySessionResponse, FuzzyActionResponse, FuzzyActionListResponse, RateLimitStatus
 )
 
 router = APIRouter(prefix="/api/fuzzy-tools", tags=["FUZZY Tools"])

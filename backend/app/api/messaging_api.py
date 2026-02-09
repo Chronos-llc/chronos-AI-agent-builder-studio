@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
@@ -159,7 +159,7 @@ async def get_webhook_url(
 
 @router.post("/messages/webhook/test")
 async def test_webhook(
-    webhook_url: str = Field(..., description="Webhook URL to test"),
+    webhook_url: str = Body(..., embed=True, description="Webhook URL to test"),
     token_user: tuple = Depends(verify_token)
 ):
     """Test a webhook URL by sending a test message"""

@@ -171,6 +171,7 @@ class ImageGenerationAgentConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable Image Generation Agent")
     generate_image: bool = Field(default=True, description="Generate images")
     edit_images: bool = Field(default=False, description="Edit existing images")
+    model: str = Field(default="auto", description="Model for image generation")
     exposed_variables: Dict[str, str] = Field(
         default={
             "Turn.ImageGenerationAgent.content": "{{Turn.ImageGenerationAgent.content}}"
@@ -183,6 +184,7 @@ class VideoAgentConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable Video Agent")
     generate_video: bool = Field(default=False, description="Generate videos")
     analyze_incoming_videos: bool = Field(default=True, description="Analyze incoming videos")
+    model: str = Field(default="auto", description="Model for video generation")
     exposed_variables: Dict[str, str] = Field(
         default={
             "turn.VideoAgent.content": "{{turn.VideoAgent.content}}"

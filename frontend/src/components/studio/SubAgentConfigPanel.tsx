@@ -15,6 +15,7 @@ import {
     Video as VideoIcon,
     Smile
 } from 'lucide-react';
+import { useModelCatalog, groupModelsByProvider } from '../../hooks/useModelCatalog';
 
 interface SubAgentConfig {
     summary_agent: {
@@ -51,12 +52,14 @@ interface SubAgentConfig {
         enabled: boolean;
         generate_image: boolean;
         edit_images: boolean;
+        model: string;
         exposed_variables: Record<string, string>;
     };
     video_agent: {
         enabled: boolean;
         generate_video: boolean;
         analyze_incoming_videos: boolean;
+        model: string;
         exposed_variables: Record<string, string>;
     };
     personality_agent: {
@@ -78,6 +81,16 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const queryClient = useQueryClient();
+    const { data: modelCatalog } = useModelCatalog();
+    const providers = modelCatalog?.providers || [];
+    const chatModels = modelCatalog?.models?.chat || [];
+    const translationModels = (modelCatalog?.models?.translation?.length ? modelCatalog?.models?.translation : chatModels) || [];
+    const imageModels = modelCatalog?.models?.image || [];
+    const videoModels = modelCatalog?.models?.video || [];
+    const chatGroups = groupModelsByProvider(chatModels, providers);
+    const translationGroups = groupModelsByProvider(translationModels, providers);
+    const imageGroups = groupModelsByProvider(imageModels, providers);
+    const videoGroups = groupModelsByProvider(videoModels, providers);
 
     // Fetch current sub-agent configuration
     const { data: subAgentConfig, isLoading: isConfigLoading } = useQuery({
@@ -337,10 +350,25 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 onChange={(e) => updateConfig('summary_agent', { model: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="claude-3">Claude 3</option>
-                                <option value="gemini-pro">Gemini Pro</option>
+                                {!chatGroups.length && (
+                                    <option value="" disabled>
+                                        Install an AI provider to see models
+                                    </option>
+                                )}
+                                {!!config.summary_agent.model && !chatModels.some(model => model.model === config.summary_agent.model) && (
+                                    <option value={config.summary_agent.model}>
+                                        Current: {config.summary_agent.model}
+                                    </option>
+                                )}
+                                {chatGroups.map(group => (
+                                    <optgroup key={group.provider} label={group.label}>
+                                        {group.models.map(model => (
+                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 
@@ -426,10 +454,25 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 onChange={(e) => updateConfig('translator_agent', { model: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="claude-3">Claude 3</option>
-                                <option value="gemini-pro">Gemini-2.5-Pro</option>
+                                {!translationGroups.length && (
+                                    <option value="" disabled>
+                                        Install a translation-capable provider to see models
+                                    </option>
+                                )}
+                                {!!config.translator_agent.model && !translationModels.some(model => model.model === config.translator_agent.model) && (
+                                    <option value={config.translator_agent.model}>
+                                        Current: {config.translator_agent.model}
+                                    </option>
+                                )}
+                                {translationGroups.map(group => (
+                                    <optgroup key={group.provider} label={group.label}>
+                                        {group.models.map(model => (
+                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 
@@ -535,9 +578,25 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     onChange={(e) => updateConfig('knowledge_agent', { fastest_model: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
-                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                    <option value="gpt-4">GPT-4</option>
-                                    <option value="claude-3">Claude 3</option>
+                                    {!chatGroups.length && (
+                                        <option value="" disabled>
+                                            Install an AI provider to see models
+                                        </option>
+                                    )}
+                                    {!!config.knowledge_agent.fastest_model && !chatModels.some(model => model.model === config.knowledge_agent.fastest_model) && (
+                                        <option value={config.knowledge_agent.fastest_model}>
+                                            Current: {config.knowledge_agent.fastest_model}
+                                        </option>
+                                    )}
+                                    {chatGroups.map(group => (
+                                        <optgroup key={group.provider} label={group.label}>
+                                            {group.models.map(model => (
+                                                <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                    {model.label}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
                                 </select>
                             </div>
 
@@ -554,9 +613,25 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     onChange={(e) => updateConfig('knowledge_agent', { best_model: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
-                                    <option value="gpt-4">GPT-4</option>
-                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                    <option value="claude-3">Claude 3</option>
+                                    {!chatGroups.length && (
+                                        <option value="" disabled>
+                                            Install an AI provider to see models
+                                        </option>
+                                    )}
+                                    {!!config.knowledge_agent.best_model && !chatModels.some(model => model.model === config.knowledge_agent.best_model) && (
+                                        <option value={config.knowledge_agent.best_model}>
+                                            Current: {config.knowledge_agent.best_model}
+                                        </option>
+                                    )}
+                                    {chatGroups.map(group => (
+                                        <optgroup key={group.provider} label={group.label}>
+                                            {group.models.map(model => (
+                                                <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                    {model.label}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -574,9 +649,25 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 onChange={(e) => updateConfig('knowledge_agent', { question_extractor_model: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="claude-3">Claude 3</option>
+                                {!chatGroups.length && (
+                                    <option value="" disabled>
+                                        Install an AI provider to see models
+                                    </option>
+                                )}
+                                {!!config.knowledge_agent.question_extractor_model && !chatModels.some(model => model.model === config.knowledge_agent.question_extractor_model) && (
+                                    <option value={config.knowledge_agent.question_extractor_model}>
+                                        Current: {config.knowledge_agent.question_extractor_model}
+                                    </option>
+                                )}
+                                {chatGroups.map(group => (
+                                    <optgroup key={group.provider} label={group.label}>
+                                        {group.models.map(model => (
+                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 
@@ -730,6 +821,41 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </label>
                         </div>
 
+                        <div>
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="image-generation-model"
+                            >
+                                Image Generation Model
+                            </label>
+                            <select
+                                id="image-generation-model"
+                                value={config.image_generation_agent.model || ''}
+                                onChange={(e) => updateConfig('image_generation_agent', { model: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                {!imageGroups.length && (
+                                    <option value="" disabled>
+                                        Install an image provider to see models
+                                    </option>
+                                )}
+                                {!!config.image_generation_agent.model && !imageModels.some(model => model.model === config.image_generation_agent.model) && (
+                                    <option value={config.image_generation_agent.model}>
+                                        Current: {config.image_generation_agent.model}
+                                    </option>
+                                )}
+                                {imageGroups.map(group => (
+                                    <optgroup key={group.provider} label={group.label}>
+                                        {group.models.map(model => (
+                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
                             <div className="space-y-2 text-sm">
@@ -797,6 +923,41 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                     <p className="text-sm text-gray-500">Automatically analyze uploaded videos</p>
                                 </div>
                             </label>
+                        </div>
+
+                        <div>
+                            <label 
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                                htmlFor="video-generation-model"
+                            >
+                                Video Generation Model
+                            </label>
+                            <select
+                                id="video-generation-model"
+                                value={config.video_agent.model || ''}
+                                onChange={(e) => updateConfig('video_agent', { model: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                {!videoGroups.length && (
+                                    <option value="" disabled>
+                                        Install a video provider to see models
+                                    </option>
+                                )}
+                                {!!config.video_agent.model && !videoModels.some(model => model.model === config.video_agent.model) && (
+                                    <option value={config.video_agent.model}>
+                                        Current: {config.video_agent.model}
+                                    </option>
+                                )}
+                                {videoGroups.map(group => (
+                                    <optgroup key={group.provider} label={group.label}>
+                                        {group.models.map(model => (
+                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="border border-gray-200 rounded-lg p-4">

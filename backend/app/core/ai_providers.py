@@ -10,6 +10,7 @@ import httpx
 import logging
 
 from app.core.config import settings
+from app.core.model_catalog import MODEL_CATALOG
 
 logger = logging.getLogger(__name__)
 
@@ -164,55 +165,16 @@ class AnthropicProvider(BaseAIProvider):
         ]
 
 
-class MockAIProvider(BaseAIProvider):
-    """Mock AI provider for testing"""
-    
-    def __init__(self):
-        super().__init__("")
-    
-    async def generate_response(
-        self, 
-        messages: List[Dict[str, str]], 
-        model: str = "mock-model",
-        **kwargs
-    ) -> Dict[str, Any]:
-        """Generate mock response"""
-        # Simulate processing delay
-        await asyncio.sleep(0.1)
-        
-        # Extract user message
-        user_message = ""
-        for message in messages:
-            if message["role"] == "user":
-                user_message = message["content"]
-                break
-        
-        return {
-            "choices": [{
-                "message": {
-                    "role": "assistant",
-                    "content": f"This is a mock response to: {user_message}"
-                }
-            }],
-            "model": model,
-            "usage": {
-                "prompt_tokens": len(user_message.split()) * 1.3,
-                "completion_tokens": 50,
-                "total_tokens": len(user_message.split()) * 1.3 + 50
-            }
-        }
-    
-    async def get_available_models(self) -> List[str]:
-        """Get mock available models"""
-        return ["mock-model", "mock-gpt", "mock-claude"]
-
-
 class AIProviderManager:
     """Manager for AI providers"""
     
     def __init__(self):
         self.providers: Dict[str, BaseAIProvider] = {}
         self._initialize_providers()
+        
+    def get_provider(self, provider_name: str) -> Optional[BaseAIProvider]:
+        """Get an AI provider instance by name"""
+        return self.providers.get(provider_name)
     
     def _initialize_providers(self):
         """Initialize available AI providers"""
@@ -226,9 +188,8 @@ class AIProviderManager:
             self.providers["anthropic"] = AnthropicProvider(settings.ANTHROPIC_API_KEY)
             logger.info("Anthropic provider initialized")
         
-        # Always initialize mock provider for testing
-        self.providers["mock"] = MockAIProvider()
-        logger.info("Mock provider initialized")
+        if not self.providers:
+            logger.warning("No AI providers initialized. Install providers and add API keys to enable models.")
     
     async def generate_response(
         self, 
@@ -280,12 +241,66 @@ class AIProviderManager:
 ai_provider_manager = AIProviderManager()
 
 
+class PromptAIProvider:
+    """Adapter that provides a prompt-based interface over chat providers."""
+
+    def __init__(self, provider_name: str, provider: BaseAIProvider):
+        self.provider_name = provider_name
+        self.provider = provider
+
+    async def generate_response(self, prompt: str, model: str, **kwargs) -> str:
+        """Generate a response from a prompt string."""
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.provider.generate_response(messages=messages, model=model, **kwargs)
+        return _extract_response_text(self.provider_name, response)
+
+
+def _extract_response_text(provider_name: str, response: Dict[str, Any]) -> str:
+    """Extract a text response from provider payloads."""
+    if isinstance(response, dict) and response.get("error"):
+        raise ValueError(response["error"])
+
+    if isinstance(response, dict):
+        # OpenAI-style response
+        if "choices" in response and response["choices"]:
+            choice = response["choices"][0]
+            message = choice.get("message") or {}
+            content = message.get("content") or choice.get("text")
+            if content is not None:
+                return str(content)
+
+        # Anthropic-style response
+        if "content" in response:
+            content = response["content"]
+            if isinstance(content, list):
+                parts = [
+                    part.get("text", "")
+                    for part in content
+                    if isinstance(part, dict)
+                ]
+                text = "".join(parts).strip()
+                if text:
+                    return text
+            if isinstance(content, str):
+                return content
+
+    return str(response)
+
+
 async def initialize_ai_providers():
     """Initialize AI providers (called on startup)"""
     logger.info("Initializing AI providers...")
     # The manager is already initialized in __init__
     # This function can be used for any additional setup
     pass
+
+
+def get_ai_provider(provider_name: str) -> Optional[PromptAIProvider]:
+    """Get a prompt-based AI provider adapter by name."""
+    provider = ai_provider_manager.providers.get(provider_name)
+    if not provider:
+        return None
+    return PromptAIProvider(provider_name, provider)
 
 
 async def get_ai_response(
@@ -307,6 +322,11 @@ async def get_all_models() -> Dict[str, List[str]]:
     """Get all available models across all providers"""
     return await ai_provider_manager.get_all_available_models()
 
+def get_raw_ai_provider(provider_name: str) -> Optional[BaseAIProvider]:
+    """Get an AI provider instance by name"""
+    global ai_provider_manager
+    return ai_provider_manager.get_provider(provider_name)
+
 
 # Utility functions for agent configuration
 def get_default_model_config(provider: str) -> Dict[str, Any]:
@@ -326,14 +346,27 @@ def get_default_model_config(provider: str) -> Dict[str, Any]:
             "temperature": 0.7,
             "top_p": 1.0
         },
-        "mock": {
-            "model": "mock-model",
+        "fireworks": {
+            "model": "gpt-oss-20B",
             "max_tokens": 1000,
-            "temperature": 0.7
+            "temperature": 0.7,
+            "top_p": 1.0
+        },
+        "xai": {
+            "model": "grok-3",
+            "max_tokens": 1000,
+            "temperature": 0.7,
+            "top_p": 1.0
+        },
+        "openrouter": {
+            "model": "GPT-5.2-Chat",
+            "max_tokens": 1000,
+            "temperature": 0.7,
+            "top_p": 1.0
         }
     }
     
-    return configs.get(provider, configs["mock"])
+    return configs.get(provider, configs["openai"])
 
 
 def validate_model_config(provider: str, config: Dict[str, Any]) -> bool:
@@ -345,16 +378,25 @@ def validate_model_config(provider: str, config: Dict[str, Any]) -> bool:
         if field not in config:
             return False
     
-    # Provider-specific validation
-    if provider == "openai":
-        return config["model"] in ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"]
-    elif provider == "anthropic":
-        return config["model"] in [
-            "claude-3-haiku-20240307",
-            "claude-3-sonnet-20240229", 
-            "claude-3-opus-20240229"
-        ]
-    elif provider == "mock":
+    catalog = MODEL_CATALOG.get(provider)
+    if not catalog:
         return True
-    
-    return False
+
+    model_name = config.get("model")
+    if model_name == "auto":
+        return True
+
+    available_models = set()
+    for models in catalog.get("models", {}).values():
+        available_models.update(models)
+
+    if model_name in available_models:
+        return True
+
+    # Allow case-insensitive matches to avoid breaking legacy configs.
+    available_lower = {model.lower() for model in available_models}
+    if isinstance(model_name, str) and model_name.lower() in available_lower:
+        return True
+
+    # Allow custom models not yet listed in the catalog.
+    return True

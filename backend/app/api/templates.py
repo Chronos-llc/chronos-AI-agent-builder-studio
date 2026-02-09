@@ -85,7 +85,7 @@ async def create_template(
     """Create a new agent template"""
     
     template = AgentTemplate(
-        **template_data.dict(),
+        **template_data.model_dump(by_alias=True),
         created_by_user_id=current_user.id
     )
     
@@ -122,7 +122,7 @@ async def update_template(
         )
     
     # Update template
-    update_data = template_update.dict(exclude_unset=True)
+    update_data = template_update.model_dump(exclude_unset=True, by_alias=True)
     for field, value in update_data.items():
         setattr(template, field, value)
     

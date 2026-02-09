@@ -38,6 +38,16 @@ The Chronos Hub Marketplace now includes two powerful MCP server integrations:
 
 These integrations are automatically initialized when you start the backend.
 
+### AI Provider Integrations
+
+Seed the AI providers into the Integrations hub:
+
+```bash
+python backend/scripts/seed_ai_provider_integrations.py
+```
+
+Then add your default API keys to `.env` (for example `OPENAI_API_KEY`, `FIREWORKS_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, and any STT/TTS keys). Install providers from the Integrations page to make their models available in the Studio model pickers.
+
 ### Using Docker (Recommended)
 
 1. Clone the repository:

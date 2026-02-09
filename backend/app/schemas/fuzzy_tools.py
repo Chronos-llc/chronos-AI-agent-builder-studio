@@ -3,7 +3,7 @@ FUZZY Tools Pydantic Schemas
 
 Defines request/response schemas for FUZZY studio manipulation tools.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -39,20 +39,26 @@ class FuzzyActionStatus(str, Enum):
 
 class CreateAgentRequest(BaseModel):
     """Request schema for creating an agent"""
+    model_config = ConfigDict(protected_namespaces=())
     name: str = Field(..., description="Name of the agent", min_length=1, max_length=100)
     description: Optional[str] = Field(None, description="Description of the agent")
     system_prompt: Optional[str] = Field(None, description="System prompt for the agent")
-    model_config: Optional[Dict[str, Any]] = Field(None, description="LLM model configuration")
+    model_config_data: Optional[Dict[str, Any]] = Field(
+        None, alias="model_config", description="LLM model configuration"
+    )
     tags: Optional[List[str]] = Field(None, description="Tags for categorization")
 
 
 class UpdateAgentConfigRequest(BaseModel):
     """Request schema for updating agent configuration"""
+    model_config = ConfigDict(protected_namespaces=())
     agent_id: int = Field(..., description="ID of the agent to update")
     name: Optional[str] = Field(None, description="New name for the agent")
     description: Optional[str] = Field(None, description="New description")
     system_prompt: Optional[str] = Field(None, description="New system prompt")
-    model_config: Optional[Dict[str, Any]] = Field(None, description="New model configuration")
+    model_config_data: Optional[Dict[str, Any]] = Field(
+        None, alias="model_config", description="New model configuration"
+    )
     tags: Optional[List[str]] = Field(None, description="New tags")
 
 
@@ -169,12 +175,13 @@ class FuzzyToolResponse(BaseModel):
 
 class AgentDetailsResponse(BaseModel):
     """Response schema for agent details"""
+    model_config = ConfigDict(protected_namespaces=())
     id: int
     name: str
     description: Optional[str]
     status: str
     system_prompt: Optional[str]
-    model_config: Optional[Dict[str, Any]]
+    model_config_data: Optional[Dict[str, Any]] = Field(None, alias="model_config")
     tags: Optional[List[str]]
     tools: List[Dict[str, Any]]
     knowledge_files: List[Dict[str, Any]]

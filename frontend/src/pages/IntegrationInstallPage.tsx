@@ -43,6 +43,23 @@ const IntegrationInstallPage: React.FC = () => {
     }
   }, [id]);
 
+  const buildDefaultFormData = (schema: any): Record<string, any> => {
+    if (!schema || typeof schema !== 'object') {
+      return {};
+    }
+
+    const properties = schema.properties || schema;
+    const defaults: Record<string, any> = {};
+
+    Object.entries(properties).forEach(([name, field]) => {
+      if (typeof field === 'object' && field !== null && field.default !== undefined) {
+        defaults[name] = field.default;
+      }
+    });
+
+    return defaults;
+  };
+
   const fetchIntegrationDetails = async (integrationId: number) => {
     try {
       setLoading(true);
@@ -60,6 +77,8 @@ const IntegrationInstallPage: React.FC = () => {
 
       const data = await response.json();
       setIntegration(data);
+      setConfigForm(buildDefaultFormData(data.config_schema));
+      setCredentialsForm(buildDefaultFormData(data.credentials_schema));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch integration details');
     } finally {
@@ -68,14 +87,19 @@ const IntegrationInstallPage: React.FC = () => {
   };
 
   const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
+    const parsedValue = type === 'checkbox'
+      ? (e.target as HTMLInputElement).checked
+      : type === 'number'
+        ? parseFloat(value)
+        : value;
     setConfigForm({
       ...configForm,
-      [name]: type === 'number' ? parseFloat(value) : value
+      [name]: parsedValue
     });
   };
 
-  const handleCredentialsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCredentialsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setCredentialsForm({
       ...credentialsForm,
@@ -121,14 +145,13 @@ const IntegrationInstallPage: React.FC = () => {
     if (!integration || !user) return;
 
     try {
-      const response = await fetch('/api/v1/integrations/config/', {
+      const response = await fetch(`/api/v1/integrations/${integration.id}/config/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          integration_id: integration.id,
           config: configForm,
           credentials: credentialsForm,
           is_active: true
@@ -151,30 +174,31 @@ const IntegrationInstallPage: React.FC = () => {
       return [];
     }
 
-    return Object.entries(schema).map(([name, field]) => {
-      if (typeof field === 'object' && field !== null) {
-        return {
-          name,
-          label: field.title || name,
-          type: field.type || 'text',
-          required: field.required || false,
-          placeholder: field.description || `Enter ${name}`,
-          description: field.description,
-          default: field.default
-        };
-      }
+    const properties = schema.properties || schema;
+    const requiredFields = new Set(schema.required || []);
+
+    return Object.entries(properties).map(([name, field]) => {
+      const fieldConfig = (typeof field === 'object' && field !== null) ? field : {};
+      const isSensitive = fieldConfig.sensitive || fieldConfig.format === 'password';
+      const fieldType = isSensitive ? 'password' : (fieldConfig.type || 'text');
 
       return {
         name,
-        label: name,
-        type: 'text',
-        required: false,
-        placeholder: `Enter ${name}`
+        label: fieldConfig.title || name,
+        type: fieldType,
+        required: requiredFields.has(name) || fieldConfig.required || false,
+        placeholder: fieldConfig.description || `Enter ${name}`,
+        description: fieldConfig.description,
+        default: fieldConfig.default
       };
     });
   };
 
-  const renderFormField = (field: FormField) => {
+  const renderFormField = (
+    field: FormField,
+    formData: Record<string, any>,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  ) => {
     return (
       <div key={field.name} className="mb-4">
         <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
@@ -183,12 +207,24 @@ const IntegrationInstallPage: React.FC = () => {
         {field.description && (
           <p className="text-xs text-gray-500 mb-1">{field.description}</p>
         )}
-        {field.type === 'textarea' ? (
+        {field.type === 'boolean' ? (
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id={field.name}
+              name={field.name}
+              checked={formData[field.name] ?? field.default ?? false}
+              onChange={onChange}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-700">Enabled</span>
+          </label>
+        ) : field.type === 'textarea' ? (
           <textarea
             id={field.name}
             name={field.name}
-            value={configForm[field.name] || field.default || ''}
-            onChange={handleConfigChange}
+            value={formData[field.name] ?? field.default ?? ''}
+            onChange={onChange}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={field.placeholder}
@@ -199,8 +235,8 @@ const IntegrationInstallPage: React.FC = () => {
             type={field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : 'text'}
             id={field.name}
             name={field.name}
-            value={configForm[field.name] || field.default || ''}
-            onChange={field.name.startsWith('credential_') ? handleCredentialsChange : handleConfigChange}
+            value={formData[field.name] ?? field.default ?? ''}
+            onChange={onChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={field.placeholder}
             required={field.required}
@@ -331,7 +367,7 @@ const IntegrationInstallPage: React.FC = () => {
 
                   {configFields.length > 0 ? (
                     <form className="space-y-4">
-                      {configFields.map(renderFormField)}
+                      {configFields.map(field => renderFormField(field, configForm, handleConfigChange))}
                     </form>
                   ) : (
                     <div className="text-center py-8">
@@ -348,7 +384,7 @@ const IntegrationInstallPage: React.FC = () => {
 
                   {credentialFields.length > 0 ? (
                     <form className="space-y-4">
-                      {credentialFields.map(renderFormField)}
+                      {credentialFields.map(field => renderFormField(field, credentialsForm, handleCredentialsChange))}
                     </form>
                   ) : (
                     <div className="text-center py-8">
