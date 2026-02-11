@@ -16,9 +16,12 @@ import {
     Plus,
     Trash2,
     Save,
-    Globe
+    Globe,
+    Mic
 } from 'lucide-react';
-import { useModelCatalog, groupModelsByProvider } from '../../hooks/useModelCatalog';
+import { useModelCatalog } from '../../hooks/useModelCatalog';
+import { ModelCatalogPicker } from './ModelCatalogPicker';
+import { VoiceConfigurationPanel } from './VoiceConfigurationPanel';
 
 interface BotSettings {
     // Basic Settings
@@ -75,7 +78,7 @@ interface EnvironmentVariable {
 }
 
 const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
-    const [activeTab, setActiveTab] = useState<'basic' | 'llm' | 'performance' | 'security' | 'integrations' | 'env' | 'advanced'>('basic');
+    const [activeTab, setActiveTab] = useState<'basic' | 'llm' | 'voice' | 'performance' | 'security' | 'integrations' | 'env' | 'advanced'>('basic');
     const [showSecretValues, setShowSecretValues] = useState<Record<string, boolean>>({});
     const [newEnvVar, setNewEnvVar] = useState<EnvironmentVariable>({ key: '', value: '', isSecret: false });
     const [showAddEnvVar, setShowAddEnvVar] = useState(false);
@@ -83,7 +86,6 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const queryClient = useQueryClient();
     const { data: modelCatalog } = useModelCatalog();
     const chatModels = modelCatalog?.models?.chat || [];
-    const modelGroups = groupModelsByProvider(chatModels, modelCatalog?.providers || []);
 
     // Fetch current settings
     const { data: settings, isLoading } = useQuery({
@@ -193,16 +195,16 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="border-b border-gray-200 pb-4 mb-6">
+            <div className="border-b border-border pb-4 mb-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <Settings className="w-6 h-6 text-blue-600" />
-                        <h2 className="text-xl font-semibold text-gray-900">Bot Settings</h2>
+                        <Settings className="w-6 h-6 text-primary" />
+                        <h2 className="text-xl font-semibold text-foreground">Bot Settings</h2>
                     </div>
                     <button
                         onClick={() => saveSettingsMutation.mutate(botSettings)}
                         disabled={saveSettingsMutation.isPending}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
                         <Save className="w-4 h-4" />
                         <span>{saveSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}</span>
@@ -214,6 +216,7 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                     {[
                         { id: 'basic', label: 'Basic', icon: User },
                         { id: 'llm', label: 'LLM Model', icon: Brain },
+                        { id: 'voice', label: 'Voice', icon: Mic },
                         { id: 'performance', label: 'Performance', icon: Gauge },
                         { id: 'security', label: 'Security', icon: Shield },
                         { id: 'integrations', label: 'Integrations', icon: Globe },
@@ -224,8 +227,8 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             key={id}
                             onClick={() => setActiveTab(id as any)}
                             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === id
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'bg-primary/15 text-primary'
+                                    : 'text-muted-foreground hover:bg-muted/40'
                                 }`}
                         >
                             <Icon className="w-4 h-4" />
@@ -358,37 +361,15 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="llm-model" className="block text-sm font-medium text-gray-700 mb-2">
-                                Model
-                            </label>
-                            <select
-                                id="llm-model"
-                                value={botSettings.llm_model}
-                                onChange={(e) => updateSetting('llm_model', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                {!modelGroups.length && (
-                                    <option value="" disabled>
-                                        Install an AI provider to see models
-                                    </option>
-                                )}
-                                {!!botSettings.llm_model && !chatModels.some(model => model.model === botSettings.llm_model) && (
-                                    <option value={botSettings.llm_model}>
-                                        Current: {botSettings.llm_model}
-                                    </option>
-                                )}
-                                {modelGroups.map(group => (
-                                    <optgroup key={group.provider} label={group.label}>
-                                        {group.models.map(model => (
-                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="chat"
+                            providers={modelCatalog?.providers || []}
+                            models={chatModels}
+                            value={botSettings.llm_model}
+                            onChange={(model) => updateSetting('llm_model', model)}
+                            label="Model"
+                            helperText="Select a provider to see its available models."
+                        />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -737,6 +718,10 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             <p className="text-xs text-gray-500 mt-1">Email for system alerts and notifications</p>
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'voice' && (
+                    <VoiceConfigurationPanel agentId={agentId} />
                 )}
 
                 {activeTab === 'env' && (

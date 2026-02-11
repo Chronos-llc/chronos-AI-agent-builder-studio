@@ -11,6 +11,7 @@ export interface ModelCatalogEntry {
 export interface ModelCatalogProvider {
   id: string
   name: string
+  icon_url?: string | null
   installed: boolean
   available: boolean
   default_env_key?: string

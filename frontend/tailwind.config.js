@@ -16,6 +16,10 @@ export default {
             },
         },
         extend: {
+            fontFamily: {
+                heading: ['"Space Grotesk"', 'sans-serif'],
+                body: ['Manrope', 'sans-serif'],
+            },
             colors: {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",

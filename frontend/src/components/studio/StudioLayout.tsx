@@ -134,14 +134,14 @@ export const StudioLayout = () => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center min-h-full">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )
     }
 
     return (
-        <div className="flex h-screen bg-background">
+        <div className="flex min-h-full bg-background">
             {/* Sidebar */}
             <div className="w-64 border-r border-border bg-card">
                 <div className="p-4 border-b border-border">

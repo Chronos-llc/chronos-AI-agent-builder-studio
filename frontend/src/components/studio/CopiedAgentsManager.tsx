@@ -84,7 +84,7 @@ export default function CopiedAgentsManager() {
     }
 
     const handleNavigateToAgent = (agentId: number) => {
-        navigate(`/studio/agents/${agentId}`)
+        navigate(`/app/agents/${agentId}/edit`)
     }
 
     const filteredAgents = copiedAgents.filter(agent => {
@@ -305,7 +305,7 @@ export default function CopiedAgentsManager() {
                         View Full Agent
                     </Button>
                     <Button
-                        onClick={() => navigate(`/studio/agents/${selectedAgent.agent_id}/edit`)}
+                        onClick={() => navigate(`/app/agents/${selectedAgent.agent_id}/edit`)}
                         variant="secondary"
                     >
                         Edit Agent
@@ -414,7 +414,7 @@ export default function CopiedAgentsManager() {
                                                             <DropdownMenuItem onClick={() => handleNavigateToAgent(agent.agent_id)}>
                                                                 View Full Agent
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => navigate(`/studio/agents/${agent.agent_id}/edit`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/app/agents/${agent.agent_id}/edit`)}>
                                                                 Edit Agent
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => navigate(`/marketplace/listings/${agent.listing_id}`)}>

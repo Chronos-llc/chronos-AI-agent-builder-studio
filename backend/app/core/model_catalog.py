@@ -81,7 +81,7 @@ FIREWORKS_CHAT_MODELS = _dedupe(
         "Qwen3-235B-A22B-Thinking-2507",
         "Qwen3-Coder-480B-A35B-Instruct",
         "Qwen3-235B-A22B-Instruct-2507",
-        "Llama-3.3-70B-instuct",
+        "Llama-3.3-70B-instruct",
         "Deepseek-R1-05/28",
         "Qwen3-Coder-30B-A3b-Instruct",
         "Deepseek-R1-Fast",
@@ -125,12 +125,278 @@ XAI_CHAT_MODELS = _dedupe(
 
 OPENROUTER_CHAT_MODELS = _dedupe(
     [
-        "Olmo-3,1-32B-instruct",
+        "Olmo-3.1-32B-instruct",
         "Mistral-small-creative",
         "Olmo-3.1-32B-Think",
         "MiMo-V2-Flash",
         "GPT-5.2-Chat",
         "Deepseek-V3-2-Speciale",
+    ]
+)
+
+OPENAI_VIDEO_MODELS = _dedupe(
+    [
+        "sora",
+        "sora-2",
+        "sora-2-2025-12-08",
+        "sora-2-2025-10-06",
+        "sora-2pro",
+    ]
+)
+
+OPENAI_IMAGE_MODELS = _dedupe(
+    [
+        "gpt-image-1",
+        "gpt-image-1-mini",
+        "gpt-image-1.5",
+        "dall-e-3",
+        "dall-e-2",
+    ]
+)
+
+OPENAI_STT_MODELS = _dedupe(
+    [
+        "whisper-1",
+        "gpt-4o-mini-transcribe",
+        "gpt-4o-transcribe",
+        "gpt-4o-transcribe-diarize",
+    ]
+)
+
+OPENAI_TTS_MODELS = _dedupe(
+    [
+        "gpt-4o-mini-tts",
+        "tts-1",
+        "tts-1-hd",
+    ]
+)
+
+OPENAI_VOICES = _dedupe(
+    [
+        "alloy",
+        "ash",
+        "ballad",
+        "coral",
+        "echo",
+        "fable",
+        "nova",
+        "onyx",
+        "sage",
+        "shimmer",
+        "verse",
+        "marin",
+        "cedar",
+    ]
+)
+
+XAI_IMAGE_MODELS = _dedupe(
+    [
+        "grok-2-image-1212",
+        "grok-imagine-image",
+        "grok-imagine-image-pro",
+    ]
+)
+
+XAI_VIDEO_MODELS = _dedupe(
+    [
+        "grok-imagine-video",
+    ]
+)
+
+GOOGLE_IMAGE_MODELS = _dedupe(
+    [
+        "gemini-2.5-flash-image/nano-banana",
+        "gemini-3-pro-image-preview/nano-banana-pro",
+        "imagen-4.0-generate-001",
+        "imagen-4.0-fast-generate-00",
+        "imagen-4.0-ultra-generate-001",
+        "imagen-3.0-capability-001",
+        "imagen-3.0-generate-002",
+        "imagen-3.0-generate-00",
+        "virtual-try-on-001",
+    ]
+)
+
+GOOGLE_VIDEO_MODELS = _dedupe(
+    [
+        "veo-2.0-generate-001",
+        "veo-2.0-generate-exp",
+        "veo-2.0-generate-preview",
+        "veo-3.0-generate-001",
+        "veo-3.0-fast-generate-001",
+        "veo-3.0-generate-preview",
+        "veo-3.0-fast-generate-preview",
+        "veo-3.1-generate-001",
+        "veo-3.1-fast-generate-001",
+        "veo-3.1-generate-preview",
+        "veo-3.1-fast-generate-preview",
+    ]
+)
+
+FIREWORKS_STT_MODELS = _dedupe(
+    [
+        "Streaming-ASR-v1",
+        "Streaming-ASR-v2",
+        "Whisper-V3-Large",
+        "Whisper-V3-Turbo",
+    ]
+)
+
+FIREWORKS_IMAGE_MODELS = _dedupe(
+    [
+        "FLUX.1-Kontext-Pro",
+        "FLUX.1-Kontext-Max",
+        "FLUX.1-[dev]-FP8",
+        "FLUX.1-[schnell]-FP8",
+        "Stable-Diffusion-XL",
+        "Qwen3-VL-235B-A22B-Instruct",
+        "Qwen3-VL-235B-A22B-Thinking",
+        "Molmo2-8B",
+        "Molmo2-4B",
+        "Qwen3-Omni-30B-A3B-Instruct",
+        "Devstral Small 24B Instruct 2512",
+        "Qwen3-VL-32B-Instruct",
+        "Qwen3-VL-8B-Instruct",
+        "Mistral Large-3-675B-Instruct-2512",
+        "NVIDIA-Nemotron-Nano-2-VL",
+        "Qwen3-VL-30B-A3B-Thinking",
+        "Qwen3-VL-30B-A3B-Instruct",
+        "GLM-4.5V",
+        "Llama-4-Maverick-Instruct (Basic)",
+        "Llama-4-Scout-Instruct (Basic)",
+        "Qwen2.5-VL-72B-Instruct",
+        "Qwen2.5-VL-32B-Instruct",
+        "Qwen2.5-VL-7B-Instruct",
+        "Qwen2.5-VL-3B-Instruct",
+        "Llama-3.2-11B-Vision-Instruct",
+        "Llama-3.2-90B-Vision-Instruct",
+    ]
+)
+
+DEEPGRAM_STT_MODELS = _dedupe(
+    [
+        "nova-2",
+        "nova-2-general",
+        "nova-2-meeting",
+        "nova-2-phonecall",
+        "nova-2-finance",
+        "nova-2-conversationalai",
+        "nova-2-voicemail",
+        "nova-2-video",
+        "nova-2-medical",
+        "nova-2-drivethru",
+        "nova-2-automotive",
+        "nova-2-atc",
+        "nova",
+        "nova-general",
+        "nova-phonecall",
+        "nova-medical",
+    ]
+)
+
+ELEVENLABS_TTS_MODELS = _dedupe(
+    [
+        "eleven_multilingual_v2",
+        "eleven_v3",
+    ]
+)
+
+ELEVENLABS_STT_MODELS = _dedupe(
+    [
+        "scribe_v2",
+        "scribe_v2_realtime",
+    ]
+)
+
+ELEVENLABS_VOICES = _dedupe(
+    [
+        "Ellen",
+        "Juniper",
+        "Jane",
+        "James",
+        "Arabella",
+        "Austin",
+        "Jarnathan",
+        "Kuon",
+        "Blondie",
+        "Priyanka",
+        "Monika Sogam",
+        "Sam",
+        "Spuds Oxley",
+        "Anika",
+        "Celian",
+        "Brock",
+        "Nathan",
+        "Taksh",
+        "Viraj",
+        "Horatius",
+        "Chris",
+        "Callum",
+        "Laura",
+        "Harry",
+        "Jessica",
+        "Charlotte",
+        "Guadeloupe Merryweather",
+        "Dr. Von",
+        "Grimblewood Thornwhisker",
+        "Mark",
+    ]
+)
+
+CARTESIA_STT_MODELS = _dedupe(
+    [
+        "ink-whisper",
+    ]
+)
+
+CARTESIA_TTS_MODELS = _dedupe(
+    [
+        "sonic-2-2025-06-11",
+        "sonic-turbo-2025-03-07",
+        "sonic-2024-12-12",
+        "sonic-3-2026-01-12",
+    ]
+)
+
+CARTESIA_VOICES = _dedupe(
+    [
+        "Tessa",
+        "Kiefer",
+        "Brandon",
+        "Ariana",
+        "Dorothy",
+        "Joanie",
+        "Layla",
+        "Marian",
+        "Cory",
+        "Kyle",
+        "Wade 2.0",
+        "Sean",
+        "Ross",
+        "Clint",
+        "Celine",
+        "Judith",
+        "Suzanne",
+        "Edward",
+        "Tabitha",
+        "Elaine",
+        "Sterling",
+        "Regis",
+        "Tanner",
+        "Marcus",
+        "Colin",
+        "Skyler",
+        "Cameron",
+        "Sabrina",
+        "Emily",
+        "Shelly",
+        "Laurel",
+        "Jeremy",
+        "Kurt",
+        "Zander",
+        "Jillian",
+        "Theo Silk",
+        "Riley",
     ]
 )
 
@@ -140,42 +406,47 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "OpenAI",
         "integration_name": "OpenAI Provider",
         "env_key": "OPENAI_API_KEY",
+        "icon_url": "",
         "models": {
             "chat": OPENAI_CHAT_MODELS,
             "translation": OPENAI_CHAT_MODELS,
-            "image": ["gpt-image-1", "dall-e-3", "dall-e-2"],
-            "video": ["sora"],
-            "stt": ["whisper-1"],
-            "tts": ["tts-1", "tts-1-hd"],
-            "voice": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+            "image": OPENAI_IMAGE_MODELS,
+            "video": OPENAI_VIDEO_MODELS,
+            "stt": OPENAI_STT_MODELS,
+            "tts": OPENAI_TTS_MODELS,
+            "voice": OPENAI_VOICES,
         },
     },
     "fireworks": {
         "name": "Fireworks AI",
         "integration_name": "Fireworks AI Provider",
         "env_key": "FIREWORKS_API_KEY",
+        "icon_url": "",
         "models": {
             "chat": FIREWORKS_CHAT_MODELS,
             "translation": FIREWORKS_CHAT_MODELS,
-            "image": [],
+            "image": FIREWORKS_IMAGE_MODELS,
             "video": [],
+            "stt": FIREWORKS_STT_MODELS,
         },
     },
     "xai": {
         "name": "xAI",
         "integration_name": "xAI Provider",
         "env_key": "XAI_API_KEY",
+        "icon_url": "",
         "models": {
             "chat": XAI_CHAT_MODELS,
             "translation": XAI_CHAT_MODELS,
-            "image": [],
-            "video": [],
+            "image": XAI_IMAGE_MODELS,
+            "video": XAI_VIDEO_MODELS,
         },
     },
     "openrouter": {
         "name": "OpenRouter",
         "integration_name": "OpenRouter Provider",
         "env_key": "OPENROUTER_API_KEY",
+        "icon_url": "",
         "models": {
             "chat": OPENROUTER_CHAT_MODELS,
             "translation": OPENROUTER_CHAT_MODELS,
@@ -187,16 +458,32 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "ElevenLabs",
         "integration_name": "ElevenLabs Voice",
         "env_key": "ELEVENLABS_API_KEY",
+        "icon_url": "",
         "models": {
-            "tts": ["eleven_multilingual_v2"],
-            "voice": [],
+            "stt": ELEVENLABS_STT_MODELS,
+            "tts": ELEVENLABS_TTS_MODELS,
+            "voice": ELEVENLABS_VOICES,
+        },
+    },
+    "cartesia": {
+        "name": "Cartesia",
+        "integration_name": "Cartesia Voice",
+        "env_key": "CARTESIA_API_KEY",
+        "icon_url": "",
+        "models": {
+            "stt": CARTESIA_STT_MODELS,
+            "tts": CARTESIA_TTS_MODELS,
+            "voice": CARTESIA_VOICES,
         },
     },
     "google": {
         "name": "Google Cloud",
         "integration_name": "Google Speech Provider",
         "env_key": "GOOGLE_CLOUD_API_KEY",
+        "icon_url": "",
         "models": {
+            "image": GOOGLE_IMAGE_MODELS,
+            "video": GOOGLE_VIDEO_MODELS,
             "stt": [],
             "tts": [],
             "voice": [],
@@ -206,6 +493,7 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "Azure Speech",
         "integration_name": "Azure Speech Provider",
         "env_key": "AZURE_SPEECH_KEY",
+        "icon_url": "",
         "models": {
             "stt": [],
             "tts": [],
@@ -216,6 +504,7 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "AWS Voice",
         "integration_name": "AWS Voice Provider",
         "env_key": "AWS_ACCESS_KEY_ID",
+        "icon_url": "",
         "models": {
             "stt": [],
             "tts": [],
@@ -226,8 +515,9 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "Deepgram",
         "integration_name": "Deepgram Speech Provider",
         "env_key": "DEEPGRAM_API_KEY",
+        "icon_url": "",
         "models": {
-            "stt": ["nova-2"],
+            "stt": DEEPGRAM_STT_MODELS,
             "tts": [],
             "voice": [],
         },
@@ -236,6 +526,7 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "AssemblyAI",
         "integration_name": "AssemblyAI Speech Provider",
         "env_key": "ASSEMBLYAI_API_KEY",
+        "icon_url": "",
         "models": {
             "stt": [],
             "tts": [],
@@ -318,6 +609,7 @@ async def build_model_catalog_response(
             {
                 "id": provider_id,
                 "name": provider.get("name", provider_id),
+                "icon_url": provider.get("icon_url") or None,
                 "installed": provider_id in installed,
                 "available": provider_id in available,
                 "default_env_key": provider.get("env_key"),

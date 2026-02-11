@@ -120,20 +120,20 @@ const AgentsPage: React.FC = () => {
     const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
     switch (status) {
       case 'active':
-        return `${baseClasses} bg-green-100 text-green-800`;
+        return `${baseClasses} bg-emerald-500/15 text-emerald-200`;
       case 'paused':
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
+        return `${baseClasses} bg-amber-500/15 text-amber-200`;
       case 'error':
-        return `${baseClasses} bg-red-100 text-red-800`;
+        return `${baseClasses} bg-rose-500/15 text-rose-200`;
       default:
-        return `${baseClasses} bg-gray-100 text-gray-800`;
+        return `${baseClasses} bg-muted text-muted-foreground`;
     }
   };
 
   const getPerformanceColor = (performance: number) => {
-    if (performance >= 95) return 'text-green-600';
-    if (performance >= 90) return 'text-yellow-600';
-    return 'text-red-600';
+    if (performance >= 95) return 'text-emerald-400';
+    if (performance >= 90) return 'text-amber-400';
+    return 'text-rose-400';
   };
 
   if (loading) {
@@ -141,12 +141,12 @@ const AgentsPage: React.FC = () => {
       <div className="page-container">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Agents</h1>
-          <Link to="/agents/new" className="btn btn-primary">
+          <Link to="/app/agents/new" className="btn btn-primary">
             Create New Agent
           </Link>
         </div>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-300"></div>
         </div>
       </div>
     );
@@ -158,7 +158,7 @@ const AgentsPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Agents</h1>
-          <p className="text-gray-600 mt-1">Manage your AI agent workspace</p>
+          <p className="text-muted-foreground mt-1">Manage your AI agent workspace</p>
         </div>
         <div className="flex items-center gap-4">
           <PlatformSwitcher 
@@ -166,7 +166,7 @@ const AgentsPage: React.FC = () => {
             onChange={setAgentTypeFilter} 
             className="hidden md:block"
           />
-          <Link to="/agents/new" className="btn btn-primary">
+          <Link to="/app/agents/new" className="btn btn-primary">
             Create New Agent
           </Link>
         </div>
@@ -185,7 +185,7 @@ const AgentsPage: React.FC = () => {
       <div className="card p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
             <input
               type="text"
               placeholder="Search agents by name, description, or type..."
@@ -195,9 +195,9 @@ const AgentsPage: React.FC = () => {
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
             <select
-              className="input pl-10 pr-8 appearance-none bg-white min-w-[150px]"
+              className="input pl-10 pr-8 appearance-none bg-card min-w-[150px]"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filter by status"
@@ -214,20 +214,20 @@ const AgentsPage: React.FC = () => {
       {/* Agents Grid */}
       {filteredAgents.length === 0 ? (
         <div className="card p-8 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Activity className="w-8 h-8 text-gray-400" />
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Activity className="w-8 h-8 text-muted-foreground/70" />
           </div>
           <h2 className="text-xl font-semibold mb-2">
             {agents.length === 0 ? 'No agents yet' : 'No agents match your search'}
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             {agents.length === 0 
               ? 'Get started by creating your first AI agent'
               : 'Try adjusting your search or filter criteria'
             }
           </p>
           {agents.length === 0 && (
-            <Link to="/agents/new" className="btn btn-primary">
+            <Link to="/app/agents/new" className="btn btn-primary">
               Create Agent
             </Link>
           )}
@@ -242,8 +242,8 @@ const AgentsPage: React.FC = () => {
                   <h3 className="text-lg font-semibold mb-1">{agent.name}</h3>
                   <span className={`text-sm px-2 py-1 rounded ${
                     agent.agent_type === 'voice' 
-                      ? 'text-purple-600 bg-purple-50' 
-                      : 'text-blue-600 bg-blue-50'
+                      ? 'text-violet-200 bg-violet-500/15' 
+                      : 'text-cyan-200 bg-cyan-500/15'
                   }`}>
                     {agent.agent_type === 'voice' ? 'Voice Agent' : 'Text Agent'}
                   </span>
@@ -251,17 +251,17 @@ const AgentsPage: React.FC = () => {
                 <div className="relative">
                   <button 
                     type="button"
-                    className="p-1 hover:bg-gray-100 rounded"
+                    className="p-1 hover:bg-muted rounded"
                     title="More options"
                     aria-label="More options"
                   >
-                    <MoreVertical className="w-4 h-4 text-gray-600" />
+                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
               </div>
 
               {/* Agent Description */}
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+              <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                 {agent.description || 'No description provided'}
               </p>
 
@@ -277,11 +277,11 @@ const AgentsPage: React.FC = () => {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-muted-foreground">
                   <MessageSquare className="w-4 h-4 mr-2" />
                   <span>{agent.usage_count.toLocaleString()} interactions</span>
                 </div>
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-muted-foreground">
                   <Clock className="w-4 h-4 mr-2" />
                   <span>{new Date(agent.updated_at).toLocaleDateString()}</span>
                 </div>
@@ -294,8 +294,8 @@ const AgentsPage: React.FC = () => {
                   onClick={() => handleStatusToggle(agent.id, agent.status)}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
                     agent.status === 'active'
-                      ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                      : 'bg-green-50 text-green-700 hover:bg-green-100'
+                      ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
+                      : 'bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25'
                   }`}
                 >
                   {agent.status === 'active' ? (
@@ -311,8 +311,8 @@ const AgentsPage: React.FC = () => {
                   )}
                 </button>
                 <Link
-                  to={`/agents/${agent.id}/edit`}
-                  className="flex items-center justify-center px-3 py-2 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 transition-colors"
+                  to={`/app/agents/${agent.id}/edit`}
+                  className="flex items-center justify-center px-3 py-2 bg-card text-muted-foreground rounded hover:bg-muted hover:text-foreground transition-colors"
                   title="Settings"
                   aria-label="Settings"
                 >
@@ -321,7 +321,7 @@ const AgentsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleDeleteAgent(agent.id)}
-                  className="flex items-center justify-center px-3 py-2 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+                  className="flex items-center justify-center px-3 py-2 bg-rose-500/15 text-rose-200 rounded hover:bg-rose-500/25 transition-colors"
                   title="Delete agent"
                   aria-label="Delete agent"
                 >
@@ -337,26 +337,26 @@ const AgentsPage: React.FC = () => {
       {filteredAgents.length > 0 && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{filteredAgents.length}</div>
-            <div className="text-sm text-gray-600">Total {agentTypeFilter.charAt(0).toUpperCase() + agentTypeFilter.slice(1)} Agents</div>
+            <div className="text-2xl font-bold text-cyan-300">{filteredAgents.length}</div>
+            <div className="text-sm text-muted-foreground">Total {agentTypeFilter.charAt(0).toUpperCase() + agentTypeFilter.slice(1)} Agents</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-emerald-400">
               {filteredAgents.filter(a => a.status === 'active').length}
             </div>
-            <div className="text-sm text-gray-600">Active</div>
+            <div className="text-sm text-muted-foreground">Active</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-amber-400">
               {filteredAgents.filter(a => a.status === 'paused').length}
             </div>
-            <div className="text-sm text-gray-600">Paused</div>
+            <div className="text-sm text-muted-foreground">Paused</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-sky-400">
               {filteredAgents.reduce((sum, a) => sum + a.usage_count, 0).toLocaleString()}
             </div>
-            <div className="text-sm text-gray-600">Total Interactions</div>
+            <div className="text-sm text-muted-foreground">Total Interactions</div>
           </div>
         </div>
       )}
