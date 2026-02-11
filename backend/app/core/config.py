@@ -64,6 +64,13 @@ class Settings(BaseSettings):
 
     # E2B Virtual Computer
     E2B_API_KEY: Optional[str] = Field(default=None, env="E2B_API_KEY")
+    
+    # Telephony provider credentials
+    TWILIO_ACCOUNT_SID: Optional[str] = Field(default=None, env="TWILIO_ACCOUNT_SID")
+    TWILIO_API_KEY: Optional[str] = Field(default=None, env="TWILIO_API_KEY")
+    TWILIO_API_SECRET: Optional[str] = Field(default=None, env="TWILIO_API_SECRET")
+    VONAGE_API_KEY: Optional[str] = Field(default=None, env="VONAGE_API_KEY")
+    VONAGE_API_SECRET: Optional[str] = Field(default=None, env="VONAGE_API_SECRET")
 
     # File Storage Configuration
     UPLOAD_MAX_SIZE: int = Field(default=10 * 1024 * 1024, env="UPLOAD_MAX_SIZE")

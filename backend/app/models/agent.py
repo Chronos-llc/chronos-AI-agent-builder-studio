@@ -77,6 +77,7 @@ class AgentModel(BaseModel):
         uselist=False,
         cascade="all, delete-orphan"
     )
+    phone_numbers = relationship("AgentPhoneNumber", back_populates="agent", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"

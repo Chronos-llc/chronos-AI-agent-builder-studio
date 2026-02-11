@@ -20,6 +20,7 @@ import ChannelConfigurationPage from './pages/ChannelConfigurationPage'
 import WebChatConfigurationPage from './pages/WebChatConfigurationPage'
 import OnboardingPage from './pages/OnboardingPage'
 import AgentSuitePage from './pages/AgentSuitePage'
+import PricingPage from './pages/PricingPage'
 import { StudioShell } from './components/studio/StudioShell'
 import './App.css'
 
@@ -40,6 +41,7 @@ function App() {
                     <div className="min-h-screen">
                         <Routes>
                             <Route path="/" element={<LandingPage />} />
+                            <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/login" element={<LoginPage />} />
 
                             <Route

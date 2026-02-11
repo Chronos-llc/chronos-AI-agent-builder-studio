@@ -831,6 +831,76 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
             }
         },
         {
+            "name": "Twilio MCP Server",
+            "description": "Twilio MCP server for telephony workflows including messaging, voice routing, and programmable communications via Twilio Labs MCP.",
+            "integration_type": "mcp_server",
+            "category": "communications",
+            "icon": "https://i.postimg.cc/c45jzmKM/download_16.png",
+            "documentation_url": "https://www.npmjs.com/package/@twilio-alpha/mcp",
+            "version": "1.0.0",
+            "is_public": True,
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "default": "npx",
+                        "description": "Command to run the Twilio MCP server"
+                    },
+                    "args": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "default": ["-y", "@twilio-alpha/mcp", "{account_sid}/{api_key}:{api_secret}"],
+                        "description": "Arguments for the Twilio MCP server command"
+                    },
+                    "server_url": {
+                        "type": "string",
+                        "default": "http://localhost:8090",
+                        "description": "Server URL for the Twilio MCP server"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "default": 30000,
+                        "description": "Request timeout in milliseconds"
+                    }
+                },
+                "required": ["command", "args"]
+            },
+            "credentials_schema": {
+                "type": "object",
+                "properties": {
+                    "account_sid": {
+                        "type": "string",
+                        "description": "Twilio Account SID",
+                        "sensitive": True
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "description": "Twilio API Key",
+                        "sensitive": True
+                    },
+                    "api_secret": {
+                        "type": "string",
+                        "description": "Twilio API Secret",
+                        "sensitive": True
+                    }
+                },
+                "required": ["account_sid", "api_key", "api_secret"]
+            },
+            "supported_features": [
+                "sms",
+                "voice",
+                "phone_numbers",
+                "call_automation",
+                "telephony_workflows"
+            ],
+            "env": {
+                "TWILIO_ACCOUNT_SID": "<YOUR_ACCOUNT_SID>",
+                "TWILIO_API_KEY": "<YOUR_API_KEY>",
+                "TWILIO_API_SECRET": "<YOUR_API_SECRET>"
+            }
+        },
+        {
             "name": "Google Maps MCP Server",
             "description": "Google Maps MCP Server for location services and mapping capabilities. Provides geocoding, directions, place search, and map visualization through the Model Context Protocol.",
             "integration_type": "mcp_server",

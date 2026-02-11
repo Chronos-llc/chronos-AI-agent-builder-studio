@@ -27,6 +27,7 @@ from .voice import (
 from .virtual_computer import (
     VirtualComputerConfiguration, VirtualComputerProvider
 )
+from .agent_phone_number import AgentPhoneNumber, PhoneNumberProvider
 from .conversation import (
     Conversation,
     ConversationMessage,
@@ -92,6 +93,8 @@ __all__ = [
     "AudioFormat",
     "VirtualComputerConfiguration",
     "VirtualComputerProvider",
+    "AgentPhoneNumber",
+    "PhoneNumberProvider",
     "Conversation",
     "ConversationMessage",
     "ConversationAction",
