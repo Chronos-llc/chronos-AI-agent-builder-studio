@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum
 from .base import Base
+from .agent_phone_number import PhoneNumberProvider
 
 
 class VoiceProvider(str, Enum):
@@ -73,6 +74,10 @@ class VoiceConfiguration(Base):
     # Interruption handling
     allow_interruption = Column(Boolean, default=True)
     interruption_threshold = Column(Float, default=0.5)  # Confidence threshold
+
+    # Telephony settings
+    phone_provider_preference = Column(SQLEnum(PhoneNumberProvider), nullable=True)
+    selected_phone_number_id = Column(Integer, ForeignKey("agent_phone_numbers.id", ondelete="SET NULL"), nullable=True)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -82,6 +87,7 @@ class VoiceConfiguration(Base):
     agent = relationship("Agent", back_populates="voice_configuration")
     user = relationship("User")
     sessions = relationship("VoiceSession", back_populates="configuration", cascade="all, delete-orphan")
+    selected_phone_number = relationship("AgentPhoneNumber", foreign_keys=[selected_phone_number_id])
     
     # Indexes
     __table_args__ = (

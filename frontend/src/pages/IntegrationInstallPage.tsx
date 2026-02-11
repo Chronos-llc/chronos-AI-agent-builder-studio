@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { ProviderLogo } from '../components/brand/ProviderLogo';
 
 interface Integration {
   id: number;
@@ -317,9 +318,17 @@ const IntegrationInstallPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <div>
+            <div className="flex items-center gap-3">
+              <ProviderLogo
+                name={integration.name}
+                url={integration.icon}
+                size={38}
+                className="border-0 bg-transparent"
+              />
+              <div>
               <h1 className="text-3xl font-bold text-foreground">Install {integration.name}</h1>
               <p className="text-muted-foreground mt-1">Follow the steps to integrate with your agents</p>
+              </div>
             </div>
             <button
               onClick={() => navigate(`/app/integrations/${integration.id}`)}
@@ -338,7 +347,7 @@ const IntegrationInstallPage: React.FC = () => {
               <span className={`text-sm font-medium ${step >= 1 ? 'text-foreground' : 'text-muted-foreground/70'}`}>Configuration</span>
             </div>
 
-            <div className="flex-1 h-0.5 ${step >= 2 ? 'bg-cyan-400' : 'bg-gray-200'}"></div>
+            <div className={`flex-1 h-0.5 ${step >= 2 ? 'bg-cyan-400' : 'bg-gray-200'}`}></div>
 
             <div className="flex items-center gap-4">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-cyan-400 text-white' : 'bg-gray-200 text-muted-foreground'}`}>
@@ -347,7 +356,7 @@ const IntegrationInstallPage: React.FC = () => {
               <span className={`text-sm font-medium ${step >= 2 ? 'text-foreground' : 'text-muted-foreground/70'}`}>Credentials</span>
             </div>
 
-            <div className="flex-1 h-0.5 ${step >= 3 ? 'bg-cyan-400' : 'bg-gray-200'}"></div>
+            <div className={`flex-1 h-0.5 ${step >= 3 ? 'bg-cyan-400' : 'bg-gray-200'}`}></div>
 
             <div className="flex items-center gap-4">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-cyan-400 text-white' : 'bg-gray-200 text-muted-foreground'}`}>

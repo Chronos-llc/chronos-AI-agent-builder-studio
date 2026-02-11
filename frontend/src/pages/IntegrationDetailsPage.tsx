@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { ProviderLogo } from '../components/brand/ProviderLogo';
 
 interface Integration {
     id: number;
@@ -286,7 +287,12 @@ const IntegrationDetailsPage: React.FC = () => {
                             <div className="flex flex-col lg:flex-row gap-6">
                                 <div className="flex-shrink-0">
                                     <div className="w-20 h-20 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <span className="text-cyan-300 text-4xl">{integration.icon || '🔌'}</span>
+                                        <ProviderLogo
+                                            name={integration.name}
+                                            url={integration.icon}
+                                            size={64}
+                                            className="border-0 bg-transparent"
+                                        />
                                     </div>
                                 </div>
 

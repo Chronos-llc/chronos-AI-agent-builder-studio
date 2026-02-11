@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+from app.schemas.phone_number import PhoneNumberProvider
 
 
 class VoiceProvider(str, Enum):
@@ -67,6 +68,10 @@ class VoiceConfigurationCreate(BaseModel):
     allow_interruption: bool = Field(default=True)
     interruption_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
 
+    # Telephony
+    selected_phone_number_id: Optional[int] = None
+    phone_provider_preference: Optional[PhoneNumberProvider] = None
+
 
 class VoiceConfigurationUpdate(BaseModel):
     """Schema for updating voice configuration"""
@@ -91,6 +96,8 @@ class VoiceConfigurationUpdate(BaseModel):
     voice_activity_detection: Optional[bool] = None
     allow_interruption: Optional[bool] = None
     interruption_threshold: Optional[float] = Field(None, ge=0.0, le=1.0)
+    selected_phone_number_id: Optional[int] = None
+    phone_provider_preference: Optional[PhoneNumberProvider] = None
 
 
 class VoiceConfigurationResponse(BaseModel):
@@ -119,6 +126,8 @@ class VoiceConfigurationResponse(BaseModel):
     voice_activity_detection: bool
     allow_interruption: bool
     interruption_threshold: float
+    selected_phone_number_id: Optional[int]
+    phone_provider_preference: Optional[PhoneNumberProvider]
     created_at: datetime
     updated_at: datetime
     

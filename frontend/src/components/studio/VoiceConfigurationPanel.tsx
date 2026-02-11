@@ -3,6 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, RefreshCw, Save } from 'lucide-react'
 import { useModelCatalog } from '../../hooks/useModelCatalog'
 import { ModelCatalogPicker } from './ModelCatalogPicker'
+import { ProviderLogo } from '../brand/ProviderLogo'
+import { phoneProviders } from '../../config/iconRegistry'
+import { useAgentPhoneNumbers } from '../../hooks/useAgentPhoneNumbers'
+import type { PhoneNumberProvider } from '../../services/phoneNumberService'
 
 type VoiceProvider =
   | 'OPENAI'
@@ -16,6 +20,7 @@ type VoiceProvider =
 
 type VoiceGender = 'MALE' | 'FEMALE' | 'NEUTRAL'
 type AudioFormat = 'MP3' | 'WAV' | 'OGG' | 'WEBM' | 'FLAC'
+type PhoneProviderType = PhoneNumberProvider
 
 interface VoiceConfig {
   id?: number
@@ -40,6 +45,8 @@ interface VoiceConfig {
   voice_activity_detection: boolean
   allow_interruption: boolean
   interruption_threshold: number
+  selected_phone_number_id?: number | null
+  phone_provider_preference?: PhoneProviderType | null
 }
 
 const providerIdFromEnum: Record<VoiceProvider, string> = {
@@ -81,6 +88,8 @@ const defaultConfig: VoiceConfig = {
   voice_activity_detection: true,
   allow_interruption: true,
   interruption_threshold: 0.5,
+  selected_phone_number_id: null,
+  phone_provider_preference: null,
 }
 
 const Section: React.FC<{
@@ -115,6 +124,23 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
   const sttModels = modelCatalog?.models?.stt || []
   const ttsModels = modelCatalog?.models?.tts || []
   const voiceModels = modelCatalog?.models?.voice || []
+  const {
+    providers: phoneProviderAvailability,
+    searchResults,
+    ownedNumbers,
+    search,
+    searching,
+    purchase,
+    purchasing,
+    selectNumber,
+    selecting,
+  } = useAgentPhoneNumbers(agentId)
+  const [phoneProvider, setPhoneProvider] = useState<PhoneProviderType>('twilio')
+  const [phoneCountryCode, setPhoneCountryCode] = useState('US')
+  const [phoneContains, setPhoneContains] = useState('')
+  const [phoneCapabilities, setPhoneCapabilities] = useState<string[]>(['voice'])
+  const [confirmPurchase, setConfirmPurchase] = useState(false)
+  const [phoneActionError, setPhoneActionError] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery<VoiceConfig>({
     queryKey: ['voice-config', agentId],
@@ -130,6 +156,9 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
   useEffect(() => {
     if (data) {
       setConfig({ ...defaultConfig, ...data })
+      if (data.phone_provider_preference) {
+        setPhoneProvider(data.phone_provider_preference)
+      }
     }
   }, [data])
 
@@ -172,6 +201,84 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
     return (providerId: string) =>
       voiceModels.find(voice => voice.provider === providerId)?.model || ''
   }, [voiceModels])
+  const configuredPhoneProviders = useMemo(
+    () =>
+      phoneProviderAvailability.reduce<Record<string, { configured: boolean; message?: string | null }>>(
+        (acc, item) => {
+          acc[item.provider] = { configured: item.configured, message: item.message }
+          return acc
+        },
+        {}
+      ),
+    [phoneProviderAvailability]
+  )
+
+  const togglePhoneCapability = (capability: string) => {
+    setPhoneCapabilities(prev =>
+      prev.includes(capability) ? prev.filter(item => item !== capability) : [...prev, capability]
+    )
+  }
+
+  const handleSearchPhoneNumbers = async () => {
+    setPhoneActionError(null)
+    try {
+      await search({
+        provider: phoneProvider,
+        payload: {
+          country_code: phoneCountryCode,
+          capabilities: phoneCapabilities.length ? phoneCapabilities : ['voice'],
+          limit: 20,
+          contains: phoneContains || undefined,
+        },
+      })
+    } catch (error: any) {
+      setPhoneActionError(error?.message || 'Failed to search phone numbers')
+    }
+  }
+
+  const handlePurchasePhoneNumber = async (
+    provider: PhoneProviderType,
+    phoneNumber: string,
+    providerNumberId: string,
+    capabilities: string[],
+    countryCode?: string | null
+  ) => {
+    setPhoneActionError(null)
+    try {
+      const purchased = await purchase({
+        provider,
+        payload: {
+          country_code: (countryCode || phoneCountryCode).toUpperCase(),
+          phone_number_e164: phoneNumber,
+          provider_number_id: providerNumberId,
+          capabilities: capabilities.length ? capabilities : ['voice'],
+          confirm_purchase: confirmPurchase,
+        },
+      })
+      setConfig(prev => ({
+        ...prev,
+        selected_phone_number_id: purchased.id,
+        phone_provider_preference: purchased.provider,
+      }))
+      setConfirmPurchase(false)
+    } catch (error: any) {
+      setPhoneActionError(error?.message || 'Failed to purchase phone number')
+    }
+  }
+
+  const handleSelectPhoneNumber = async (numberId: number, provider: PhoneProviderType) => {
+    setPhoneActionError(null)
+    try {
+      const selected = await selectNumber({ numberId })
+      setConfig(prev => ({
+        ...prev,
+        selected_phone_number_id: selected.id,
+        phone_provider_preference: provider,
+      }))
+    } catch (error: any) {
+      setPhoneActionError(error?.message || 'Failed to select phone number')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -353,6 +460,191 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
         >
           <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
             No fallbacks configured. Add a fallback provider for improved reliability.
+          </div>
+        </Section>
+
+        <Section
+          title="Phone Numbers"
+          description="Choose a telephony provider, search available numbers, purchase, and assign one number to this agent."
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Provider</label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(['twilio', 'vonage'] as PhoneProviderType[]).map(providerId => {
+                  const provider = phoneProviders[providerId] || {
+                    id: providerId,
+                    name: providerId.toUpperCase(),
+                    url: '',
+                  }
+                  const availability = configuredPhoneProviders[providerId]
+                  const isActive = phoneProvider === providerId
+                  return (
+                    <button
+                      key={providerId}
+                      type="button"
+                      onClick={() => {
+                        setPhoneProvider(providerId)
+                        setConfig(prev => ({ ...prev, phone_provider_preference: providerId }))
+                      }}
+                      className={`rounded-xl border px-3 py-2 text-left transition ${
+                        isActive
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-card hover:border-muted-foreground/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ProviderLogo name={provider.name} url={provider.url} size={24} />
+                        <span className="text-sm font-medium text-foreground">{provider.name}</span>
+                      </div>
+                      <div
+                        className={`mt-1 text-xs ${
+                          availability?.configured ? 'text-emerald-400' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {availability?.configured ? 'Configured' : availability?.message || 'Not configured'}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Search filters</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  value={phoneCountryCode}
+                  onChange={(e) => setPhoneCountryCode(e.target.value.toUpperCase())}
+                  maxLength={4}
+                  className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/60"
+                  placeholder="Country (US)"
+                />
+                <input
+                  value={phoneContains}
+                  onChange={(e) => setPhoneContains(e.target.value)}
+                  className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/60"
+                  placeholder="Contains"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {['voice', 'sms', 'mms'].map(capability => (
+                  <button
+                    key={capability}
+                    type="button"
+                    onClick={() => togglePhoneCapability(capability)}
+                    className={`rounded-full border px-3 py-1 text-xs uppercase tracking-wide transition ${
+                      phoneCapabilities.includes(capability)
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:border-muted-foreground/40'
+                    }`}
+                  >
+                    {capability}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleSearchPhoneNumbers}
+                disabled={searching}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              >
+                {searching ? 'Searching...' : 'Search numbers'}
+              </button>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={confirmPurchase}
+              onChange={(e) => setConfirmPurchase(e.target.checked)}
+              className="rounded border-border text-primary focus:ring-primary"
+            />
+            Confirm purchase authorization for paid phone number orders.
+          </label>
+
+          {phoneActionError && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {phoneActionError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">Search results</h4>
+              <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                {searchResults.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
+                    Run a search to load available numbers from the selected provider.
+                  </div>
+                )}
+                {searchResults.map(result => (
+                  <div key={`${result.provider}-${result.provider_number_id}`} className="rounded-lg border border-border bg-card px-3 py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium text-foreground">{result.phone_number_e164}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {(result.capabilities || []).join(', ') || 'voice'}
+                          {result.monthly_cost ? ` • ${result.currency || 'USD'} ${result.monthly_cost}` : ''}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handlePurchasePhoneNumber(
+                            result.provider,
+                            result.phone_number_e164,
+                            result.provider_number_id,
+                            result.capabilities || ['voice'],
+                            result.country_code
+                          )
+                        }
+                        disabled={!confirmPurchase || purchasing}
+                        className="rounded-full border border-primary/40 px-3 py-1 text-xs font-medium text-primary hover:border-primary disabled:opacity-50"
+                      >
+                        {purchasing ? 'Purchasing...' : 'Purchase'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">Owned numbers</h4>
+              <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                {ownedNumbers.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
+                    No purchased numbers yet for this agent.
+                  </div>
+                )}
+                {ownedNumbers.map(number => (
+                  <div key={number.id} className="rounded-lg border border-border bg-card px-3 py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium text-foreground">{number.phone_number_e164}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {number.provider.toUpperCase()} • {(number.capabilities || []).join(', ') || 'voice'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPhoneNumber(number.id, number.provider)}
+                        disabled={selecting || number.is_selected}
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                          number.is_selected
+                            ? 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                            : 'border border-border text-muted-foreground hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        {number.is_selected ? 'Selected' : selecting ? 'Selecting...' : 'Select'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </Section>
 
