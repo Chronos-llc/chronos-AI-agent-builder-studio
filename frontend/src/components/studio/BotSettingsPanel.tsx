@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Settings,
@@ -17,11 +17,13 @@ import {
     Trash2,
     Save,
     Globe,
-    Mic
+    Mic,
+    Cpu
 } from 'lucide-react';
 import { useModelCatalog } from '../../hooks/useModelCatalog';
 import { ModelCatalogPicker } from './ModelCatalogPicker';
 import { VoiceConfigurationPanel } from './VoiceConfigurationPanel';
+import { useVirtualComputerConfig, VirtualComputerConfig } from '../../hooks/useVirtualComputerConfig';
 
 interface BotSettings {
     // Basic Settings
@@ -68,6 +70,7 @@ interface BotSettings {
     enable_analytics: boolean;
     enable_monitoring: boolean;
     alert_email?: string;
+    agentic_thinking_enabled: boolean;
 }
 
 interface EnvironmentVariable {
@@ -75,6 +78,47 @@ interface EnvironmentVariable {
     value: string;
     description?: string;
     isSecret: boolean;
+}
+
+interface McpServer {
+    id: number;
+    server_id: string;
+    name: string;
+    is_active: boolean;
+}
+
+interface McpServerGroup {
+    id: number;
+    name: string;
+    description?: string;
+    algorithm?: string;
+    health_check_interval?: number;
+    failover_enabled?: boolean;
+    is_active: boolean;
+}
+
+interface McpServerGroupMemberInfo {
+    server_id: string;
+    name: string;
+    is_active: boolean;
+    server_active?: boolean;
+    weight?: number;
+    priority?: number;
+}
+
+interface McpServerGroupInfo {
+    group: McpServerGroup;
+    members: McpServerGroupMemberInfo[];
+    total_members: number;
+    active_members: number;
+}
+
+interface VirtualComputerTestResult {
+    stdout?: string;
+    stderr?: string;
+    exit_code?: number;
+    duration_ms?: number;
+    error?: string;
 }
 
 const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
@@ -86,24 +130,98 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const queryClient = useQueryClient();
     const { data: modelCatalog } = useModelCatalog();
     const chatModels = modelCatalog?.models?.chat || [];
+    const {
+        config: virtualComputerConfig,
+        isLoading: virtualComputerLoading,
+        updateConfig: updateVirtualComputerConfig,
+        updating: virtualComputerUpdating
+    } = useVirtualComputerConfig(agentId);
+    const [virtualComputer, setVirtualComputer] = useState<VirtualComputerConfig | null>(null);
+    const [virtualComputerTestResult, setVirtualComputerTestResult] = useState<VirtualComputerTestResult | null>(null);
+
+    const { data: mcpServers } = useQuery({
+        queryKey: ['mcp-servers'],
+        queryFn: async () => {
+            const response = await fetch('/api/v1/enhanced-mcp/servers/?active_only=false');
+            if (!response.ok) {
+                throw new Error('Failed to fetch MCP servers');
+            }
+            return response.json() as Promise<McpServer[]>;
+        }
+    });
+
+    const { data: mcpGroupInfos } = useQuery({
+        queryKey: ['mcp-group-infos'],
+        queryFn: async () => {
+            const groupResponse = await fetch('/api/v1/enhanced-mcp/groups/');
+            if (!groupResponse.ok) {
+                throw new Error('Failed to fetch MCP groups');
+            }
+            const groups = await groupResponse.json() as McpServerGroup[];
+            const infos = await Promise.all(
+                groups.map(async (group) => {
+                    const response = await fetch(`/api/v1/enhanced-mcp/groups/${encodeURIComponent(group.name)}/members/`);
+                    if (!response.ok) {
+                        return {
+                            group,
+                            members: [],
+                            total_members: 0,
+                            active_members: 0
+                        } as McpServerGroupInfo;
+                    }
+                    return response.json() as Promise<McpServerGroupInfo>;
+                })
+            );
+            return infos;
+        }
+    });
 
     // Fetch current settings
     const { data: settings, isLoading } = useQuery({
         queryKey: ['bot-settings', agentId],
         queryFn: async () => {
-            const response = await fetch(`/api/agents/${agentId}/settings`);
+            const response = await fetch(`/api/v1/agents/${agentId}`);
             if (!response.ok) throw new Error('Failed to fetch settings');
-            return response.json();
+            const agent = await response.json();
+            return {
+                name: agent.name,
+                description: agent.description || '',
+                agent_type: agent.agent_type || 'text',
+                llm_model: agent.model_config?.llm_model || 'gpt-4',
+                llm_temperature: agent.model_config?.temperature ?? 0.7,
+                llm_max_tokens: agent.model_config?.max_tokens ?? 1000,
+                custom_prompts: {
+                    system_prompt: agent.system_prompt || '',
+                    user_prompt_template: agent.user_prompt_template || '',
+                    error_handling_prompt: ''
+                },
+                agentic_thinking_enabled: Boolean(agent.agentic_thinking_enabled)
+            };
         }
     });
 
     // Save settings mutation
     const saveSettingsMutation = useMutation({
         mutationFn: async (settings: BotSettings) => {
-            const response = await fetch(`/api/agents/${agentId}/settings`, {
+            const response = await fetch(`/api/v1/agents/${agentId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
+                body: JSON.stringify({
+                    name: settings.name,
+                    description: settings.description,
+                    agent_type: settings.agent_type,
+                    system_prompt: settings.custom_prompts?.system_prompt || '',
+                    user_prompt_template: settings.custom_prompts?.user_prompt_template || '',
+                    model_config: {
+                        llm_model: settings.llm_model,
+                        temperature: settings.llm_temperature,
+                        max_tokens: settings.llm_max_tokens,
+                        top_p: settings.llm_top_p,
+                        frequency_penalty: settings.llm_frequency_penalty,
+                        presence_penalty: settings.llm_presence_penalty
+                    },
+                    agentic_thinking_enabled: settings.agentic_thinking_enabled
+                })
             });
             if (!response.ok) throw new Error('Failed to save settings');
             return response.json();
@@ -143,7 +261,8 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
             error_handling_prompt: ''
         },
         enable_analytics: true,
-        enable_monitoring: true
+        enable_monitoring: true,
+        agentic_thinking_enabled: false
     });
 
     useEffect(() => {
@@ -151,6 +270,45 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
             setBotSettings(prevSettings => ({ ...prevSettings, ...settings }));
         }
     }, [settings]);
+
+    useEffect(() => {
+        if (virtualComputerConfig) {
+            setVirtualComputer(virtualComputerConfig);
+        }
+    }, [virtualComputerConfig]);
+
+    const allServerIds = useMemo(
+        () => (mcpServers || []).filter(server => server.is_active).map(server => server.server_id),
+        [mcpServers]
+    );
+
+    const groupInfos = useMemo(
+        () => mcpGroupInfos || [],
+        [mcpGroupInfos]
+    );
+
+    const groupedServerIds = useMemo(() => {
+        const ids = new Set<string>();
+        groupInfos.forEach(groupInfo => {
+            groupInfo.members?.forEach(member => {
+                ids.add(member.server_id);
+            });
+        });
+        return ids;
+    }, [groupInfos]);
+
+    const ungroupedServers = useMemo(() => {
+        return (mcpServers || []).filter(server => !groupedServerIds.has(server.server_id));
+    }, [mcpServers, groupedServerIds]);
+
+    const effectiveSelectedServerIds = useMemo(() => {
+        if (!virtualComputer) return [];
+        const selected = virtualComputer.mcp_server_ids || [];
+        if (selected.length === 0) {
+            return allServerIds;
+        }
+        return selected;
+    }, [virtualComputer, allServerIds]);
 
     const updateSetting = (key: keyof BotSettings, value: any) => {
         setBotSettings(prev => ({ ...prev, [key]: value }));
@@ -181,6 +339,85 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
     const toggleSecretValue = (key: string) => {
         setShowSecretValues(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const updateVirtualComputerField = (field: keyof VirtualComputerConfig, value: any) => {
+        setVirtualComputer(prev => (prev ? { ...prev, [field]: value } : prev));
+    };
+
+    const toggleMcpServer = (serverId: string) => {
+        setVirtualComputer(prev => {
+            if (!prev) return prev;
+            const current = prev.mcp_server_ids || [];
+            if (current.length === 0) {
+                const next = allServerIds.filter(id => id !== serverId);
+                return { ...prev, mcp_server_ids: next };
+            }
+            if (current.includes(serverId)) {
+                return { ...prev, mcp_server_ids: current.filter(id => id !== serverId) };
+            }
+            return { ...prev, mcp_server_ids: [...current, serverId] };
+        });
+    };
+
+    const toggleMcpGroup = (groupServerIds: string[]) => {
+        if (!groupServerIds.length) return;
+        setVirtualComputer(prev => {
+            if (!prev) return prev;
+            const current = prev.mcp_server_ids || [];
+            if (current.length === 0) {
+                const next = allServerIds.filter(id => !groupServerIds.includes(id));
+                return { ...prev, mcp_server_ids: next };
+            }
+            const groupFullySelected = groupServerIds.every(id => current.includes(id));
+            if (groupFullySelected) {
+                return { ...prev, mcp_server_ids: current.filter(id => !groupServerIds.includes(id)) };
+            }
+            const next = Array.from(new Set([...current, ...groupServerIds]));
+            return { ...prev, mcp_server_ids: next };
+        });
+    };
+
+    const saveVirtualComputer = async () => {
+        if (!virtualComputer) return;
+        await updateVirtualComputerConfig({
+            enabled: virtualComputer.enabled,
+            provider: virtualComputer.provider,
+            idle_timeout_seconds: virtualComputer.idle_timeout_seconds,
+            max_runtime_seconds: virtualComputer.max_runtime_seconds,
+            memory_mb: virtualComputer.memory_mb,
+            cpu_cores: virtualComputer.cpu_cores,
+            allow_network: virtualComputer.allow_network,
+            mcp_enabled: virtualComputer.mcp_enabled,
+            mcp_server_ids: virtualComputer.mcp_server_ids
+        });
+    };
+
+    const testVirtualComputer = async () => {
+        setVirtualComputerTestResult(null);
+        try {
+            const response = await fetch(`/api/v1/agents/${agentId}/virtual-computer/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: 'print("Hello from Chronos Virtual Computer")',
+                    inputs: { message: 'ping' }
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                setVirtualComputerTestResult({ error: result.detail || 'Failed to run sandbox test' });
+                return;
+            }
+            setVirtualComputerTestResult({
+                stdout: result.stdout,
+                stderr: result.stderr,
+                exit_code: result.exit_code,
+                duration_ms: result.duration_ms
+            });
+        } catch (error: any) {
+            setVirtualComputerTestResult({ error: error?.message || 'Failed to run sandbox test' });
+        }
     };
 
     if (isLoading) {
@@ -717,6 +954,298 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             />
                             <p className="text-xs text-gray-500 mt-1">Email for system alerts and notifications</p>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'integrations' && (
+                    <div className="space-y-6">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                                <Globe className="w-5 h-5 text-gray-600 mt-0.5" />
+                                <div>
+                                    <h3 className="font-medium text-gray-900">Integrations</h3>
+                                    <p className="text-sm text-gray-700 mt-1">
+                                        Configure sandboxed execution and tool access for this agent.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="font-medium text-amber-900">Agentic Thinking (Beta / Experimental)</h3>
+                                    <p className="text-sm text-amber-700 mt-1">
+                                        Enables internal dialogue planning before execution. Available on Pro and Enterprise plans.
+                                    </p>
+                                </div>
+                                <label className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={botSettings.agentic_thinking_enabled}
+                                        onChange={(e) => updateSetting('agentic_thinking_enabled', e.target.checked)}
+                                        className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                    />
+                                    <span className="text-sm text-amber-900">Enable</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {virtualComputerLoading && (
+                            <div className="text-sm text-gray-500">Loading virtual computer settings...</div>
+                        )}
+
+                        {!virtualComputerLoading && !virtualComputer && (
+                            <div className="text-sm text-gray-500">Virtual computer configuration is unavailable.</div>
+                        )}
+
+                        {virtualComputer && (
+                            <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Cpu className="w-5 h-5 text-blue-600" />
+                                        <div>
+                                            <h3 className="font-medium text-gray-900">Virtual Computer</h3>
+                                            <p className="text-sm text-gray-500">Run Python in an isolated E2B sandbox.</p>
+                                        </div>
+                                    </div>
+                                    <label className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={virtualComputer.enabled}
+                                            onChange={(e) => updateVirtualComputerField('enabled', e.target.checked)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Enabled</span>
+                                    </label>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                                        <select
+                                            value={virtualComputer.provider}
+                                            onChange={(e) => updateVirtualComputerField('provider', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                            <option value="e2b">E2B</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Idle Timeout (seconds)</label>
+                                        <input
+                                            type="number"
+                                            min={30}
+                                            max={3600}
+                                            value={virtualComputer.idle_timeout_seconds}
+                                            onChange={(e) => updateVirtualComputerField('idle_timeout_seconds', Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Max Runtime (seconds)</label>
+                                        <input
+                                            type="number"
+                                            min={60}
+                                            max={7200}
+                                            value={virtualComputer.max_runtime_seconds}
+                                            onChange={(e) => updateVirtualComputerField('max_runtime_seconds', Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Memory (MB)</label>
+                                        <input
+                                            type="number"
+                                            min={128}
+                                            max={8192}
+                                            value={virtualComputer.memory_mb}
+                                            onChange={(e) => updateVirtualComputerField('memory_mb', Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">CPU Cores</label>
+                                        <input
+                                            type="number"
+                                            min={0.25}
+                                            max={8}
+                                            step={0.25}
+                                            value={virtualComputer.cpu_cores}
+                                            onChange={(e) => updateVirtualComputerField('cpu_cores', Number(e.target.value))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label className="flex items-center space-x-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={virtualComputer.allow_network}
+                                            onChange={(e) => updateVirtualComputerField('allow_network', e.target.checked)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <div>
+                                            <span className="font-medium text-gray-900">Allow Network Access</span>
+                                            <p className="text-sm text-gray-500">Permit outbound network calls in the sandbox.</p>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center space-x-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={virtualComputer.mcp_enabled}
+                                            onChange={(e) => updateVirtualComputerField('mcp_enabled', e.target.checked)}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <div>
+                                            <span className="font-medium text-gray-900">MCP Tools Enabled</span>
+                                            <p className="text-sm text-gray-500">Expose MCP tools through the sandbox proxy.</p>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {virtualComputer.mcp_enabled && (
+                                    <div className="space-y-3">
+                                        <div className="border border-gray-200 rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-gray-900">Server Groups</h4>
+                                                    <p className="text-xs text-gray-500">Manage access by MCP groups or fine-tune server selection below.</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 max-h-56 overflow-auto">
+                                                {groupInfos.length > 0 ? (
+                                                    groupInfos.map(groupInfo => {
+                                                        const memberServerIds = (groupInfo.members || []).map(member => member.server_id);
+                                                        const activeMemberIds = memberServerIds.filter(id => allServerIds.includes(id));
+                                                        const groupSelected = activeMemberIds.length > 0 && activeMemberIds.every(id => effectiveSelectedServerIds.includes(id));
+                                                        return (
+                                                            <div key={groupInfo.group.id} className="rounded-md border border-gray-200 p-2">
+                                                                <label className="flex items-center space-x-2 text-sm font-medium">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={groupSelected}
+                                                                        onChange={() => toggleMcpGroup(activeMemberIds)}
+                                                                        disabled={activeMemberIds.length === 0}
+                                                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                    />
+                                                                    <span className="text-gray-800">{groupInfo.group.name}</span>
+                                                                    <span className="text-xs text-gray-500">({groupInfo.active_members}/{groupInfo.total_members})</span>
+                                                                </label>
+                                                                {groupInfo.group.description && (
+                                                                    <div className="text-xs text-gray-500 ml-6">
+                                                                        {groupInfo.group.description}
+                                                                    </div>
+                                                                )}
+                                                                <div className="mt-2 space-y-1 ml-6">
+                                                                    {groupInfo.members.length > 0 ? (
+                                                                        groupInfo.members.map(member => (
+                                                                            <label key={`${groupInfo.group.id}-${member.server_id}`} className="flex items-center space-x-2 text-xs">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={effectiveSelectedServerIds.includes(member.server_id)}
+                                                                                    onChange={() => toggleMcpServer(member.server_id)}
+                                                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                                />
+                                                                                <span className="text-gray-800">{member.name}</span>
+                                                                                {member.server_active === false && (
+                                                                                    <span className="text-xs text-gray-400">(inactive)</span>
+                                                                                )}
+                                                                            </label>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div className="text-xs text-gray-500">No servers assigned to this group.</div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <div className="text-xs text-gray-500">No server groups found.</div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="border border-gray-200 rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-gray-900">Allowed MCP Servers</h4>
+                                                    <p className="text-xs text-gray-500">Select the MCP servers this sandbox can access. Leave empty to allow all.</p>
+                                                </div>
+                                                {(virtualComputer.mcp_server_ids || []).length === 0 && (
+                                                    <span className="text-xs text-gray-500">All active servers</span>
+                                                )}
+                                            </div>
+                                            <div className="space-y-2 max-h-48 overflow-auto">
+                                                {ungroupedServers.map(server => (
+                                                    <label key={server.server_id} className="flex items-center space-x-2 text-sm">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={effectiveSelectedServerIds.includes(server.server_id)}
+                                                            onChange={() => toggleMcpServer(server.server_id)}
+                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        <span className="text-gray-800">{server.name}</span>
+                                                        {!server.is_active && (
+                                                            <span className="text-xs text-gray-400">(inactive)</span>
+                                                        )}
+                                                    </label>
+                                                ))}
+                                                {(!mcpServers || mcpServers.length === 0) && (
+                                                    <div className="text-xs text-gray-500">No MCP servers found.</div>
+                                                )}
+                                                {mcpServers && mcpServers.length > 0 && ungroupedServers.length === 0 && (
+                                                    <div className="text-xs text-gray-500">All servers are assigned to groups.</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        onClick={saveVirtualComputer}
+                                        disabled={virtualComputerUpdating}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {virtualComputerUpdating ? 'Saving...' : 'Save Virtual Computer'}
+                                    </button>
+                                    <button
+                                        onClick={testVirtualComputer}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                        Test Sandbox
+                                    </button>
+                                </div>
+
+                                {virtualComputerTestResult && (
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 space-y-2">
+                                        {virtualComputerTestResult.error && (
+                                            <div className="text-red-600">{virtualComputerTestResult.error}</div>
+                                        )}
+                                        {virtualComputerTestResult.stdout && (
+                                            <div>
+                                                <div className="text-xs font-medium uppercase text-gray-500">stdout</div>
+                                                <pre className="whitespace-pre-wrap">{virtualComputerTestResult.stdout}</pre>
+                                            </div>
+                                        )}
+                                        {virtualComputerTestResult.stderr && (
+                                            <div>
+                                                <div className="text-xs font-medium uppercase text-gray-500">stderr</div>
+                                                <pre className="whitespace-pre-wrap">{virtualComputerTestResult.stderr}</pre>
+                                            </div>
+                                        )}
+                                        {virtualComputerTestResult.duration_ms !== undefined && (
+                                            <div className="text-xs text-gray-500">Duration: {virtualComputerTestResult.duration_ms} ms</div>
+                                        )}
+                                        {virtualComputerTestResult.exit_code !== undefined && (
+                                            <div className="text-xs text-gray-500">Exit code: {virtualComputerTestResult.exit_code}</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 

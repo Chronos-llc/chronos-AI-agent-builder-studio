@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Integer, Text
+from sqlalchemy import Column, String, Boolean, Integer, Text, DateTime
 from sqlalchemy.orm import relationship
 
 from app.models.base import BaseModel
@@ -21,6 +21,11 @@ class User(BaseModel):
     # Security
     login_attempts = Column(Integer, default=0)
     locked_until = Column(String(20), nullable=True)  # ISO datetime string
+
+    # Retention and deletion lifecycle
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deletion_requested_at = Column(DateTime(timezone=True), nullable=True)
+    purge_after = Column(DateTime(timezone=True), nullable=True)
      
     # Preferences
     theme = Column(String(20), default="light")  # light, dark, system
@@ -31,12 +36,14 @@ class User(BaseModel):
     settings = relationship("UserSettings", back_populates="user", cascade="all, delete-orphan")
     usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
     plan = relationship("UserPlan", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     integrations = relationship("Integration", back_populates="author", cascade="all, delete-orphan")
     integration_configs = relationship("IntegrationConfig", back_populates="user", cascade="all, delete-orphan")
     integration_reviews = relationship("IntegrationReview", back_populates="user", cascade="all, delete-orphan")
     knowledge_searches = relationship("KnowledgeSearch", back_populates="user", cascade="all, delete-orphan")
     training_sessions = relationship("TrainingSession", back_populates="user", cascade="all, delete-orphan")
     personal_access_tokens = relationship("PersonalAccessToken", back_populates="user", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"

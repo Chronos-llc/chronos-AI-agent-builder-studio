@@ -6,6 +6,7 @@ export interface ModelCatalogEntry {
   provider: string
   model: string
   label: string
+  context_window?: number
 }
 
 export interface ModelCatalogProvider {

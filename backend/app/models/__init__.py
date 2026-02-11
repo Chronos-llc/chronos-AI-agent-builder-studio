@@ -2,6 +2,7 @@
 
 from .base import BaseModel
 from .user import User
+from .user_profile import UserProfile, UserPersona
 from .agent import AgentModel, AgentVersion, Action, AgentStatus
 from .settings import UserSettings
 from .usage import UsageRecord, UserPlan, UsageType, PlanType
@@ -23,10 +24,26 @@ from .voice import (
     VoiceConfiguration, VoiceSession, VoiceInteraction,
     VoiceProvider, VoiceGender, AudioFormat
 )
+from .virtual_computer import (
+    VirtualComputerConfiguration, VirtualComputerProvider
+)
+from .conversation import (
+    Conversation,
+    ConversationMessage,
+    ConversationAction,
+    ConversationDialogue,
+    DialogueSession,
+    DialogueMessage,
+    ConversationChannelType,
+    ConversationStatus,
+    DialogueSessionStatus,
+)
 
 __all__ = [
     "BaseModel",
     "User",
+    "UserProfile",
+    "UserPersona",
     "AgentModel", 
     "AgentVersion",
     "Action",
@@ -72,5 +89,16 @@ __all__ = [
     "VoiceInteraction",
     "VoiceProvider",
     "VoiceGender",
-    "AudioFormat"
+    "AudioFormat",
+    "VirtualComputerConfiguration",
+    "VirtualComputerProvider",
+    "Conversation",
+    "ConversationMessage",
+    "ConversationAction",
+    "ConversationDialogue",
+    "DialogueSession",
+    "DialogueMessage",
+    "ConversationChannelType",
+    "ConversationStatus",
+    "DialogueSessionStatus",
 ]

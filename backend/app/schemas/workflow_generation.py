@@ -198,6 +198,14 @@ class WorkflowGenerationResponse(BaseModel):
 class WorkflowExecutionRequest(BaseModel):
     """Schema for executing a generated workflow"""
     workflow_id: int
+    agent_id: Optional[int] = None
+    input_data: Optional[Dict[str, Any]] = None
+
+
+class WorkflowSchemaExecutionRequest(BaseModel):
+    """Schema for executing an ad-hoc workflow schema"""
+    agent_id: int
+    workflow_schema: Dict[str, Any]
     input_data: Optional[Dict[str, Any]] = None
 
 

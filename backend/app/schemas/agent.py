@@ -24,6 +24,7 @@ class AgentBase(BaseModel):
     agent_type: AgentType = AgentType.TEXT
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
+    agentic_thinking_enabled: bool = False
     tags: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -39,6 +40,7 @@ class AgentUpdate(BaseModel):
     agent_type: Optional[AgentType] = None
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
+    agentic_thinking_enabled: Optional[bool] = None
     model_config: Optional[Dict[str, Any]] = None
     tags: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None

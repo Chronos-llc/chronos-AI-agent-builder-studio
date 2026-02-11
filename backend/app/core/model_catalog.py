@@ -21,6 +21,55 @@ CAPABILITIES: Tuple[str, ...] = (
     "voice",
 )
 
+DEFAULT_CONTEXT_WINDOW = 16000
+
+MODEL_CONTEXT_WINDOWS: Dict[str, int] = {
+    "gpt-5.2": 400000,
+    "gpt-5.1": 400000,
+    "gpt-5": 400000,
+    "gpt-5 mini": 128000,
+    "gpt-5 nano": 64000,
+    "gpt-5.1 codex": 128000,
+    "gpt-5.1-codex-max": 256000,
+    "gpt-5-codex": 128000,
+    "gpt-5.2-pro": 400000,
+    "gpt-5 pro": 400000,
+    "gpt-4.1": 128000,
+    "gpt-4.1 mini": 128000,
+    "gpt-4.1 nano": 64000,
+    "o4-mini": 128000,
+    "gpt-4o": 128000,
+    "gpt-4o mini": 128000,
+    "gpt-4 turbo": 128000,
+    "gpt-4": 8192,
+    "o3": 200000,
+    "o3-pro": 200000,
+    "o3-mini": 200000,
+    "o1": 200000,
+    "o1-pro": 200000,
+    "gpt-5.2-chat": 400000,
+}
+
+
+def get_context_window_for_model(model_name: str | None) -> int:
+    if not model_name:
+        return DEFAULT_CONTEXT_WINDOW
+
+    normalized = model_name.strip().lower()
+    if normalized in MODEL_CONTEXT_WINDOWS:
+        return MODEL_CONTEXT_WINDOWS[normalized]
+
+    # Heuristic fallback for third-party catalogs.
+    if "nano" in normalized:
+        return 64000
+    if "mini" in normalized:
+        return 128000
+    if "think" in normalized or "reason" in normalized:
+        return 200000
+    if "gpt-5" in normalized or "o1" in normalized or "o3" in normalized:
+        return 200000
+    return DEFAULT_CONTEXT_WINDOW
+
 
 def _dedupe(models: List[str]) -> List[str]:
     seen: Set[str] = set()
@@ -600,7 +649,7 @@ async def build_model_catalog_response(
     installed, available = await _get_provider_statuses(db, user_id)
 
     providers_payload: List[Dict[str, Any]] = []
-    models_payload: Dict[str, List[Dict[str, str]]] = {cap: [] for cap in CAPABILITIES}
+    models_payload: Dict[str, List[Dict[str, Any]]] = {cap: [] for cap in CAPABILITIES}
 
     for provider_id, provider in MODEL_CATALOG.items():
         provider_models = provider.get("models", {})
@@ -630,6 +679,7 @@ async def build_model_catalog_response(
                         "provider": provider_id,
                         "model": model,
                         "label": model,
+                        "context_window": get_context_window_for_model(model),
                     }
                 )
 

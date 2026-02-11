@@ -14,6 +14,9 @@ from app.schemas.action import (
     ActionResponse, ActionCreate, ActionUpdate,
     ActionExecutionRequest, ActionExecutionResponse
 )
+from app.core.virtual_computer import get_virtual_computer_manager
+from app.core.conversation_manager import append_action
+from app.models.conversation import Conversation
 from app.schemas.hook import (
     HookResponse, HookCreate, HookUpdate,
     HookExecutionRequest, HookExecutionResponse
@@ -265,24 +268,114 @@ async def execute_action(
             detail="Agent not found or not owned by user"
         )
     
-    # TODO: Implement actual action execution with sandboxing
-    # For now, return a mock response
-    
-    return {
-        "execution_id": f"exec_{action_id}_{int(time.time())}",
-        "status": "completed",
-        "result": {
-            "output": "Mock execution result",
-            "success": True
-        },
-        "error": None,
-        "logs": ["Action execution started", "Action executed successfully"],
-        "metrics": {
-            "duration_ms": 150,
-            "memory_usage_mb": 10
-        },
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    if action.action_type == "code_execution":
+        if not action.code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No code provided for code_execution action"
+            )
+
+        config = agent.virtual_computer_configuration
+        if not config or not config.enabled:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Virtual computer is disabled for this agent"
+            )
+
+        manager = get_virtual_computer_manager()
+        try:
+            result = await manager.execute_python(
+                agent_id=agent.id,
+                user_id=current_user.id,
+                code=action.code,
+                inputs=execution_request.input_data,
+                session_id=execution_request.context.get("session_id") if execution_request.context else None,
+                idle_timeout_seconds=config.idle_timeout_seconds,
+                max_runtime_seconds=config.max_runtime_seconds,
+                server_ids=config.mcp_server_ids
+            )
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(exc)
+            )
+
+        conversation_id = (execution_request.context or {}).get("conversation_id")
+        if conversation_id:
+            conversation = (
+                await db.execute(
+                    select(Conversation).where(
+                        and_(
+                            Conversation.id == int(conversation_id),
+                            Conversation.user_id == current_user.id,
+                            Conversation.agent_id == agent.id,
+                        )
+                    )
+                )
+            ).scalar_one_or_none()
+            if conversation:
+                await append_action(
+                    db,
+                    conversation=conversation,
+                    action_type="virtual_computer_code_execution",
+                    payload={
+                        "stdout": result.get("stdout", ""),
+                        "stderr": result.get("stderr", ""),
+                        "exit_code": result.get("exit_code"),
+                        "duration_ms": result.get("duration_ms", 0),
+                    },
+                    status="completed" if result.get("exit_code") in (0, None) else "failed",
+                )
+
+        status_value = "completed" if result.get("exit_code") in (0, None) else "failed"
+        return ActionExecutionResponse(
+            execution_id=f"exec_{action_id}_{int(time.time())}",
+            status=status_value,
+            result={
+                "stdout": result.get("stdout", ""),
+                "stderr": result.get("stderr", ""),
+                "exit_code": result.get("exit_code")
+            },
+            error=None if status_value == "completed" else "Code execution failed",
+            logs=["Code execution started", "Code execution completed"],
+            metrics={
+                "duration_ms": result.get("duration_ms", 0)
+            },
+            timestamp=datetime.utcnow()
+        )
+
+    # Default mock response for non-code actions
+    conversation_id = (execution_request.context or {}).get("conversation_id")
+    if conversation_id:
+        conversation = (
+            await db.execute(
+                select(Conversation).where(
+                    and_(
+                        Conversation.id == int(conversation_id),
+                        Conversation.user_id == current_user.id,
+                        Conversation.agent_id == agent.id,
+                    )
+                )
+            )
+        ).scalar_one_or_none()
+        if conversation:
+            await append_action(
+                db,
+                conversation=conversation,
+                action_type=action.action_type,
+                payload={"input_data": execution_request.input_data},
+                status="completed",
+            )
+
+    return ActionExecutionResponse(
+        execution_id=f"exec_{action_id}_{int(time.time())}",
+        status="completed",
+        result={"output": "Mock execution result", "success": True},
+        error=None,
+        logs=["Action execution started", "Action executed successfully"],
+        metrics={"duration_ms": 150, "memory_usage_mb": 10},
+        timestamp=datetime.utcnow()
+    )
 
 
 # Hooks Endpoints

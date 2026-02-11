@@ -114,6 +114,13 @@ export interface WorkflowExecutionCreate {
 
 export interface WorkflowExecutionRequest {
   workflow_id: number;
+  agent_id: number;
+  input_data?: Record<string, any>;
+}
+
+export interface WorkflowSchemaExecutionRequest {
+  agent_id: number;
+  workflow_schema: WorkflowSchema;
   input_data?: Record<string, any>;
 }
 
