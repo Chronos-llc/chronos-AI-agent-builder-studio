@@ -22,7 +22,7 @@ interface FormField {
   required: boolean;
   placeholder?: string;
   description?: string;
-  default?: string;
+  default?: any;
 }
 
 const IntegrationInstallPage: React.FC = () => {
@@ -53,8 +53,9 @@ const IntegrationInstallPage: React.FC = () => {
     const defaults: Record<string, any> = {};
 
     Object.entries(properties).forEach(([name, field]) => {
-      if (typeof field === 'object' && field !== null && field.default !== undefined) {
-        defaults[name] = field.default;
+      const fieldConfig: any = (typeof field === 'object' && field !== null) ? field : {};
+      if (fieldConfig.default !== undefined) {
+        defaults[name] = fieldConfig.default;
       }
     });
 
@@ -179,7 +180,7 @@ const IntegrationInstallPage: React.FC = () => {
     const requiredFields = new Set(schema.required || []);
 
     return Object.entries(properties).map(([name, field]) => {
-      const fieldConfig = (typeof field === 'object' && field !== null) ? field : {};
+      const fieldConfig: any = (typeof field === 'object' && field !== null) ? field : {};
       const isSensitive = fieldConfig.sensitive || fieldConfig.format === 'password';
       const fieldType = isSensitive ? 'password' : (fieldConfig.type || 'text');
 
@@ -479,8 +480,8 @@ const IntegrationInstallPage: React.FC = () => {
                 ) : (
                   <button
                     onClick={handleInstall}
-                    disabled={isTesting || (testResult && !testResult.success)}
-                    className={`bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ${isTesting || (testResult && !testResult.success) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isTesting || (!!testResult && !testResult.success)}
+                    className={`bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ${isTesting || (!!testResult && !testResult.success) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Install Integration
                   </button>

@@ -21,9 +21,10 @@ const ChannelConfigurationPage: React.FC = () => {
         const fetchConfig = async () => {
             try {
                 setIsLoading(true);
+                const token = localStorage.getItem('token')
                 const response = await fetch(`/api/communication-channels/config/${channelType}`, {
                     headers: {
-                        'Authorization': `Bearer ${user.token}`,
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                         'Content-Type': 'application/json'
                     }
                 });
@@ -59,7 +60,7 @@ const ChannelConfigurationPage: React.FC = () => {
         }
     };
 
-    const handleNestedInputChange = (section: string, field: string, value: string | boolean) => {
+    const handleNestedInputChange = (section: string, field: string, value: any) => {
         if (!config) return;
 
         setConfig({
@@ -78,10 +79,11 @@ const ChannelConfigurationPage: React.FC = () => {
             setIsSaving(true);
             setError(null);
 
+            const token = localStorage.getItem('token')
             const response = await fetch(`/api/communication-channels/config/${channelType}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${user.token}`,
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(config)

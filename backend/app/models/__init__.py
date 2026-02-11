@@ -14,6 +14,7 @@ from .template import (
 from .hook import Hook
 from .integration import Integration
 from .knowledge import KnowledgeFile, KnowledgeChunk, KnowledgeSearch, KnowledgeFileStatus, FileType
+from .training import TrainingSession, TrainingInteraction, TrainingCorrection, TrainingSessionStatus, TrainingMode, CorrectionType
 from .mcp_server import (
     MCPServer, MCPOperationLog, MCPServerMetric, 
     MCPCacheEntry, MCPServerGroup, MCPServerGroupMember
@@ -73,6 +74,12 @@ __all__ = [
     "KnowledgeSearch",
     "KnowledgeFileStatus",
     "FileType",
+    "TrainingSession",
+    "TrainingInteraction",
+    "TrainingCorrection",
+    "TrainingSessionStatus",
+    "TrainingMode",
+    "CorrectionType",
     "MCPServer",
     "MCPOperationLog",
     "MCPServerMetric",

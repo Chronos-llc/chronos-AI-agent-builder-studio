@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime
 from sqlalchemy.types import JSON
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -21,7 +20,7 @@ class PlatformUpdate(BaseModel):
     
     # Media
     media_type = Column(String(20), nullable=True)  # IMAGE, VIDEO, NONE
-    media_urls = Column(JSONB, nullable=True)  # Array of media URLs
+    media_urls = Column(JSON, nullable=True)  # Array of media URLs
     thumbnail_url = Column(String(500), nullable=True)
     
     # Visibility

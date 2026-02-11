@@ -1,9 +1,12 @@
+export type LogLevel = 'info' | 'warning' | 'warn' | 'error' | 'debug';
+export type LogSource = 'system' | 'action' | 'hook' | 'agent' | 'user' | string;
+
 export interface LogEntry {
   id: string;
   timestamp: string;
-  level: 'info' | 'warning' | 'error' | 'debug';
+  level: LogLevel;
   message: string;
-  source: string;
+  source: LogSource;
   context?: Record<string, unknown>;
   agentId?: string;
   actionId?: string;
