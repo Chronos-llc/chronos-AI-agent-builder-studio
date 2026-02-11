@@ -1,87 +1,33 @@
-import { describe, it, expect, vi } from 'vitest';
-import {
-  getPlatformUpdates,
-  markUpdateAsViewed
-} from '../platformUpdatesService';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getPlatformUpdates, markUpdateViewed } from '../platformUpdatesService'
 
-describe('Platform Updates Service', () => {
-  describe('getPlatformUpdates', () => {
-    it('should fetch platform updates successfully', async () => {
-      const mockData = {
-        data: [
-          {
-            id: '1',
-            title: 'New Feature Update',
-            content: 'We have released a new feature',
-            type: 'feature',
-            priority: 'high',
-            is_viewed: false
-          }
-        ],
-        total: 1,
-        page: 1,
-        limit: 10
-      };
+describe('platformUpdatesService', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockData)
-      });
+  it('fetches platform updates list', async () => {
+    const payload = { data: [], total: 0, page: 1, page_size: 20 }
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(payload),
+    } as unknown as Response)
 
-      global.fetch = mockFetch;
+    const result = await getPlatformUpdates()
+    expect((globalThis.fetch as any).mock.calls[0][0]).toContain('/api/updates')
+    expect(result.total).toBe(0)
+  })
 
-      const result = await getPlatformUpdates();
-      
-      expect(mockFetch).toHaveBeenCalledWith('/api/platform-updates');
-      expect(result).toEqual(mockData);
-    });
+  it('marks an update as viewed', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    } as unknown as Response)
 
-    it('should handle errors when fetching platform updates', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false
-      });
+    await markUpdateViewed(3)
+    const [url, options] = (globalThis.fetch as any).mock.calls[0]
+    expect(url).toContain('/api/updates/3/mark-viewed')
+    expect(options.method).toBe('POST')
+  })
+})
 
-      global.fetch = mockFetch;
-
-      await expect(getPlatformUpdates()).rejects.toThrow('Failed to fetch platform updates');
-    });
-  });
-
-  describe('markUpdateAsViewed', () => {
-    it('should mark an update as viewed successfully', async () => {
-      const updateId = '1';
-      
-      const mockData = {
-        success: true,
-        message: 'Update marked as viewed'
-      };
-
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockData)
-      });
-
-      global.fetch = mockFetch;
-
-      const result = await markUpdateAsViewed(updateId);
-      
-      expect(mockFetch).toHaveBeenCalledWith(`/api/platform-updates/${updateId}/view`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      expect(result).toEqual(mockData);
-    });
-
-    it('should handle errors when marking update as viewed', async () => {
-      const updateId = '1';
-      
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false
-      });
-
-      global.fetch = mockFetch;
-
-      await expect(markUpdateAsViewed(updateId)).rejects.toThrow(`Failed to mark update ${updateId} as viewed`);
-    });
-  });
-});

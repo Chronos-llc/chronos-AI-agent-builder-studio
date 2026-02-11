@@ -84,7 +84,7 @@ class VoiceConfiguration(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    agent = relationship("Agent", back_populates="voice_configuration")
+    agent = relationship("AgentModel", back_populates="voice_configuration")
     user = relationship("User")
     sessions = relationship("VoiceSession", back_populates="configuration", cascade="all, delete-orphan")
     selected_phone_number = relationship("AgentPhoneNumber", foreign_keys=[selected_phone_number_id])
@@ -139,7 +139,7 @@ class VoiceSession(Base):
     
     # Relationships
     configuration = relationship("VoiceConfiguration", back_populates="sessions")
-    agent = relationship("Agent", back_populates="voice_sessions")
+    agent = relationship("AgentModel", back_populates="voice_sessions")
     interactions = relationship("VoiceInteraction", back_populates="session", cascade="all, delete-orphan")
     
     # Indexes

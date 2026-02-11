@@ -6,7 +6,6 @@ Skills are pre-built capabilities stored as files that admins can create and use
 """
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime
 from sqlalchemy.types import JSON
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -36,8 +35,8 @@ class Skill(BaseModel):
     
     # Version and parameters
     version = Column(String(20), nullable=True)
-    parameters = Column(JSONB, nullable=True)  # Configurable parameters for the skill
-    tags = Column(JSONB, nullable=True)  # Tags for filtering and search
+    parameters = Column(JSON, nullable=True)  # Configurable parameters for the skill
+    tags = Column(JSON, nullable=True)  # Tags for filtering and search
     
     # Admin Management
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -59,7 +58,7 @@ class AgentSkillInstallation(BaseModel):
     knowledge_file_id = Column(Integer, ForeignKey("knowledge_files.id", ondelete="SET NULL"), nullable=True)
     
     # Configuration for this installation
-    configuration = Column(JSONB, nullable=True)  # User-specific configuration for the skill
+    configuration = Column(JSON, nullable=True)  # User-specific configuration for the skill
     is_enabled = Column(Boolean, server_default='true', nullable=False)
     
     installed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

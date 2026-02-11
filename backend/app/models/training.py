@@ -24,7 +24,8 @@ class TrainingSession(Base):
     __tablename__ = 'training_sessions'
     
     id = Column(String(64), primary_key=True, index=True)
-    agent_id = Column(String(64), ForeignKey('agents.id'), nullable=False)
+    agent_id = Column(Integer, ForeignKey('agents.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
     started_at = Column(DateTime, server_default=func.now())
     ended_at = Column(DateTime, nullable=True)
     status = Column(Enum(TrainingSessionStatus), default=TrainingSessionStatus.active)
@@ -32,6 +33,8 @@ class TrainingSession(Base):
     
     interactions = relationship('TrainingInteraction', back_populates='session', cascade='all, delete-orphan')
     corrections = relationship('TrainingCorrection', back_populates='session', cascade='all, delete-orphan')
+    agent = relationship('AgentModel', back_populates='training_sessions')
+    user = relationship('User', back_populates='training_sessions')
 
 class TrainingInteraction(Base):
     __tablename__ = 'training_interactions'

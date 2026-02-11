@@ -5,7 +5,6 @@ Defines the database models for marketplace listings, installations, and reviews
 """
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, Numeric, DateTime
 from sqlalchemy.types import JSON
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -75,8 +74,8 @@ class MarketplaceListing(BaseModel):
     # Metadata
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     version = Column(String(20), nullable=True)
-    schema_data = Column(JSONB, nullable=True)
-    preview_images = Column(JSONB, nullable=True)
+    schema_data = Column(JSON, nullable=True)
+    preview_images = Column(JSON, nullable=True)
     demo_video_url = Column(String(500), nullable=True)
     
     # Statistics

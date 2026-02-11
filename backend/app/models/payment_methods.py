@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Numeric
 from sqlalchemy.types import JSON
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -15,7 +14,7 @@ class PaymentMethod(BaseModel):
     name = Column(String(100), nullable=False)  # e.g., "Stripe Credit Card", "PayPal", "Bank Transfer"
     provider = Column(String(50), nullable=False)  # e.g., "stripe", "paypal", "bank"
     is_active = Column(Boolean, server_default='true', nullable=False)
-    configuration = Column(JSONB, nullable=True)  # Provider-specific configuration
+    configuration = Column(JSON, nullable=True)  # Provider-specific configuration
     
     # Relationships
     payment_settings = relationship("PaymentSettings", back_populates="default_method")
@@ -31,7 +30,7 @@ class PaymentSettings(BaseModel):
     currency = Column(String(3), server_default='USD', nullable=False)
     tax_rate = Column(Numeric(precision=5, scale=2), server_default='0.0', nullable=False)
     default_payment_method_id = Column(Integer, ForeignKey("payment_methods.id", ondelete="SET NULL"), nullable=True)
-    settings = Column(JSONB, nullable=True)  # Additional payment settings
+    settings = Column(JSON, nullable=True)  # Additional payment settings
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Relationships
@@ -51,7 +50,7 @@ class PaymentTransaction(BaseModel):
     payment_method_id = Column(Integer, ForeignKey("payment_methods.id", ondelete="SET NULL"), nullable=True)
     transaction_type = Column(String(50), nullable=False)  # e.g., "purchase", "refund", "subscription"
     status = Column(String(50), server_default='pending', nullable=False)  # e.g., "pending", "completed", "failed", "refunded"
-    additional_metadata = Column(JSONB, nullable=True)
+    additional_metadata = Column(JSON, nullable=True)
     external_transaction_id = Column(String(255), nullable=True)  # Transaction ID from payment processor
     
     # Relationships

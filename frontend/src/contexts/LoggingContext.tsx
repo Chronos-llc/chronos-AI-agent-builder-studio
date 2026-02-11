@@ -14,7 +14,7 @@ interface LoggingContextType {
   getLogStatistics: () => {
     total: number;
     byLevel: Record<LogLevel, number>;
-    bySource: Record<LogSource, number>;
+    bySource: Record<string, number>;
   };
   downloadLogs: () => void;
   importLogs: (logs: LogEntry[]) => void;
@@ -24,7 +24,7 @@ export const LoggingContext = createContext<LoggingContextType | undefined>(unde
 
 export const LoggingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [filter, setFilter] = useState<{ level?: LogLevel; source?: LogSource }>({});
+  const [filter, setFilterState] = useState<{ level?: LogLevel; source?: LogSource }>({});
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   const addLog = useCallback((log: LogEntry) => {
@@ -53,6 +53,10 @@ export const LoggingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
   }, [logs]);
 
+  const setFilter = useCallback((level?: LogLevel, source?: LogSource) => {
+    setFilterState({ level, source });
+  }, []);
+
   const getFilteredLogs = useCallback(() => {
     let filtered = logs;
     
@@ -78,6 +82,7 @@ export const LoggingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const byLevel: Record<LogLevel, number> = {
       debug: 0,
       info: 0,
+      warning: 0,
       warn: 0,
       error: 0
     };
