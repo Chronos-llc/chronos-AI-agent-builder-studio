@@ -9,6 +9,7 @@ class VoiceProvider(str, Enum):
     """Supported voice service providers"""
     OPENAI = "OPENAI"  # OpenAI Whisper (STT) and TTS
     ELEVENLABS = "ELEVENLABS"  # ElevenLabs TTS
+    CARTESIA = "CARTESIA"  # Cartesia STT/TTS
     GOOGLE = "GOOGLE"  # Google Cloud Speech-to-Text and Text-to-Speech
     AZURE = "AZURE"  # Azure Cognitive Services
     AWS = "AWS"  # Amazon Polly and Transcribe

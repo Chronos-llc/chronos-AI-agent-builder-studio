@@ -27,6 +27,10 @@
     @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
 }
 
+.input {
+    @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+}
+
 /* Studio Layout - Dynamic Panel Widths using CSS Variables */
 .studio-layout {
     --studio-sidebar-width: 300px;

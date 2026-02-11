@@ -63,7 +63,7 @@ PROVIDERS = [
         "icon": "AI",
         "documentation_url": "https://docs.fireworks.ai",
         "version": "1.0.0",
-        "supported_features": ["chat", "translation"],
+        "supported_features": ["chat", "translation", "image", "stt"],
     },
     {
         "name": "xAI Provider",
@@ -73,7 +73,7 @@ PROVIDERS = [
         "icon": "AI",
         "documentation_url": "https://docs.x.ai",
         "version": "1.0.0",
-        "supported_features": ["chat", "translation"],
+        "supported_features": ["chat", "translation", "image", "video"],
     },
     {
         "name": "OpenRouter Provider",
@@ -93,7 +93,17 @@ PROVIDERS = [
         "icon": "AI",
         "documentation_url": "https://elevenlabs.io/docs",
         "version": "1.0.0",
-        "supported_features": ["tts", "voice"],
+        "supported_features": ["stt", "tts", "voice"],
+    },
+    {
+        "name": "Cartesia Voice",
+        "description": "Cartesia speech-to-text, text-to-speech, and voice models.",
+        "integration_type": "ai_model",
+        "category": "ai_models",
+        "icon": "AI",
+        "documentation_url": "https://docs.cartesia.ai",
+        "version": "1.0.0",
+        "supported_features": ["stt", "tts", "voice"],
     },
     {
         "name": "Google Speech Provider",
@@ -103,7 +113,7 @@ PROVIDERS = [
         "icon": "AI",
         "documentation_url": "https://cloud.google.com/speech-to-text/docs",
         "version": "1.0.0",
-        "supported_features": ["stt", "tts", "voice"],
+        "supported_features": ["image", "video", "stt", "tts", "voice"],
     },
     {
         "name": "Azure Speech Provider",

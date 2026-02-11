@@ -8,6 +8,7 @@ class VoiceProvider(str, Enum):
     """Supported voice service providers"""
     OPENAI = "OPENAI"
     ELEVENLABS = "ELEVENLABS"
+    CARTESIA = "CARTESIA"
     GOOGLE = "GOOGLE"
     AZURE = "AZURE"
     AWS = "AWS"

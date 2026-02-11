@@ -394,23 +394,23 @@ const CommunicationChannelsPage: React.FC = () => {
         const analytics = analyticsData?.channel_analytics?.[channel.channel_id] || {};
 
         return (
-            <div key={channel.channel_id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div key={channel.channel_id} className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
                 <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                                <span className="text-blue-600 text-lg">{channelTypeConfig?.icon || '🔌'}</span>
+                                <span className="text-cyan-300 text-lg">{channelTypeConfig?.icon || '🔌'}</span>
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900">{channelTypeConfig?.name || channel.channel_type}</h3>
-                                <p className="text-sm text-gray-500">ID: {channel.channel_id}</p>
+                                <h3 className="font-semibold text-foreground">{channelTypeConfig?.name || channel.channel_type}</h3>
+                                <p className="text-sm text-muted-foreground">ID: {channel.channel_id}</p>
                             </div>
                         </div>
                         <div className="flex gap-1">
                             {channel.is_default && (
-                                <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">Default</span>
+                                <span className="text-xs bg-green-100 text-emerald-300 px-2 py-1 rounded-full">Default</span>
                             )}
-                            <span className={`text-xs px-2 py-1 rounded-full ${channel.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                            <span className={`text-xs px-2 py-1 rounded-full ${channel.status === 'active' ? 'bg-green-100 text-emerald-300' : 'bg-yellow-100 text-amber-400'}`}>
                                 {channel.status}
                             </span>
                         </div>
@@ -418,33 +418,33 @@ const CommunicationChannelsPage: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Messages</p>
-                            <p className="font-semibold text-gray-900">{analytics.total_messages || 0}</p>
+                            <p className="text-sm text-muted-foreground mb-1">Messages</p>
+                            <p className="font-semibold text-foreground">{analytics.total_messages || 0}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Success Rate</p>
-                            <p className="font-semibold text-gray-900">{analytics.success_rate ? analytics.success_rate.toFixed(1) + '%' : 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground mb-1">Success Rate</p>
+                            <p className="font-semibold text-foreground">{analytics.success_rate ? analytics.success_rate.toFixed(1) + '%' : 'N/A'}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Active Users</p>
-                            <p className="font-semibold text-gray-900">{analytics.active_users || 0}</p>
+                            <p className="text-sm text-muted-foreground mb-1">Active Users</p>
+                            <p className="font-semibold text-foreground">{analytics.active_users || 0}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600 mb-1">Avg Response</p>
-                            <p className="font-semibold text-gray-900">{analytics.avg_response_time_ms ? analytics.avg_response_time_ms.toFixed(1) + 'ms' : 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground mb-1">Avg Response</p>
+                            <p className="font-semibold text-foreground">{analytics.avg_response_time_ms ? analytics.avg_response_time_ms.toFixed(1) + 'ms' : 'N/A'}</p>
                         </div>
                     </div>
 
                     <div className="flex gap-2">
                         <button
                             onClick={() => navigate(`/communication/channels/${channel.channel_id}/configure`)}
-                            className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                            className="flex-1 bg-gray-100 text-muted-foreground py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors"
                         >
                             Configure
                         </button>
                         <button
                             onClick={() => handleTestChannel(channel.channel_id)}
-                            className="bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                            className="bg-cyan-400 text-white py-2 px-3 rounded-md text-sm hover:bg-cyan-300 transition-colors"
                         >
                             Test
                         </button>
@@ -478,38 +478,38 @@ const CommunicationChannelsPage: React.FC = () => {
                                 type="checkbox"
                                 checked={!!value}
                                 onChange={(e) => onChange(field.name, e.target.checked)}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="h-4 w-4 text-cyan-300 border-border rounded focus:ring-blue-500"
                             />
-                            <span className="ml-2 text-sm text-gray-700">{field.label}</span>
+                            <span className="ml-2 text-sm text-muted-foreground">{field.label}</span>
                         </label>
-                        {field.help_text && <p className="text-xs text-gray-500 mt-1">{field.help_text}</p>}
+                        {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
                 );
 
             case 'select':
                 return (
                     <div key={field.name} className="mb-4">
-                        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor={field.name} className="block text-sm font-medium text-muted-foreground mb-1">
                             {field.label}
                         </label>
                         <select
                             id={field.name}
                             value={value}
                             onChange={(e) => onChange(field.name, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                             {field.options?.map((option: any) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </select>
-                        {field.help_text && <p className="text-xs text-gray-500 mt-1">{field.help_text}</p>}
+                        {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
                 );
 
             case 'password':
                 return (
                     <div key={field.name} className="mb-4">
-                        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor={field.name} className="block text-sm font-medium text-muted-foreground mb-1">
                             {field.label}
                         </label>
                         <input
@@ -517,17 +517,17 @@ const CommunicationChannelsPage: React.FC = () => {
                             id={field.name}
                             value={value}
                             onChange={(e) => onChange(field.name, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder={field.placeholder}
                         />
-                        {field.help_text && <p className="text-xs text-gray-500 mt-1">{field.help_text}</p>}
+                        {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
                 );
 
             case 'number':
                 return (
                     <div key={field.name} className="mb-4">
-                        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor={field.name} className="block text-sm font-medium text-muted-foreground mb-1">
                             {field.label}
                         </label>
                         <input
@@ -535,17 +535,17 @@ const CommunicationChannelsPage: React.FC = () => {
                             id={field.name}
                             value={value}
                             onChange={(e) => onChange(field.name, parseInt(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder={field.placeholder}
                         />
-                        {field.help_text && <p className="text-xs text-gray-500 mt-1">{field.help_text}</p>}
+                        {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
                 );
 
             default: // text
                 return (
                     <div key={field.name} className="mb-4">
-                        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor={field.name} className="block text-sm font-medium text-muted-foreground mb-1">
                             {field.label}
                         </label>
                         <input
@@ -553,10 +553,10 @@ const CommunicationChannelsPage: React.FC = () => {
                             id={field.name}
                             value={value}
                             onChange={(e) => onChange(field.name, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder={field.placeholder}
                         />
-                        {field.help_text && <p className="text-xs text-gray-500 mt-1">{field.help_text}</p>}
+                        {field.help_text && <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>}
                     </div>
                 );
         }
@@ -565,9 +565,9 @@ const CommunicationChannelsPage: React.FC = () => {
     if (loading && !channels.length) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen bg-gray-50 p-6">
+                <div className="min-h-screen bg-background p-6">
                     <div className="max-w-7xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+                        <div className="bg-card rounded-lg shadow-sm p-6 animate-pulse">
                             <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
                             <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
                             <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
@@ -590,13 +590,13 @@ const CommunicationChannelsPage: React.FC = () => {
     if (error) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen bg-gray-50 p-6">
+                <div className="min-h-screen bg-background p-6">
                     <div className="max-w-7xl mx-auto">
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                            <p className="text-red-600 mb-4">⚠️ {error}</p>
+                        <div className="bg-rose-500/10 border border-red-200 rounded-lg p-6">
+                            <p className="text-rose-400 mb-4">⚠️ {error}</p>
                             <button
                                 onClick={fetchChannels}
-                                className="text-sm text-red-600 hover:text-red-800"
+                                className="text-sm text-rose-400 hover:text-red-800"
                             >
                                 Try again
                             </button>
@@ -609,24 +609,24 @@ const CommunicationChannelsPage: React.FC = () => {
 
     return (
         <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50 p-6">
+            <div className="min-h-screen bg-background p-6">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Communication Channels</h1>
-                            <p className="text-gray-600 mt-1">Manage your multi-channel communication integrations</p>
+                            <h1 className="text-3xl font-bold text-foreground">Communication Channels</h1>
+                            <p className="text-muted-foreground mt-1">Manage your multi-channel communication integrations</p>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={handleAddChannel}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                                className="bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300 transition-colors"
                             >
                                 + Add Channel
                             </button>
                             <button
-                                onClick={() => navigate('/integrations')}
-                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                                onClick={() => navigate('/app/integrations')}
+                                className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
                             >
                                 View Integrations
                             </button>
@@ -634,30 +634,30 @@ const CommunicationChannelsPage: React.FC = () => {
                     </div>
 
                     {/* Tabs */}
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-                        <div className="border-b border-gray-200 px-6">
+                    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
+                        <div className="border-b border-border px-6">
                             <div className="flex -mb-px">
                                 <button
                                     onClick={() => setActiveTab('channels')}
                                     className={`flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'channels'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                                        ? 'border-blue-600 text-cyan-300'
+                                        : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'}`}
                                 >
                                     Communication Channels
                                 </button>
                                 <button
                                     onClick={() => { setActiveTab('analytics'); fetchAnalytics(); }}
                                     className={`flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'analytics'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                                        ? 'border-blue-600 text-cyan-300'
+                                        : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'}`}
                                 >
                                     Analytics Dashboard
                                 </button>
                                 <button
                                     onClick={() => { setActiveTab('routing'); fetchRoutingRules('all'); }}
                                     className={`flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'routing'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                                        ? 'border-blue-600 text-cyan-300'
+                                        : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'}`}
                                 >
                                     Message Routing
                                 </button>
@@ -671,37 +671,37 @@ const CommunicationChannelsPage: React.FC = () => {
                             {/* Add Channel Modal */}
                             {showAddChannel && (
                                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                                        <div className="p-6 border-b border-gray-200">
+                                    <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                                        <div className="p-6 border-b border-border">
                                             <div className="flex justify-between items-center">
-                                                <h3 className="text-xl font-semibold text-gray-900">Add New Communication Channel</h3>
+                                                <h3 className="text-xl font-semibold text-foreground">Add New Communication Channel</h3>
                                                 <button
                                                     onClick={handleCancelAddChannel}
-                                                    className="text-gray-400 hover:text-gray-600"
+                                                    className="text-muted-foreground/70 hover:text-muted-foreground"
                                                 >
                                                     ✕
                                                 </button>
                                             </div>
-                                            <p className="text-gray-600 mt-1">Select a channel type and configure the integration</p>
+                                            <p className="text-muted-foreground mt-1">Select a channel type and configure the integration</p>
                                         </div>
 
                                         {!selectedChannelType ? (
                                             <div className="p-6">
-                                                <h4 className="font-medium text-gray-700 mb-4">Select Channel Type</h4>
+                                                <h4 className="font-medium text-muted-foreground mb-4">Select Channel Type</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     {channelTypes.map((channelType) => (
                                                         <div
                                                             key={channelType.type}
                                                             onClick={() => handleSelectChannelType(channelType.type)}
-                                                            className="bg-gray-50 border-2 border-transparent rounded-lg p-4 cursor-pointer hover:border-blue-300 transition-colors"
+                                                            className="bg-background border-2 border-transparent rounded-lg p-4 cursor-pointer hover:border-blue-300 transition-colors"
                                                         >
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                                                                    <span className="text-blue-600 text-lg">{channelType.icon}</span>
+                                                                    <span className="text-cyan-300 text-lg">{channelType.icon}</span>
                                                                 </div>
                                                                 <div>
-                                                                    <h5 className="font-semibold text-gray-900">{channelType.name}</h5>
-                                                                    <p className="text-sm text-gray-600">{channelType.description}</p>
+                                                                    <h5 className="font-semibold text-foreground">{channelType.name}</h5>
+                                                                    <p className="text-sm text-muted-foreground">{channelType.description}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -711,10 +711,10 @@ const CommunicationChannelsPage: React.FC = () => {
                                         ) : (
                                             <div className="p-6">
                                                 <div className="flex justify-between items-center mb-4">
-                                                    <h4 className="font-medium text-gray-700">Configure {channelTypes.find(ct => ct.type === selectedChannelType)?.name}</h4>
+                                                    <h4 className="font-medium text-muted-foreground">Configure {channelTypes.find(ct => ct.type === selectedChannelType)?.name}</h4>
                                                     <button
                                                         onClick={() => setSelectedChannelType(null)}
-                                                        className="text-sm text-blue-600 hover:text-blue-800"
+                                                        className="text-sm text-cyan-300 hover:text-blue-800"
                                                     >
                                                         ← Change Channel Type
                                                     </button>
@@ -728,7 +728,7 @@ const CommunicationChannelsPage: React.FC = () => {
                                                         )}
                                                 </div>
 
-                                                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <div className="mt-6 bg-cyan-500/10 border border-blue-200 rounded-lg p-4">
                                                     <p className="text-blue-800 text-sm">
                                                         🔒 Your credentials are encrypted and stored securely. They will never be shared or exposed.
                                                     </p>
@@ -737,7 +737,7 @@ const CommunicationChannelsPage: React.FC = () => {
                                                 <div className="flex justify-end gap-3 mt-6">
                                                     <button
                                                         onClick={handleCancelAddChannel}
-                                                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                                                        className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
                                                         disabled={isAdding}
                                                     >
                                                         Cancel
@@ -771,8 +771,8 @@ const CommunicationChannelsPage: React.FC = () => {
                             ) : (
                                 <div className="text-center py-12">
                                     <div className="text-6xl text-gray-300 mb-4">🔌</div>
-                                    <p className="text-gray-600 mb-2">No communication channels configured</p>
-                                    <p className="text-sm text-gray-500">Click "Add Channel" to get started</p>
+                                    <p className="text-muted-foreground mb-2">No communication channels configured</p>
+                                    <p className="text-sm text-muted-foreground">Click "Add Channel" to get started</p>
                                 </div>
                             )}
                         </div>
@@ -780,43 +780,43 @@ const CommunicationChannelsPage: React.FC = () => {
 
                     {/* Analytics Tab */}
                     {activeTab === 'analytics' && (
-                        <div className="bg-white rounded-lg shadow-sm p-6">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Communication Analytics Dashboard</h3>
+                        <div className="bg-card rounded-lg shadow-sm p-6">
+                            <h3 className="text-xl font-semibold text-foreground mb-6">Communication Analytics Dashboard</h3>
 
                             {/* Summary Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                    <p className="text-sm text-blue-600 mb-1">Total Channels</p>
+                                <div className="bg-cyan-500/10 border border-blue-200 rounded-lg p-4">
+                                    <p className="text-sm text-cyan-300 mb-1">Total Channels</p>
                                     <p className="text-2xl font-bold text-blue-800">{analyticsData?.total_channels || 0}</p>
                                 </div>
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                    <p className="text-sm text-green-600 mb-1">Total Messages</p>
+                                <div className="bg-emerald-500/10 border border-green-200 rounded-lg p-4">
+                                    <p className="text-sm text-emerald-300 mb-1">Total Messages</p>
                                     <p className="text-2xl font-bold text-green-800">{analyticsData?.total_messages || 0}</p>
                                 </div>
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <p className="text-sm text-yellow-600 mb-1">Success Rate</p>
+                                <div className="bg-amber-500/10 border border-yellow-200 rounded-lg p-4">
+                                    <p className="text-sm text-amber-400 mb-1">Success Rate</p>
                                     <p className="text-2xl font-bold text-yellow-800">{analyticsData?.success_rate ? analyticsData.success_rate.toFixed(1) + '%' : 'N/A'}</p>
                                 </div>
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                    <p className="text-sm text-red-600 mb-1">Failed Messages</p>
+                                <div className="bg-rose-500/10 border border-red-200 rounded-lg p-4">
+                                    <p className="text-sm text-rose-400 mb-1">Failed Messages</p>
                                     <p className="text-2xl font-bold text-red-800">{analyticsData?.failed_messages || 0}</p>
                                 </div>
                             </div>
 
                             {/* Channel Analytics */}
                             <div className="mb-6">
-                                <h4 className="font-semibold text-gray-700 mb-4">Channel Performance</h4>
+                                <h4 className="font-semibold text-muted-foreground mb-4">Channel Performance</h4>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-gray-50">
+                                        <thead className="bg-background">
                                             <tr>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Channel</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Messages</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Success</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Failed</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Success Rate</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Avg Response</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Active Users</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Channel</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Messages</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Success</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Failed</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Success Rate</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Avg Response</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Active Users</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -825,11 +825,11 @@ const CommunicationChannelsPage: React.FC = () => {
                                                 const channelTypeConfig = channelTypes.find(ct => ct.type === channel.channel_type);
 
                                                 return (
-                                                    <tr key={channel.channel_id} className="border-t border-gray-100">
+                                                    <tr key={channel.channel_id} className="border-t border-border">
                                                         <td className="px-4 py-3">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-lg">{channelTypeConfig?.icon}</span>
-                                                                <span className="font-medium text-gray-900">{channelTypeConfig?.name || channel.channel_type}</span>
+                                                                <span className="font-medium text-foreground">{channelTypeConfig?.name || channel.channel_type}</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3">{channelAnalytics.total_messages || 0}</td>
@@ -852,16 +852,16 @@ const CommunicationChannelsPage: React.FC = () => {
 
                             {/* Performance Charts */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <h5 className="font-medium text-gray-700 mb-3">Message Volume by Channel</h5>
-                                    <div className="h-48 bg-white rounded border border-gray-200 flex items-center justify-center">
-                                        <p className="text-gray-500">Chart would display here in real implementation</p>
+                                <div className="bg-background rounded-lg p-4">
+                                    <h5 className="font-medium text-muted-foreground mb-3">Message Volume by Channel</h5>
+                                    <div className="h-48 bg-card rounded border border-border flex items-center justify-center">
+                                        <p className="text-muted-foreground">Chart would display here in real implementation</p>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <h5 className="font-medium text-gray-700 mb-3">Success Rate by Channel</h5>
-                                    <div className="h-48 bg-white rounded border border-gray-200 flex items-center justify-center">
-                                        <p className="text-gray-500">Chart would display here in real implementation</p>
+                                <div className="bg-background rounded-lg p-4">
+                                    <h5 className="font-medium text-muted-foreground mb-3">Success Rate by Channel</h5>
+                                    <div className="h-48 bg-card rounded border border-border flex items-center justify-center">
+                                        <p className="text-muted-foreground">Chart would display here in real implementation</p>
                                     </div>
                                 </div>
                             </div>
@@ -870,44 +870,44 @@ const CommunicationChannelsPage: React.FC = () => {
 
                     {/* Routing Tab */}
                     {activeTab === 'routing' && (
-                        <div className="bg-white rounded-lg shadow-sm p-6">
+                        <div className="bg-card rounded-lg shadow-sm p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-semibold text-gray-900">Message Routing Rules</h3>
+                                <h3 className="text-xl font-semibold text-foreground">Message Routing Rules</h3>
                                 <button
-                                    onClick={() => navigate('/communication/routing/advanced')}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                                    onClick={() => navigate('/app/channels')}
+                                    className="bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300 transition-colors"
                                 >
                                     Advanced Routing
                                 </button>
                             </div>
 
                             {/* Add Routing Rule */}
-                            <div className="mb-6 bg-gray-50 rounded-lg p-4">
-                                <h4 className="font-medium text-gray-700 mb-3">Add New Routing Rule</h4>
+                            <div className="mb-6 bg-background rounded-lg p-4">
+                                <h4 className="font-medium text-muted-foreground mb-3">Add New Routing Rule</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Rule Name</label>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Rule Name</label>
                                         <input
                                             type="text"
                                             value={newRule.name}
                                             onChange={(e) => setNewRule({...newRule, name: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            className="w-full px-3 py-2 border border-border rounded-md"
                                             placeholder="e.g., high_priority_routing"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Priority</label>
                                         <input
                                             type="number"
                                             value={newRule.priority}
                                             onChange={(e) => setNewRule({...newRule, priority: parseInt(e.target.value) || 1})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            className="w-full px-3 py-2 border border-border rounded-md"
                                             min="1"
                                             max="5"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Target Channels</label>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Target Channels</label>
                                         <select
                                             multiple
                                             value={newRule.target_channels}
@@ -915,7 +915,7 @@ const CommunicationChannelsPage: React.FC = () => {
                                                 const options = Array.from(e.target.selectedOptions).map(option => option.value);
                                                 setNewRule({...newRule, target_channels: options});
                                             }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                            className="w-full px-3 py-2 border border-border rounded-md"
                                         >
                                             {channels.map(channel => (
                                                 <option key={channel.channel_id} value={channel.channel_id}>{channel.channel_id}</option>
@@ -935,20 +935,20 @@ const CommunicationChannelsPage: React.FC = () => {
                             {/* Routing Rules Table */}
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-gray-50">
+                                    <thead className="bg-background">
                                         <tr>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Name</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Priority</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Condition</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Target Channels</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Status</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Actions</th>
+                                            <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Name</th>
+                                            <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Priority</th>
+                                            <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Condition</th>
+                                            <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Target Channels</th>
+                                            <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Status</th>
+                                            <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {routingRules.map(rule => (
-                                            <tr key={rule.id} className="border-t border-gray-100">
-                                                <td className="px-4 py-3 font-medium text-gray-900">{rule.name}</td>
+                                            <tr key={rule.id} className="border-t border-border">
+                                                <td className="px-4 py-3 font-medium text-foreground">{rule.name}</td>
                                                 <td className="px-4 py-3">{rule.priority}</td>
                                                 <td className="px-4 py-3">
                                                     <code className="text-sm bg-gray-100 px-2 py-1 rounded">
@@ -957,14 +957,14 @@ const CommunicationChannelsPage: React.FC = () => {
                                                 </td>
                                                 <td className="px-4 py-3">{rule.target_channels.join(', ')}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${rule.enabled ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${rule.enabled ? 'bg-green-100 text-emerald-300' : 'bg-yellow-100 text-amber-400'}`}>
                                                         {rule.enabled ? 'Enabled' : 'Disabled'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <button
                                                         onClick={() => handleRemoveRoutingRule(rule.id)}
-                                                        className="text-red-600 hover:text-red-800 text-sm"
+                                                        className="text-rose-400 hover:text-red-800 text-sm"
                                                     >
                                                         Remove
                                                     </button>
@@ -976,10 +976,10 @@ const CommunicationChannelsPage: React.FC = () => {
                             </div>
 
                             {/* Routing Visualization */}
-                            <div className="mt-6 bg-gray-50 rounded-lg p-4">
-                                <h4 className="font-medium text-gray-700 mb-3">Routing Flow Visualization</h4>
-                                <div className="h-64 bg-white rounded border border-gray-200 flex items-center justify-center">
-                                    <p className="text-gray-500">Interactive routing flow diagram would display here</p>
+                            <div className="mt-6 bg-background rounded-lg p-4">
+                                <h4 className="font-medium text-muted-foreground mb-3">Routing Flow Visualization</h4>
+                                <div className="h-64 bg-card rounded border border-border flex items-center justify-center">
+                                    <p className="text-muted-foreground">Interactive routing flow diagram would display here</p>
                                 </div>
                             </div>
                         </div>

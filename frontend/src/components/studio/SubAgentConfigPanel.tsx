@@ -15,7 +15,8 @@ import {
     Video as VideoIcon,
     Smile
 } from 'lucide-react';
-import { useModelCatalog, groupModelsByProvider } from '../../hooks/useModelCatalog';
+import { useModelCatalog } from '../../hooks/useModelCatalog';
+import { ModelCatalogPicker } from './ModelCatalogPicker';
 
 interface SubAgentConfig {
     summary_agent: {
@@ -87,10 +88,6 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const translationModels = (modelCatalog?.models?.translation?.length ? modelCatalog?.models?.translation : chatModels) || [];
     const imageModels = modelCatalog?.models?.image || [];
     const videoModels = modelCatalog?.models?.video || [];
-    const chatGroups = groupModelsByProvider(chatModels, providers);
-    const translationGroups = groupModelsByProvider(translationModels, providers);
-    const imageGroups = groupModelsByProvider(imageModels, providers);
-    const videoGroups = groupModelsByProvider(videoModels, providers);
 
     // Fetch current sub-agent configuration
     const { data: subAgentConfig, isLoading: isConfigLoading } = useQuery({
@@ -337,40 +334,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="summary-model"
-                            >
-                                Summary Generation Model
-                            </label>
-                            <select
-                                id="summary-model"
-                                value={config.summary_agent.model}
-                                onChange={(e) => updateConfig('summary_agent', { model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                {!chatGroups.length && (
-                                    <option value="" disabled>
-                                        Install an AI provider to see models
-                                    </option>
-                                )}
-                                {!!config.summary_agent.model && !chatModels.some(model => model.model === config.summary_agent.model) && (
-                                    <option value={config.summary_agent.model}>
-                                        Current: {config.summary_agent.model}
-                                    </option>
-                                )}
-                                {chatGroups.map(group => (
-                                    <optgroup key={group.provider} label={group.label}>
-                                        {group.models.map(model => (
-                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="chat"
+                            providers={providers}
+                            models={chatModels}
+                            value={config.summary_agent.model}
+                            onChange={(model) => updateConfig('summary_agent', { model })}
+                            label="Summary Generation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
@@ -441,40 +412,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </label>
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="translator-model"
-                            >
-                                Translation Model
-                            </label>
-                            <select
-                                id="translator-model"
-                                value={config.translator_agent.model}
-                                onChange={(e) => updateConfig('translator_agent', { model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                {!translationGroups.length && (
-                                    <option value="" disabled>
-                                        Install a translation-capable provider to see models
-                                    </option>
-                                )}
-                                {!!config.translator_agent.model && !translationModels.some(model => model.model === config.translator_agent.model) && (
-                                    <option value={config.translator_agent.model}>
-                                        Current: {config.translator_agent.model}
-                                    </option>
-                                )}
-                                {translationGroups.map(group => (
-                                    <optgroup key={group.provider} label={group.label}>
-                                        {group.models.map(model => (
-                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="translation"
+                            providers={providers}
+                            models={translationModels}
+                            value={config.translator_agent.model}
+                            onChange={(model) => updateConfig('translator_agent', { model })}
+                            label="Translation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
@@ -565,111 +510,32 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label 
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                    htmlFor="knowledge-fastest-model"
-                                >
-                                    Fastest Model
-                                </label>
-                                <select
-                                    id="knowledge-fastest-model"
-                                    value={config.knowledge_agent.fastest_model}
-                                    onChange={(e) => updateConfig('knowledge_agent', { fastest_model: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    {!chatGroups.length && (
-                                        <option value="" disabled>
-                                            Install an AI provider to see models
-                                        </option>
-                                    )}
-                                    {!!config.knowledge_agent.fastest_model && !chatModels.some(model => model.model === config.knowledge_agent.fastest_model) && (
-                                        <option value={config.knowledge_agent.fastest_model}>
-                                            Current: {config.knowledge_agent.fastest_model}
-                                        </option>
-                                    )}
-                                    {chatGroups.map(group => (
-                                        <optgroup key={group.provider} label={group.label}>
-                                            {group.models.map(model => (
-                                                <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                    {model.label}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label 
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                    htmlFor="knowledge-best-model"
-                                >
-                                    Best Model
-                                </label>
-                                <select
-                                    id="knowledge-best-model"
-                                    value={config.knowledge_agent.best_model}
-                                    onChange={(e) => updateConfig('knowledge_agent', { best_model: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    {!chatGroups.length && (
-                                        <option value="" disabled>
-                                            Install an AI provider to see models
-                                        </option>
-                                    )}
-                                    {!!config.knowledge_agent.best_model && !chatModels.some(model => model.model === config.knowledge_agent.best_model) && (
-                                        <option value={config.knowledge_agent.best_model}>
-                                            Current: {config.knowledge_agent.best_model}
-                                        </option>
-                                    )}
-                                    {chatGroups.map(group => (
-                                        <optgroup key={group.provider} label={group.label}>
-                                            {group.models.map(model => (
-                                                <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                    {model.label}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    ))}
-                                </select>
-                            </div>
+                            <ModelCatalogPicker
+                                capability="chat"
+                                providers={providers}
+                                models={chatModels}
+                                value={config.knowledge_agent.fastest_model}
+                                onChange={(model) => updateConfig('knowledge_agent', { fastest_model: model })}
+                                label="Fastest Model"
+                            />
+                            <ModelCatalogPicker
+                                capability="chat"
+                                providers={providers}
+                                models={chatModels}
+                                value={config.knowledge_agent.best_model}
+                                onChange={(model) => updateConfig('knowledge_agent', { best_model: model })}
+                                label="Best Model"
+                            />
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="knowledge-question-extractor-model"
-                            >
-                                Question Extractor Model
-                            </label>
-                            <select
-                                id="knowledge-question-extractor-model"
-                                value={config.knowledge_agent.question_extractor_model}
-                                onChange={(e) => updateConfig('knowledge_agent', { question_extractor_model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                {!chatGroups.length && (
-                                    <option value="" disabled>
-                                        Install an AI provider to see models
-                                    </option>
-                                )}
-                                {!!config.knowledge_agent.question_extractor_model && !chatModels.some(model => model.model === config.knowledge_agent.question_extractor_model) && (
-                                    <option value={config.knowledge_agent.question_extractor_model}>
-                                        Current: {config.knowledge_agent.question_extractor_model}
-                                    </option>
-                                )}
-                                {chatGroups.map(group => (
-                                    <optgroup key={group.provider} label={group.label}>
-                                        {group.models.map(model => (
-                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="chat"
+                            providers={providers}
+                            models={chatModels}
+                            value={config.knowledge_agent.question_extractor_model}
+                            onChange={(model) => updateConfig('knowledge_agent', { question_extractor_model: model })}
+                            label="Question Extractor Model"
+                        />
 
                         <div>
                             <label 
@@ -821,40 +687,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </label>
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="image-generation-model"
-                            >
-                                Image Generation Model
-                            </label>
-                            <select
-                                id="image-generation-model"
-                                value={config.image_generation_agent.model || ''}
-                                onChange={(e) => updateConfig('image_generation_agent', { model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                {!imageGroups.length && (
-                                    <option value="" disabled>
-                                        Install an image provider to see models
-                                    </option>
-                                )}
-                                {!!config.image_generation_agent.model && !imageModels.some(model => model.model === config.image_generation_agent.model) && (
-                                    <option value={config.image_generation_agent.model}>
-                                        Current: {config.image_generation_agent.model}
-                                    </option>
-                                )}
-                                {imageGroups.map(group => (
-                                    <optgroup key={group.provider} label={group.label}>
-                                        {group.models.map(model => (
-                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="image"
+                            providers={providers}
+                            models={imageModels}
+                            value={config.image_generation_agent.model}
+                            onChange={(model) => updateConfig('image_generation_agent', { model })}
+                            label="Image Generation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
@@ -925,40 +765,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </label>
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="video-generation-model"
-                            >
-                                Video Generation Model
-                            </label>
-                            <select
-                                id="video-generation-model"
-                                value={config.video_agent.model || ''}
-                                onChange={(e) => updateConfig('video_agent', { model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                {!videoGroups.length && (
-                                    <option value="" disabled>
-                                        Install a video provider to see models
-                                    </option>
-                                )}
-                                {!!config.video_agent.model && !videoModels.some(model => model.model === config.video_agent.model) && (
-                                    <option value={config.video_agent.model}>
-                                        Current: {config.video_agent.model}
-                                    </option>
-                                )}
-                                {videoGroups.map(group => (
-                                    <optgroup key={group.provider} label={group.label}>
-                                        {group.models.map(model => (
-                                            <option key={`${group.provider}-${model.model}`} value={model.model}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="video"
+                            providers={providers}
+                            models={videoModels}
+                            value={config.video_agent.model}
+                            onChange={(model) => updateConfig('video_agent', { model })}
+                            label="Video Generation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>

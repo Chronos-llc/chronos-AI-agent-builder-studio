@@ -221,7 +221,7 @@ export const AdminStudioLayout = () => {
     }
 
     return (
-        <div className="flex h-screen bg-background overflow-hidden admin-studio-layout">
+        <div className="flex min-h-full bg-background overflow-hidden admin-studio-layout">
             {/* Sidebar */}
             <div className={`transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-0'} ${!sidebarOpen && !isMobile ? 'hidden md:block' : ''} admin-mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
                 <div className="h-full flex flex-col border-r border-border bg-card admin-navigation">
