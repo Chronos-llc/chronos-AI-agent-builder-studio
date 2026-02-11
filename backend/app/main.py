@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -16,6 +17,7 @@ from app.core.integration_monitoring import initialize_integration_monitoring
 from app.core.communication_channels import initialize_communication_channels
 from app.core.webchat import initialize_webchat
 from app.core.agent_engine import initialize_agent_engine, cleanup_agent_engine
+from app.core.data_retention import purge_due_deleted_users, retention_loop
 from scripts.initialize_mcp_integrations import initialize_mcp_integrations
 
 # Setup logging
@@ -28,6 +30,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Chronos AI Agent Builder Studio")
+    retention_task: asyncio.Task | None = None
       
     # Create database tables
     async with engine.begin() as conn:
@@ -53,11 +56,22 @@ async def lifespan(app: FastAPI):
       
     # Initialize WebChat
     await initialize_webchat()
+
+    # Run retention purge on startup and then continue in background
+    await purge_due_deleted_users()
+    retention_task = asyncio.create_task(retention_loop())
      
     yield
      
     # Shutdown
     logger.info("Shutting down Chronos AI Agent Builder Studio")
+
+    if retention_task:
+        retention_task.cancel()
+        try:
+            await retention_task
+        except asyncio.CancelledError:
+            pass
      
     # Cleanup AgentEngine
     await cleanup_agent_engine()
@@ -83,6 +97,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+app.include_router(user_profiles.router, prefix="/api/v1", tags=["user-profiles"])
 app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
 app.include_router(actions.router, prefix="/api/v1", tags=["actions", "hooks"])
 app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"])
@@ -92,11 +107,15 @@ app.include_router(mcp.router, prefix="/api/v1/mcp", tags=["mcp"])  # Original M
 app.include_router(enhanced_mcp.router, prefix="/api/v1", tags=["enhanced-mcp"])  # Enhanced MCP endpoints
 app.include_router(ai_providers.router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(voice.router, prefix="/api/v1", tags=["voice"])
+app.include_router(virtual_computer.router, prefix="/api/v1", tags=["virtual-computer"])
 app.include_router(integration_monitoring.router, prefix="/api/v1/monitoring", tags=["monitoring"])
 app.include_router(communication_channels.router, prefix="/api/v1/communication", tags=["communication"])
 app.include_router(webchat.router, prefix="/api/v1/webchat", tags=["webchat"])
 app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge"])
 app.include_router(training.router, prefix="/api/v1", tags=["training"])
+app.include_router(workflow_generation.router, prefix="/api/v1/workflow-generation", tags=["workflow-generation"])
+app.include_router(conversations.router, prefix="/api/v1", tags=["conversations"])
+app.include_router(agentic_thinking.router, prefix="/api/v1", tags=["agentic-thinking"])
 app.include_router(meta_agent.router, prefix="/api/v1/meta-agent", tags=["meta-agent"])
 app.include_router(personal_access_tokens.router, prefix="/api/v1/personal-access-tokens", tags=["personal-access-tokens"])
 app.include_router(messaging_api.router, prefix="/api/v1/messaging", tags=["messaging-api"])

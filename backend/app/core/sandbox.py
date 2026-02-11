@@ -76,7 +76,7 @@ class SandboxManager:
                     cap_drop=["ALL"],
                     security_opt=["no-new-privileges"],
                     read_only=True,
-                    tmpfs={}/tmp:exec,size=65536k"},
+                    tmpfs={"/tmp": "exec,size=65536k"},
                     auto_remove=False
                 )
                 

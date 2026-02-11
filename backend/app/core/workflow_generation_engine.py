@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 from app.models.workflow_generation import (
-    WorkflowTemplate, GeneratedWorkflow, WorkflowExecution,
+    WorkflowGenerationTemplate, GeneratedWorkflow, WorkflowGenerationExecution,
     WorkflowPattern, WorkflowStatus, ExecutionStatus, WorkflowCategory
 )
 
@@ -35,6 +35,7 @@ class WorkflowGenerationEngine:
         "notification": ["notify", "email", "alert", "message", "send"],
         "document_processing": ["parse", "extract", "convert", "pdf", "document"],
         "machine_learning": ["train", "model", "predict", "ml", "ai", "inference"],
+        "code_execution": ["python", "script", "code", "sandbox", "execute code", "run code"],
     }
     
     # Template categories for matching
@@ -50,7 +51,7 @@ class WorkflowGenerationEngine:
     
     def __init__(self):
         """Initialize the workflow generation engine."""
-        self._template_cache: Dict[int, WorkflowTemplate] = {}
+        self._template_cache: Dict[int, WorkflowGenerationTemplate] = {}
         self._pattern_cache: Dict[int, WorkflowPattern] = {}
     
     async def generate_workflow(
@@ -214,7 +215,7 @@ class WorkflowGenerationEngine:
     async def match_template(
         self,
         description: str
-    ) -> Optional[WorkflowTemplate]:
+    ) -> Optional[WorkflowGenerationTemplate]:
         """
         Match a description to an existing workflow template.
         
@@ -222,7 +223,7 @@ class WorkflowGenerationEngine:
             description: Natural language description
             
         Returns:
-            Matching WorkflowTemplate or None
+            Matching WorkflowGenerationTemplate or None
         """
         # This would typically query the database
         # For now, return None (no match)
@@ -230,14 +231,14 @@ class WorkflowGenerationEngine:
     
     async def generate_from_template(
         self,
-        template: WorkflowTemplate,
+        template: WorkflowGenerationTemplate,
         parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Generate a workflow from a template with provided parameters.
         
         Args:
-            template: WorkflowTemplate to use
+            template: WorkflowGenerationTemplate to use
             parameters: Parameters to customize the template
             
         Returns:
@@ -263,7 +264,7 @@ class WorkflowGenerationEngine:
         def replace_placeholders(obj: Any) -> Any:
             if isinstance(obj, str):
                 for key, value in parameters.items():
-                    placeholder = f"{{{{{key}}}}"
+                    placeholder = f"{{{{{key}}}}}"
                     if placeholder in obj:
                         obj = obj.replace(placeholder, str(value))
                 return obj
@@ -436,6 +437,10 @@ class WorkflowGenerationEngine:
                 {"name": "trigger", "type": "trigger", "description": "Trigger automation"},
                 {"name": "execute_actions", "type": "action", "description": "Execute automated actions"},
                 {"name": "notify", "type": "notification", "description": "Send notification"},
+            ]
+        elif intent == "code_execution":
+            steps = [
+                {"name": "prepare_code", "type": "code_execution", "description": "Execute Python code in sandbox"},
             ]
         else:
             # Generic workflow

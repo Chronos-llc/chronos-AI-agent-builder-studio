@@ -17,6 +17,7 @@ import type {
   GeneratedWorkflowListResponse,
   WorkflowExecution,
   WorkflowExecutionRequest,
+  WorkflowSchemaExecutionRequest,
   WorkflowPattern,
   WorkflowPatternListResponse,
   WorkflowGenerationRequest,
@@ -27,7 +28,7 @@ import type {
 } from '../types/workflowGeneration';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const API_BASE = `${API_BASE_URL}/api/workflow-generation`;
+const API_BASE = `${API_BASE_URL}/api/v1/workflow-generation`;
 
 export const workflowGenerationService = {
   /**
@@ -136,6 +137,14 @@ export const workflowGenerationService = {
    */
   async executeWorkflow(request: WorkflowExecutionRequest): Promise<WorkflowExecution> {
     const response = await axios.post<WorkflowExecution>(`${API_BASE}/execute`, request);
+    return response.data;
+  },
+
+  /**
+   * Execute an ad-hoc workflow schema
+   */
+  async executeSchema(request: WorkflowSchemaExecutionRequest): Promise<WorkflowExecution> {
+    const response = await axios.post<WorkflowExecution>(`${API_BASE}/execute-schema`, request);
     return response.data;
   },
 

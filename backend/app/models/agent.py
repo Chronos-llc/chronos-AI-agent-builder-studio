@@ -38,6 +38,7 @@ class AgentModel(BaseModel):
     
     # Sub-agent configurations
     sub_agent_config = Column(JSON, nullable=True)  # Sub-agent specific configurations
+    agentic_thinking_enabled = Column(Boolean, default=False, nullable=False)
     
     # Metadata
     tags = Column(JSON, nullable=True)  # List of tags
@@ -68,6 +69,14 @@ class AgentModel(BaseModel):
     conversation_contexts = relationship("ConversationContext", back_populates="agent", cascade="all, delete-orphan")
     voice_configuration = relationship("VoiceConfiguration", back_populates="agent", uselist=False, cascade="all, delete-orphan")
     voice_sessions = relationship("VoiceSession", back_populates="agent", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="agent", cascade="all, delete-orphan")
+    dialogue_sessions = relationship("DialogueSession", back_populates="agent", cascade="all, delete-orphan")
+    virtual_computer_configuration = relationship(
+        "VirtualComputerConfiguration",
+        back_populates="agent",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
     
     def __repr__(self):
         return f"<AgentModel(id={self.id}, name='{self.name}', status='{self.status}')>"

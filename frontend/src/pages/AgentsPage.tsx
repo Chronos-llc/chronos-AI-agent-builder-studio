@@ -288,7 +288,7 @@ const AgentsPage: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => handleStatusToggle(agent.id, agent.status)}
@@ -310,6 +310,14 @@ const AgentsPage: React.FC = () => {
                     </>
                   )}
                 </button>
+                <Link
+                  to={`/app/agents/${agent.id}/suite`}
+                  className="flex items-center justify-center px-3 py-2 bg-cyan-500/15 text-cyan-200 rounded hover:bg-cyan-500/25 transition-colors text-sm font-medium"
+                  title="Open in Suite"
+                  aria-label="Open in suite"
+                >
+                  Suite
+                </Link>
                 <Link
                   to={`/app/agents/${agent.id}/edit`}
                   className="flex items-center justify-center px-3 py-2 bg-card text-muted-foreground rounded hover:bg-muted hover:text-foreground transition-colors"

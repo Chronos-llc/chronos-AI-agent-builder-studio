@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from typing import Dict, Any, List
 from uuid import uuid4
+import logging
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.webchat import (
     WebChatConfig,
@@ -10,9 +13,13 @@ from app.core.webchat import (
 )
 from app.api.auth import get_current_user
 from app.models.user import User as UserModel
+from app.models.agent import AgentModel
+from app.core.database import get_db
+from app.core.conversation_manager import append_message, get_or_create_conversation
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/webchat/sessions/", response_model=Dict[str, Any])
@@ -67,11 +74,41 @@ async def get_webchat_session(
 async def send_webchat_message(
     session_id: str,
     message: WebChatMessage,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Send a message in a WebChat session"""
     try:
         result = await webchat_manager.send_message(session_id, message)
+        session = await webchat_manager.get_session(session_id)
+        agent_id = session.agent_id
+
+        if agent_id:
+            agent = (
+                await db.execute(
+                    select(AgentModel).where(
+                        and_(AgentModel.id == agent_id, AgentModel.owner_id == current_user.id)
+                    )
+                )
+            ).scalar_one_or_none()
+            if agent:
+                conversation = await get_or_create_conversation(
+                    db,
+                    agent_id=agent.id,
+                    user_id=current_user.id,
+                    channel_type="webchat",
+                    external_conversation_id=session_id,
+                    title=f"WebChat {session_id}"
+                )
+                role = "user" if (message.sender or "").lower() == "user" else "agent"
+                await append_message(
+                    db,
+                    conversation=conversation,
+                    role=role,
+                    content=message.content,
+                    metadata=message.metadata,
+                    source_platform_message_id=message.message_id
+                )
         return result
     except WebChatError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -41,6 +41,9 @@ httpx==0.25.2
 # File handling
 aiofiles==23.2.1
 
+# Virtual computer sandbox (E2B)
+e2b==0.17.0
+
 # DeepDiff for configuration comparison
 deepdiff==6.7.1
 

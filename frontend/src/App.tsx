@@ -18,6 +18,8 @@ import IntegrationSuccessPage from './pages/IntegrationSuccessPage'
 import CommunicationChannelsPage from './pages/CommunicationChannelsPage'
 import ChannelConfigurationPage from './pages/ChannelConfigurationPage'
 import WebChatConfigurationPage from './pages/WebChatConfigurationPage'
+import OnboardingPage from './pages/OnboardingPage'
+import AgentSuitePage from './pages/AgentSuitePage'
 import { StudioShell } from './components/studio/StudioShell'
 import './App.css'
 
@@ -50,9 +52,11 @@ function App() {
                             >
                                 <Route index element={<DashboardPage />} />
                                 <Route path="dashboard" element={<DashboardPage />} />
+                                <Route path="onboarding" element={<OnboardingPage />} />
                                 <Route path="agents" element={<AgentsPage />} />
                                 <Route path="agents/new" element={<AgentBuilderPage />} />
                                 <Route path="agents/:id/edit" element={<AgentBuilderPage />} />
+                                <Route path="agents/:id/suite" element={<AgentSuitePage />} />
                                 <Route path="settings" element={<SettingsPage />} />
                                 <Route path="admin/*" element={<AdminPage />} />
                                 <Route path="integrations" element={<IntegrationsPage />} />

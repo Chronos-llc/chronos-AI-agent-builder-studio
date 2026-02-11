@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     MCP_SERVER_API_KEY: Optional[str] = Field(default=None, env="MCP_SERVER_API_KEY")
     MCP_SERVER_TIMEOUT: int = Field(default=30, env="MCP_SERVER_TIMEOUT")
 
+    # E2B Virtual Computer
+    E2B_API_KEY: Optional[str] = Field(default=None, env="E2B_API_KEY")
+
     # File Storage Configuration
     UPLOAD_MAX_SIZE: int = Field(default=10 * 1024 * 1024, env="UPLOAD_MAX_SIZE")
     ALLOWED_FILE_TYPES: List[str] = Field(

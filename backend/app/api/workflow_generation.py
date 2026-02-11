@@ -5,6 +5,7 @@ Provides API endpoints for workflow generation, template management,
 execution tracking, and pattern recognition.
 """
 import time
+from datetime import datetime
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -13,10 +14,12 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.virtual_computer import get_virtual_computer_manager
 from app.core.workflow_generation_engine import WorkflowGenerationEngine
 from app.models.user import User
+from app.models.agent import AgentModel
 from app.models.workflow_generation import (
-    WorkflowTemplate, GeneratedWorkflow, WorkflowExecution,
+    WorkflowGenerationTemplate, GeneratedWorkflow, WorkflowGenerationExecution,
     WorkflowPattern, WorkflowStatus, ExecutionStatus, WorkflowCategory
 )
 from app.api.auth import get_current_user
@@ -27,7 +30,8 @@ from app.schemas.workflow_generation import (
     WorkflowExecutionCreate, WorkflowExecutionResponse,
     WorkflowPatternResponse, WorkflowPatternListResponse,
     WorkflowGenerationRequest, WorkflowGenerationResponse,
-    WorkflowExecutionRequest, PatternRecognitionRequest, PatternRecognitionResponse,
+    WorkflowExecutionRequest, WorkflowSchemaExecutionRequest,
+    PatternRecognitionRequest, PatternRecognitionResponse,
     WorkflowOptimizationRequest, WorkflowOptimizationResponse
 )
 
@@ -111,19 +115,19 @@ async def list_templates(
     db: AsyncSession = Depends(get_db)
 ):
     """List available workflow templates with optional filtering."""
-    query = select(WorkflowTemplate)
+    query = select(WorkflowGenerationTemplate)
     
     # Apply filters
     if category is not None:
-        query = query.where(WorkflowTemplate.category == category)
+        query = query.where(WorkflowGenerationTemplate.category == category)
     
     if is_public is not None:
-        query = query.where(WorkflowTemplate.is_public == is_public)
+        query = query.where(WorkflowGenerationTemplate.is_public == is_public)
     
     # Include user's private templates or public templates
     query = query.where(
-        (WorkflowTemplate.is_public == True) |
-        (WorkflowTemplate.user_id == current_user.id)
+        (WorkflowGenerationTemplate.is_public == True) |
+        (WorkflowGenerationTemplate.user_id == current_user.id)
     )
     
     # Get total count
@@ -132,7 +136,7 @@ async def list_templates(
     total = total_result.scalar()
     
     # Apply pagination
-    query = query.offset(offset).limit(limit).order_by(WorkflowTemplate.created_at.desc())
+    query = query.offset(offset).limit(limit).order_by(WorkflowGenerationTemplate.created_at.desc())
     
     result = await db.execute(query)
     templates = result.scalars().all()
@@ -152,7 +156,7 @@ async def create_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new workflow template."""
-    template = WorkflowTemplate(
+    template = WorkflowGenerationTemplate(
         name=template_data.name,
         description=template_data.description,
         category=template_data.category,
@@ -177,11 +181,11 @@ async def get_template(
 ):
     """Get a specific template by ID."""
     result = await db.execute(
-        select(WorkflowTemplate).where(
+        select(WorkflowGenerationTemplate).where(
             and_(
-                WorkflowTemplate.id == template_id,
-                (WorkflowTemplate.is_public == True) |
-                (WorkflowTemplate.user_id == current_user.id)
+                WorkflowGenerationTemplate.id == template_id,
+                (WorkflowGenerationTemplate.is_public == True) |
+                (WorkflowGenerationTemplate.user_id == current_user.id)
             )
         )
     )
@@ -205,10 +209,10 @@ async def update_template(
 ):
     """Update a workflow template."""
     result = await db.execute(
-        select(WorkflowTemplate).where(
+        select(WorkflowGenerationTemplate).where(
             and_(
-                WorkflowTemplate.id == template_id,
-                WorkflowTemplate.user_id == current_user.id
+                WorkflowGenerationTemplate.id == template_id,
+                WorkflowGenerationTemplate.user_id == current_user.id
             )
         )
     )
@@ -240,10 +244,10 @@ async def delete_template(
 ):
     """Delete a workflow template."""
     result = await db.execute(
-        select(WorkflowTemplate).where(
+        select(WorkflowGenerationTemplate).where(
             and_(
-                WorkflowTemplate.id == template_id,
-                WorkflowTemplate.user_id == current_user.id
+                WorkflowGenerationTemplate.id == template_id,
+                WorkflowGenerationTemplate.user_id == current_user.id
             )
         )
     )
@@ -357,8 +361,18 @@ async def execute_workflow(
             detail="Workflow not found"
         )
     
+    workflow_schema = workflow.workflow_schema
+    agent: Optional[AgentModel] = None
+    if _workflow_requires_code_execution(workflow_schema):
+        if not request.agent_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agent_id is required for code_execution steps"
+            )
+        agent = await _get_agent_or_404(request.agent_id, current_user, db)
+
     # Create execution record
-    execution = WorkflowExecution(
+    execution = WorkflowGenerationExecution(
         generated_workflow_id=request.workflow_id,
         status=ExecutionStatus.RUNNING,
         input_data=request.input_data
@@ -370,8 +384,10 @@ async def execute_workflow(
     try:
         # Execute the workflow (simplified - in production would execute actual steps)
         output_data = await _execute_workflow_steps(
-            workflow.workflow_schema,
-            request.input_data
+            workflow_schema,
+            request.input_data,
+            agent=agent,
+            current_user=current_user
         )
         
         execution.status = ExecutionStatus.COMPLETED
@@ -383,6 +399,8 @@ async def execute_workflow(
         
         return execution
         
+    except HTTPException:
+        raise
     except Exception as e:
         execution.status = ExecutionStatus.FAILED
         execution.error_message = str(e)
@@ -395,13 +413,55 @@ async def execute_workflow(
         )
 
 
+@router.post("/execute-schema", response_model=WorkflowExecutionResponse)
+async def execute_workflow_schema(
+    request: WorkflowSchemaExecutionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Execute an ad-hoc workflow schema without persisting a generated workflow."""
+    start_time = time.time()
+
+    agent = await _get_agent_or_404(request.agent_id, current_user, db)
+
+    try:
+        output_data = await _execute_workflow_steps(
+            request.workflow_schema,
+            request.input_data,
+            agent=agent,
+            current_user=current_user
+        )
+
+        return WorkflowExecutionResponse(
+            id=0,
+            generated_workflow_id=0,
+            status=ExecutionStatus.COMPLETED,
+            input_data=request.input_data,
+            output_data=output_data,
+            execution_time_ms=(time.time() - start_time) * 1000,
+            error_message=None,
+            created_at=datetime.utcnow()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Workflow execution failed: {str(e)}"
+        )
+
+
 async def _execute_workflow_steps(
     workflow_schema: dict,
-    input_data: Optional[dict]
+    input_data: Optional[dict],
+    agent: Optional[AgentModel],
+    current_user: User
 ) -> dict:
     """Execute workflow steps (simplified implementation)."""
     steps = workflow_schema.get("steps", [])
     results = {}
+    logs = {"steps": {}}
     
     for step in steps:
         step_name = step.get("name", "unknown")
@@ -419,10 +479,80 @@ async def _execute_workflow_steps(
             results[step_name] = {"loaded": True, "data": step_input}
         elif step_type == "api_call":
             results[step_name] = {"api_called": True, "response": step_input}
+        elif step_type == "code_execution":
+            if not agent:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="agent_id is required for code_execution steps"
+                )
+            config = agent.virtual_computer_configuration
+            if not config or not config.enabled:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Virtual computer is disabled for this agent"
+                )
+            code = (step.get("config") or {}).get("code")
+            if not code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Missing code for step {step_name}"
+                )
+            manager = get_virtual_computer_manager()
+            try:
+                exec_result = await manager.execute_python(
+                    agent_id=agent.id,
+                    user_id=current_user.id,
+                    code=code,
+                    inputs=step_input,
+                    idle_timeout_seconds=config.idle_timeout_seconds,
+                    max_runtime_seconds=config.max_runtime_seconds,
+                    server_ids=config.mcp_server_ids,
+                    mcp_enabled=config.mcp_enabled
+                )
+            except RuntimeError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=str(exc)
+                )
+
+            results[step_name] = {
+                "executed": True,
+                "stdout": exec_result.get("stdout", ""),
+                "stderr": exec_result.get("stderr", ""),
+                "exit_code": exec_result.get("exit_code"),
+                "duration_ms": exec_result.get("duration_ms", 0)
+            }
+            logs["steps"][step_name] = {
+                "type": "code_execution",
+                "stdout": exec_result.get("stdout", ""),
+                "stderr": exec_result.get("stderr", ""),
+                "exit_code": exec_result.get("exit_code"),
+                "duration_ms": exec_result.get("duration_ms", 0)
+            }
         else:
             results[step_name] = {"executed": True, "result": step_input}
     
-    return {"steps": results, "success": True}
+    return {"steps": results, "success": True, "logs": logs}
+
+
+def _workflow_requires_code_execution(workflow_schema: dict) -> bool:
+    steps = workflow_schema.get("steps", [])
+    return any(step.get("type") == "code_execution" for step in steps)
+
+
+async def _get_agent_or_404(agent_id: int, current_user: User, db: AsyncSession) -> AgentModel:
+    result = await db.execute(
+        select(AgentModel).where(
+            and_(
+                AgentModel.id == agent_id,
+                AgentModel.owner_id == current_user.id
+            )
+        )
+    )
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
+    return agent
 
 
 # ============== Workflow Pattern Endpoints ==============
@@ -441,7 +571,7 @@ async def list_patterns(
     return WorkflowPatternListResponse(patterns=patterns)
 
 
-@router.post("/patterns/recognize", response_model=PatternRecognitionRequest)
+@router.post("/patterns/recognize", response_model=PatternRecognitionResponse)
 async def recognize_pattern(
     request: PatternRecognitionRequest,
     current_user: User = Depends(get_current_user),
@@ -455,10 +585,10 @@ async def recognize_pattern(
     """
     pattern = await workflow_engine.recognize_pattern(request.workflow_schema)
     
-    return PatternRecognitionRequest(
-        workflow_schema=request.workflow_schema,
+    return PatternRecognitionResponse(
         matched_pattern=pattern,
-        confidence=0.85 if pattern else 0.0
+        confidence=0.85 if pattern else 0.0,
+        similar_patterns=[],
     )
 
 
