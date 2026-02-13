@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { ChronosLogo } from '../brand/ChronosLogo'
 import { Reveal } from '../Reveal'
+import { LanguageSwitcher } from './LanguageSwitcher'
+import { useMarketingI18n } from '../../hooks/useMarketingI18n'
 
 export const HeroSection: React.FC = () => {
+  const { t } = useMarketingI18n()
+
   return (
     <section className="relative overflow-hidden border-b border-white/10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.18),_transparent_55%)]" />
@@ -14,23 +18,25 @@ export const HeroSection: React.FC = () => {
       <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6">
         <ChronosLogo textClassName="text-white" markClassName="text-white" />
         <nav className="hidden items-center gap-6 text-sm text-white/70 md:flex">
-          <a href="#features" className="hover:text-white">Features</a>
-          <a href="#integrations" className="hover:text-white">Integrations</a>
-          <a href="#voice" className="hover:text-white">Voice</a>
-          <Link to="/pricing" className="hover:text-white">Pricing</Link>
+          <a href="#unified-stack" className="hover:text-white">{t('nav.unifiedStack', 'Unified Stack')}</a>
+          <a href="#suite" className="hover:text-white">{t('nav.agentSuite', 'Agent Suite')}</a>
+          <a href="#channels" className="hover:text-white">{t('nav.channels', 'Channels')}</a>
+          <Link to="/pricing" className="hover:text-white">{t('nav.pricing', 'Pricing')}</Link>
+          <Link to="/docs" className="hover:text-white">{t('nav.docs', 'Docs')}</Link>
         </nav>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <Link
             to="/login"
             className="rounded-full border border-white/20 px-4 py-2 text-sm text-white/80 transition hover:border-white/40 hover:text-white"
           >
-            Sign in
+            {t('nav.signin', 'Sign in')}
           </Link>
           <Link
             to="/app"
             className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#081018] transition hover:bg-white/90"
           >
-            Launch Studio
+            {t('nav.launchStudio', 'Launch Studio')}
           </Link>
         </div>
       </header>
@@ -39,18 +45,20 @@ export const HeroSection: React.FC = () => {
         <div className="space-y-6">
           <Reveal>
             <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.2em] text-white/70">
-              Chronos AI Agent Builder Studio
+              {t('hero.badge', 'Chronos AI Agent Builder Studio')}
             </div>
           </Reveal>
           <Reveal delay={90}>
             <h1 className="text-4xl font-semibold leading-tight md:text-6xl">
-              Build agent systems that run real work every day.
+              {t('hero.title', 'Build agent systems that run real work every day.')}
             </h1>
           </Reveal>
           <Reveal delay={150}>
             <p className="max-w-2xl text-lg text-white/75">
-              From Idea to Agent in Minutes. Build your own chatbot and give it tools to do actual work for you.
-              Create a digital sidekick that works with your data, tools, voice, and workflows.
+              {t(
+                'hero.subtitle',
+                'From Idea to Agent in Minutes. Build your own chatbot and give it tools to do actual work for you. Create a digital sidekick that works with your data, tools, voice, and workflows.'
+              )}
             </p>
           </Reveal>
           <Reveal delay={220}>
@@ -59,14 +67,20 @@ export const HeroSection: React.FC = () => {
                 to="/app"
                 className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-semibold text-[#081018] transition hover:bg-cyan-200"
               >
-                Start building
+                {t('hero.start', 'Start building')}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/pricing"
                 className="inline-flex items-center gap-2 rounded-full border border-cyan-200/40 bg-cyan-200/10 px-6 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200 hover:bg-cyan-200/20"
               >
-                Compare plans
+                {t('hero.compare', 'Compare plans')}
+              </Link>
+              <Link
+                to="/docs"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/10"
+              >
+                {t('hero.readDocs', 'Read docs')}
               </Link>
             </div>
           </Reveal>

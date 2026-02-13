@@ -4,6 +4,7 @@ import {
     Users, 
     UserPlus, 
     ShoppingCart, 
+    ClipboardCheck,
     BrainCircuit, 
     Package, 
     MessageSquare, 
@@ -41,6 +42,12 @@ export const ModeSwitcher = ({
             label: 'Marketplace',
             icon: <ShoppingCart className="w-4 h-4" />,
             description: 'Administer marketplace listings and categories'
+        },
+        {
+            mode: 'integration-submissions',
+            label: 'Integrations',
+            icon: <ClipboardCheck className="w-4 h-4" />,
+            description: 'Review and publish integration submissions'
         },
         {
             mode: 'skills',

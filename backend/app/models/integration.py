@@ -1,8 +1,24 @@
 from sqlalchemy import Column, String, Text, Boolean, ForeignKey, JSON, Integer, Float, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import enum
 
 from app.models.base import BaseModel
+
+
+class IntegrationStatus(str, enum.Enum):
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
+    UNDER_REVIEW = "under_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PUBLISHED = "published"
+
+
+class IntegrationVisibility(str, enum.Enum):
+    PRIVATE = "private"
+    TEAM = "team"
+    PUBLIC = "public"
 
 
 class Integration(BaseModel):
@@ -17,6 +33,23 @@ class Integration(BaseModel):
     documentation_url = Column(String(500), nullable=True)
     version = Column(String(20), default="1.0.0")
     is_public = Column(Boolean, default=True)
+    status = Column(String(30), nullable=False, default=IntegrationStatus.DRAFT.value)
+    submission_notes = Column(Text, nullable=True)
+    moderation_notes = Column(Text, nullable=True)
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    published_at = Column(DateTime(timezone=True), nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    visibility = Column(String(20), nullable=False, default=IntegrationVisibility.PRIVATE.value)
+    app_icon_url = Column(String(500), nullable=True)
+    app_screenshots = Column(JSON, nullable=False, default=[])
+    developer_name = Column(String(200), nullable=True)
+    website_url = Column(String(500), nullable=True)
+    support_url_or_email = Column(String(500), nullable=True)
+    privacy_policy_url = Column(String(500), nullable=True)
+    terms_url = Column(String(500), nullable=True)
+    demo_url = Column(String(500), nullable=True)
+    is_workflow_node_enabled = Column(Boolean, default=False)
      
     # Configuration schemas
     config_schema = Column(JSON, nullable=False, default={})
@@ -35,10 +68,16 @@ class Integration(BaseModel):
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=True)  # Optional - can be global
      
     # Relationships
-    author = relationship("User", back_populates="integrations")
+    author = relationship("User", back_populates="integrations", foreign_keys=[author_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
     agent = relationship("AgentModel", back_populates="integrations")
     configs = relationship("IntegrationConfig", back_populates="integration", cascade="all, delete-orphan")
     reviews = relationship("IntegrationReview", back_populates="integration", cascade="all, delete-orphan")
+    submission_events = relationship(
+        "IntegrationSubmissionEvent",
+        back_populates="integration",
+        cascade="all, delete-orphan"
+    )
      
     def __repr__(self):
         return f"<Integration(id={self.id}, name='{self.name}', type='{self.integration_type}')>"

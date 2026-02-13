@@ -25,6 +25,7 @@ import type {
   WorkflowSchema,
   WorkflowOptimizationRequest,
   WorkflowOptimizationResponse,
+  IntegrationNodeDefinition,
 } from '../types/workflowGeneration';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -201,6 +202,11 @@ export const workflowGenerationService = {
       `${API_BASE}/generated/${workflowId}/executions`
     );
     return response.data;
+  },
+
+  async listIntegrationNodes(): Promise<IntegrationNodeDefinition[]> {
+    const response = await axios.get<{ nodes: IntegrationNodeDefinition[] }>(`${API_BASE}/integration-nodes`);
+    return response.data.nodes || [];
   },
 };
 

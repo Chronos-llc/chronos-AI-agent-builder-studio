@@ -370,8 +370,9 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
               label="Voice Selection"
             />
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Voice Gender</label>
+              <label htmlFor="voice-gender" className="text-sm font-medium text-foreground">Voice Gender</label>
               <select
+                id="voice-gender"
                 value={config.tts_voice_gender}
                 onChange={(e) => setConfig(prev => ({ ...prev, tts_voice_gender: e.target.value as VoiceGender }))}
                 className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/60"
@@ -385,8 +386,9 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
-              <label className="text-sm font-medium text-foreground">Speed: {config.tts_speed.toFixed(1)}x</label>
+              <label htmlFor="tts-speed" className="text-sm font-medium text-foreground">Speed: {config.tts_speed.toFixed(1)}x</label>
               <input
+                id="tts-speed"
                 type="range"
                 min={0.5}
                 max={2}
@@ -397,8 +399,9 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Pitch: {config.tts_pitch.toFixed(1)}x</label>
+              <label htmlFor="tts-pitch" className="text-sm font-medium text-foreground">Pitch: {config.tts_pitch.toFixed(1)}x</label>
               <input
+                id="tts-pitch"
                 type="range"
                 min={0.5}
                 max={2}
@@ -654,8 +657,9 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Audio Format</label>
+              <label htmlFor="audio-format" className="text-sm font-medium text-foreground">Audio Format</label>
               <select
+                id="audio-format"
                 value={config.audio_format}
                 onChange={(e) => setConfig(prev => ({ ...prev, audio_format: e.target.value as AudioFormat }))}
                 className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/60"
@@ -668,21 +672,25 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Sample Rate (Hz)</label>
+              <label htmlFor="sample-rate" className="text-sm font-medium text-foreground">Sample Rate (Hz)</label>
               <input
+                id="sample-rate"
                 type="number"
                 value={config.sample_rate}
                 onChange={(e) => setConfig(prev => ({ ...prev, sample_rate: Number(e.target.value) }))}
                 className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/60"
+                placeholder="Sample Rate"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Bit Rate (kbps)</label>
+              <label htmlFor="bit-rate" className="text-sm font-medium text-foreground">Bit Rate (kbps)</label>
               <input
+                id="bit-rate"
                 type="number"
                 value={config.bit_rate}
                 onChange={(e) => setConfig(prev => ({ ...prev, bit_rate: Number(e.target.value) }))}
                 className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/60"
+                placeholder="Bit Rate"
               />
             </div>
           </div>
@@ -727,10 +735,11 @@ export const VoiceConfigurationPanel: React.FC<{ agentId: number }> = ({ agentId
           </div>
 
           <div>
-            <label className="text-sm font-medium text-foreground">
+            <label htmlFor="interruption-threshold" className="text-sm font-medium text-foreground">
               Interruption Threshold: {config.interruption_threshold.toFixed(2)}
             </label>
             <input
+              id="interruption-threshold"
               type="range"
               min={0}
               max={1}

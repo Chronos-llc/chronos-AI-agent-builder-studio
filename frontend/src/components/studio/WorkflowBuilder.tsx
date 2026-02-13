@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   Plus, Trash2, Play, 
   ArrowUp, ArrowDown, Copy, Settings, 
@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import type { WorkflowSchema, WorkflowStep } from '../../types/workflowGeneration';
+import type { WorkflowSchema, WorkflowStep, IntegrationNodeDefinition } from '../../types/workflowGeneration';
 import { workflowGenerationService } from '../../services/workflowGenerationService';
 import type { WorkflowExecution } from '../../types/workflowGeneration';
 
@@ -38,6 +38,20 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   const [executionResult, setExecutionResult] = useState<WorkflowExecution | null>(null);
   const [executionError, setExecutionError] = useState<string | null>(null);
   const [agentIdInput, setAgentIdInput] = useState('');
+  const [integrationNodes, setIntegrationNodes] = useState<IntegrationNodeDefinition[]>([]);
+  const availableIntegrationNodeTypes = Array.from(new Set(integrationNodes.map((node) => node.node_type)));
+
+  useEffect(() => {
+    const loadIntegrationNodes = async () => {
+      try {
+        const nodes = await workflowGenerationService.listIntegrationNodes();
+        setIntegrationNodes(nodes);
+      } catch {
+        setIntegrationNodes([]);
+      }
+    };
+    loadIntegrationNodes();
+  }, []);
 
   const handleSchemaChange = useCallback(
     (newSchema: WorkflowSchema) => {
@@ -189,6 +203,10 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
         return <ArrowDown className="w-4 h-4 text-green-500" />;
       case 'code_execution':
         return <Code className="w-4 h-4 text-emerald-500" />;
+      case 'integration_api_call':
+        return <Zap className="w-4 h-4 text-purple-500" />;
+      case 'integration_mcp_call':
+        return <Settings className="w-4 h-4 text-indigo-500" />;
       default:
         return <Settings className="w-4 h-4 text-gray-500" />;
     }
@@ -206,6 +224,10 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
         return 'border-l-purple-500 bg-purple-50';
       case 'code_execution':
         return 'border-l-emerald-500 bg-emerald-50';
+      case 'integration_api_call':
+        return 'border-l-purple-500 bg-purple-50';
+      case 'integration_mcp_call':
+        return 'border-l-indigo-500 bg-indigo-50';
       default:
         return 'border-l-gray-500 bg-gray-50';
     }
@@ -537,6 +559,16 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           <option value="load">Load</option>
                           <option value="api_call">API Call</option>
                           <option value="code_execution">Code Execution</option>
+                          {availableIntegrationNodeTypes.map((nodeType) => (
+                            <option
+                              key={`integration-node-type-${nodeType}`}
+                              value={nodeType}
+                            >
+                              {nodeType === 'integration_mcp_call'
+                                ? 'Integration MCP Call'
+                                : 'Integration API Call'}
+                            </option>
+                          ))}
                           <option value="action">Action</option>
                           <option value="notification">Notification</option>
                           <option value="end">End</option>
@@ -571,6 +603,88 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           <p className="text-xs text-muted-foreground mt-1">
                             This code runs inside the agent&apos;s virtual computer sandbox.
                           </p>
+                        </div>
+                      )}
+                      {(step.type === 'integration_api_call' || step.type === 'integration_mcp_call') && (
+                        <div className="space-y-2">
+                          <label htmlFor="step-integration-id" className="block text-sm font-medium mb-1">Integration</label>
+                          <select
+                            id="step-integration-id"
+                            value={String(step.config?.integration_id || '')}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: {
+                                  ...(step.config || {}),
+                                  integration_id: Number(e.target.value) || undefined,
+                                },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                          >
+                            <option value="">Select integration</option>
+                            {integrationNodes
+                              .filter((node) => node.node_type === step.type)
+                              .map((node) => (
+                                <option key={`integration-${node.integration_id}`} value={node.integration_id}>
+                                  {node.name}
+                                </option>
+                              ))}
+                          </select>
+                          <label htmlFor="step-integration-url" className="block text-sm font-medium mb-1">Request URL</label>
+                          <Input
+                            id="step-integration-url"
+                            value={step.config?.url || ''}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), url: e.target.value },
+                              })
+                            }
+                            placeholder="https://api.example.com/resource"
+                          />
+                          <label htmlFor="step-integration-method" className="block text-sm font-medium mb-1">Method</label>
+                          <select
+                            id="step-integration-method"
+                            value={step.config?.method || 'GET'}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), method: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                          >
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="PATCH">PATCH</option>
+                            <option value="DELETE">DELETE</option>
+                          </select>
+                          <label htmlFor="step-integration-server-id" className="block text-sm font-medium mb-1">MCP Server ID (optional)</label>
+                          <Input
+                            id="step-integration-server-id"
+                            value={step.config?.server_id || ''}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), server_id: e.target.value },
+                              })
+                            }
+                            placeholder="server_id"
+                          />
+                          <label htmlFor="step-integration-payload" className="block text-sm font-medium mb-1">Body JSON (optional)</label>
+                          <textarea
+                            id="step-integration-payload"
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[100px] font-mono text-xs"
+                            defaultValue={JSON.stringify(step.config?.body || {}, null, 2)}
+                            onBlur={(e) => {
+                              try {
+                                const parsed = e.target.value.trim() ? JSON.parse(e.target.value) : {}
+                                handleStepUpdate(step.name, {
+                                  config: { ...(step.config || {}), body: parsed },
+                                })
+                              } catch {
+                                // Keep previous valid JSON and let API validation handle malformed payload.
+                              }
+                            }}
+                          />
                         </div>
                       )}
                       <div>

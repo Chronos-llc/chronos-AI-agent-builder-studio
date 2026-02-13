@@ -7,7 +7,6 @@ Create Date: 2026-01-10 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'skills_tables'
@@ -16,6 +15,9 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    bind = op.get_bind()
+    now_expr = sa.text("NOW()") if bind.dialect.name == "postgresql" else sa.text("CURRENT_TIMESTAMP")
+
     # Create agent_skills table
     op.create_table(
         'agent_skills',
@@ -38,8 +40,8 @@ def upgrade():
         
         # Admin Management
         sa.Column('created_by', sa.Integer(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.ForeignKeyConstraint(['created_by'], ['users.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
@@ -52,7 +54,7 @@ def upgrade():
         sa.Column('agent_id', sa.Integer(), nullable=False),
         sa.Column('skill_id', sa.Integer(), nullable=False),
         sa.Column('knowledge_file_id', sa.Integer(), nullable=True),
-        sa.Column('installed_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('installed_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['skill_id'], ['agent_skills.id'], ondelete='CASCADE'),

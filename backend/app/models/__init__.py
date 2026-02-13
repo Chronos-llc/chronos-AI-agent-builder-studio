@@ -2,6 +2,8 @@
 
 from .base import BaseModel
 from .user import User
+from .social_account import SocialAccount
+from .personal_access_token import PersonalAccessToken
 from .user_profile import UserProfile, UserPersona
 from .agent import AgentModel, AgentVersion, Action, AgentStatus
 from .settings import UserSettings
@@ -13,6 +15,7 @@ from .template import (
 )
 from .hook import Hook
 from .integration import Integration
+from .integration_submission import IntegrationSubmissionEvent
 from .knowledge import KnowledgeFile, KnowledgeChunk, KnowledgeSearch, KnowledgeFileStatus, FileType
 from .training import TrainingSession, TrainingInteraction, TrainingCorrection, TrainingSessionStatus, TrainingMode, CorrectionType
 from .mcp_server import (
@@ -29,6 +32,7 @@ from .virtual_computer import (
     VirtualComputerConfiguration, VirtualComputerProvider
 )
 from .agent_phone_number import AgentPhoneNumber, PhoneNumberProvider
+from .communication_channel import CommunicationChannel
 from .conversation import (
     Conversation,
     ConversationMessage,
@@ -44,6 +48,8 @@ from .conversation import (
 __all__ = [
     "BaseModel",
     "User",
+    "SocialAccount",
+    "PersonalAccessToken",
     "UserProfile",
     "UserPersona",
     "AgentModel", 
@@ -69,6 +75,7 @@ __all__ = [
     "ExecutionStatus",
     "Hook",
     "Integration",
+    "IntegrationSubmissionEvent",
     "KnowledgeFile",
     "KnowledgeChunk",
     "KnowledgeSearch",
@@ -102,6 +109,7 @@ __all__ = [
     "VirtualComputerProvider",
     "AgentPhoneNumber",
     "PhoneNumberProvider",
+    "CommunicationChannel",
     "Conversation",
     "ConversationMessage",
     "ConversationAction",

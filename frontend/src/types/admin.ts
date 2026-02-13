@@ -2,6 +2,7 @@ export type AdminMode =
     'meta-agents' |
     'subagents' |
     'marketplace' |
+    'integration-submissions' |
     'skills' |
     'platform-updates' |
     'support' |

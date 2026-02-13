@@ -831,6 +831,54 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
             }
         },
         {
+            "name": "Playwright MCP Server",
+            "description": "Playwright MCP server for browser automation tasks including navigation, interaction, extraction, and end-to-end web workflows.",
+            "integration_type": "mcp_server",
+            "category": "automation",
+            "icon": "https://playwright.dev/img/playwright-logo.svg",
+            "documentation_url": "https://github.com/modelcontextprotocol/servers/tree/main/src/playwright",
+            "version": "1.0.0",
+            "is_public": True,
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "default": "npx",
+                        "description": "Command to run the Playwright MCP server"
+                    },
+                    "args": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "default": ["-y", "@modelcontextprotocol/server-playwright"],
+                        "description": "Arguments for the Playwright MCP server command"
+                    },
+                    "server_url": {
+                        "type": "string",
+                        "default": "http://localhost:8091",
+                        "description": "Server URL for the Playwright MCP server"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "default": 45000,
+                        "description": "Request timeout in milliseconds"
+                    }
+                },
+                "required": ["command", "args"]
+            },
+            "credentials_schema": {
+                "type": "object",
+                "properties": {}
+            },
+            "supported_features": [
+                "browser_navigation",
+                "form_interaction",
+                "web_extraction",
+                "screenshot_capture",
+                "ui_testing"
+            ]
+        },
+        {
             "name": "Twilio MCP Server",
             "description": "Twilio MCP server for telephony workflows including messaging, voice routing, and programmable communications via Twilio Labs MCP.",
             "integration_type": "mcp_server",
@@ -983,7 +1031,7 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
         db.add(integration)
         created_count += 1
         
-        print(f"✅ Created integration: {integration_data['name']}")
+        print(f"[OK] Created integration: {integration_data['name']}")
 
     return created_count
 
@@ -1000,20 +1048,20 @@ async def initialize_mcp_integrations() -> bool:
         default_user = result.scalars().first()
         
         if not default_user:
-            print("⚠️ No user found in database. MCP integrations require at least one user.")
+            print("[WARN] No user found in database. MCP integrations require at least one user.")
             await db.close()
             return False
             
-        print(f"👤 Using user: {default_user.email} (ID: {default_user.id})")
+        print(f"[INFO] Using user: {default_user.email} (ID: {default_user.id})")
         
         # Create MCP integrations
         created_count = await create_mcp_integrations(db, default_user.id)
         
         if created_count > 0:
             await db.commit()
-            print(f"🎉 Successfully added {created_count} MCP server integrations to the Chronos Hub Marketplace!")
+            print(f"[OK] Successfully added {created_count} MCP server integrations to the Chronos Hub Marketplace.")
         else:
-            print("ℹ️ All MCP server integrations already exist in the database.")
+            print("[INFO] All MCP server integrations already exist in the database.")
             
         # Show summary
         result = await db.execute(
@@ -1021,7 +1069,7 @@ async def initialize_mcp_integrations() -> bool:
         )
         mcp_servers = result.scalars().all()
         
-        print(f"\n📊 Summary: {len(mcp_servers)} MCP server integrations available:")
+        print(f"\n[INFO] Summary: {len(mcp_servers)} MCP server integrations available:")
         for server in mcp_servers:
             print(f"  - {server.name} v{server.version} ({server.category})")
             
@@ -1029,7 +1077,7 @@ async def initialize_mcp_integrations() -> bool:
         return True
         
     except Exception as e:
-        print(f"❌ Error initializing MCP integrations: {e}")
+        print(f"[ERROR] Error initializing MCP integrations: {e}")
         if 'db' in locals():
             await db.rollback()
             await db.close()
@@ -1049,17 +1097,17 @@ async def get_default_user_id() -> Optional[int]:
         return default_user.id if default_user else None
         
     except Exception as e:
-        print(f"❌ Error getting default user: {e}")
+        print(f"[ERROR] Error getting default user: {e}")
         return None
 
 
 if __name__ == "__main__":
-    print("🚀 Initializing MCP server integrations for Chronos Hub Marketplace...")
+    print("[INFO] Initializing MCP server integrations for Chronos Hub Marketplace...")
     success = asyncio.run(initialize_mcp_integrations())
     
     if success:
-        print("\n✅ MCP integrations are ready to use!")
-        print("💡 You can now install these MCP servers from the Chronos Hub Marketplace.")
+        print("\n[OK] MCP integrations are ready to use.")
+        print("[INFO] You can now install these MCP servers from the Chronos Hub Marketplace.")
     else:
-        print("\n❌ Failed to initialize MCP integrations.")
+        print("\n[ERROR] Failed to initialize MCP integrations.")
         sys.exit(1)

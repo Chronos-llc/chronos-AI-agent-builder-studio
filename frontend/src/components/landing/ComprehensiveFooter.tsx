@@ -7,30 +7,52 @@ const saasBadgeSnippet =
 
 export const ComprehensiveFooter: React.FC = () => {
   return (
-    <footer className="border-t border-white/10 bg-[#070A10] py-12">
+    <footer className="border-t border-white/10 bg-[#06080D] py-12">
       <div className="mx-auto grid w-full max-w-7xl gap-8 px-6 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <ChronosLogo textClassName="text-white" markClassName="text-white" />
           <p className="mt-4 text-sm text-white/70">
-            Chronos AI is a product line of Chronos Intelligence Systems by Mohex, focused on agent orchestration,
-            workflow automation, voice operations, compliance, and enterprise deployment.
+            Chronos AI is a product line of Chronos Intelligence Systems by Mohex, focused on unified voice and chat agent
+            operations, workflow orchestration, and production-grade automation.
           </p>
-          <p className="mt-3 text-xs text-white/55">
-            Founder and CEO: Jesse Newton Okoroma
-          </p>
-          <p className="mt-1 text-xs text-white/55">
-            Address: 23 Ogbogoro Road, Portharcourt, Rivers State, Nigeria.
-          </p>
+          <p className="mt-3 text-xs text-white/55">Founder and CEO: Jesse Newton Okoroma</p>
+          <p className="mt-1 text-xs text-white/55">Address: 23 Ogbogoro Road, Port Harcourt, Rivers State, Nigeria.</p>
         </div>
 
         <div>
           <h4 className="text-sm font-semibold text-white">Platform</h4>
           <ul className="mt-3 space-y-2 text-sm text-white/65">
             <li>Agent Builder + Agent Suite</li>
-            <li>Fuzzy Assistant</li>
+            <li>Fuzzy assistant</li>
+            <li>Workflow Generator + Virtual Computer</li>
             <li>Integrations Hub + MCP</li>
-            <li>Voice Studio + Telephony</li>
-            <li>Analytics, Logs, and Compliance</li>
+            <li>Voice Studio + Channels</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-semibold text-white">Product</h4>
+          <ul className="mt-3 space-y-2 text-sm text-white/65">
+            <li>
+              <Link to="/pricing" className="hover:text-white">
+                Pricing
+              </Link>
+            </li>
+            <li>
+              <Link to="/docs" className="hover:text-white">
+                Docs
+              </Link>
+            </li>
+            <li>
+              <Link to="/login" className="hover:text-white">
+                Login
+              </Link>
+            </li>
+            <li>
+              <a href="mailto:chronos.llc@mohex.org" className="hover:text-white">
+                chronos.llc@mohex.org
+              </a>
+            </li>
           </ul>
         </div>
 
@@ -43,26 +65,10 @@ export const ComprehensiveFooter: React.FC = () => {
               </a>
             </li>
             <li>
-              <Link to="/pricing" className="hover:text-white">
-                Pricing
-              </Link>
-            </li>
-            <li>
-              <a href="mailto:chronos.llc@mohex.org" className="hover:text-white">
-                chronos.llc@mohex.org
-              </a>
-            </li>
-            <li>
               <a href="https://mohex.org/#team" target="_blank" rel="noopener noreferrer" className="hover:text-white">
                 Team
               </a>
             </li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-semibold text-white">Legal</h4>
-          <ul className="mt-3 space-y-2 text-sm text-white/65">
             <li>
               <a href="https://mohex.org/privacy-policy/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
                 Privacy Policy
@@ -73,22 +79,15 @@ export const ComprehensiveFooter: React.FC = () => {
                 Terms of Service
               </a>
             </li>
-            <li>
-              <a href="https://mohex.org/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                Data Retention & Deletion
-              </a>
-            </li>
           </ul>
-
           <div className="mt-4" dangerouslySetInnerHTML={{ __html: saasBadgeSnippet }} />
         </div>
       </div>
 
       <div className="mx-auto mt-8 flex w-full max-w-7xl items-center justify-between border-t border-white/10 px-6 pt-6 text-xs text-white/55">
-        <span>{`Â© ${new Date().getFullYear()} Chronos AI. All rights reserved.`}</span>
+        <span>{`© ${new Date().getFullYear()} Chronos AI. All rights reserved.`}</span>
         <span>Port Harcourt, Rivers State, Nigeria</span>
       </div>
     </footer>
   )
 }
-

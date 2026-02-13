@@ -7,7 +7,6 @@ Create Date: 2026-01-10 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'support_system_tables'
@@ -16,6 +15,9 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    bind = op.get_bind()
+    now_expr = sa.text("NOW()") if bind.dialect.name == "postgresql" else sa.text("CURRENT_TIMESTAMP")
+
     # Create support_messages table
     op.create_table(
         'support_messages',
@@ -28,8 +30,8 @@ def upgrade():
         sa.Column('assigned_to', sa.Integer(), nullable=True),
         sa.Column('category', sa.String(length=50), nullable=True),
         
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
         
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -45,7 +47,7 @@ def upgrade():
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('is_admin', sa.Boolean(), server_default='false', nullable=False),
         sa.Column('reply_text', sa.Text(), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.ForeignKeyConstraint(['message_id'], ['support_messages.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),

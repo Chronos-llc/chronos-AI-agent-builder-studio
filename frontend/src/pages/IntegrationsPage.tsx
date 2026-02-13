@@ -28,6 +28,10 @@ interface IntegrationCategory {
     count: number;
 }
 
+interface UserPlanInfo {
+    plan_type: string;
+}
+
 const IntegrationsPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -40,6 +44,7 @@ const IntegrationsPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [userPlan, setUserPlan] = useState<UserPlanInfo | null>(null);
 
     const integrationTypes = [
         { name: 'API', icon: '🔌' },
@@ -55,7 +60,24 @@ const IntegrationsPage: React.FC = () => {
     useEffect(() => {
         fetchIntegrations();
         fetchCategories();
+        fetchUserPlan();
     }, [currentPage, searchQuery, selectedCategory, selectedType]);
+
+    const fetchUserPlan = async () => {
+        try {
+            const response = await fetch('/api/v1/usage/plan', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            if (!response.ok) return;
+            setUserPlan(await response.json());
+        } catch (err) {
+            console.error('Failed to fetch user plan:', err);
+        }
+    };
+
+    const canCreateIntegration = ['team_developer', 'special_service', 'enterprise', 'pro'].includes((userPlan?.plan_type || '').toLowerCase());
 
     const fetchIntegrations = async () => {
         try {
@@ -153,12 +175,38 @@ const IntegrationsPage: React.FC = () => {
 
     return (
         <ProtectedRoute>
-            <div className="min-h-screen bg-background p-6">
+            <div className="space-y-6">
                 <div className="max-w-7xl mx-auto">
-                    <h1 className="text-3xl font-bold text-foreground mb-8">Chronos Hub Marketplace</h1>
+                    <div className="mb-8">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Integration hub</p>
+                                <h1 className="mt-2 text-3xl font-bold text-white">Chronos Hub Marketplace</h1>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (canCreateIntegration) {
+                                        navigate('/app/integrations/create');
+                                    }
+                                }}
+                                className={`rounded-full px-5 py-2 text-sm font-semibold ${
+                                    canCreateIntegration
+                                        ? 'bg-cyan-300 text-[#081018] hover:bg-cyan-200'
+                                        : 'bg-white/10 text-white/70 hover:bg-white/15'
+                                }`}
+                            >
+                                Create New Integration
+                            </button>
+                        </div>
+                        {!canCreateIntegration && (
+                            <p className="mt-3 text-sm text-amber-200">
+                                Publishing integrations is available on Team/Developer plan and above.
+                            </p>
+                        )}
+                    </div>
 
                     {/* Search and Filters */}
-                    <div className="bg-card rounded-lg shadow-sm p-4 mb-6">
+                    <div className="chronos-surface p-4 mb-6">
                         <div className="flex flex-col lg:flex-row gap-4">
                             <form onSubmit={handleSearch} className="flex-1">
                                 <div className="relative">
@@ -167,7 +215,7 @@ const IntegrationsPage: React.FC = () => {
                                         placeholder="Search integrations..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-border rounded-lg bg-black/25 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                     <button
                                         type="submit"
@@ -185,12 +233,12 @@ const IntegrationsPage: React.FC = () => {
                                         onClick={() => handleCategorySelect(category.name)}
                                         className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm whitespace-nowrap ${selectedCategory === category.name
                                             ? 'bg-cyan-400 text-white'
-                                            : 'bg-gray-200 text-muted-foreground hover:bg-gray-300'
+                                            : 'bg-black/20 text-muted-foreground hover:bg-black/30'
                                             }`}
                                     >
                                         <span>{category.icon}</span>
                                         <span>{category.name}</span>
-                                        <span className="bg-background0 text-white text-xs rounded-full px-1 ml-1">{category.count}</span>
+                                        <span className="bg-black/40 text-white text-xs rounded-full px-1 ml-1">{category.count}</span>
                                     </button>
                                 ))}
                             </div>
@@ -204,7 +252,7 @@ const IntegrationsPage: React.FC = () => {
                                     onClick={() => handleTypeSelect(type.name)}
                                     className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm whitespace-nowrap ${selectedType === type.name
                                         ? 'bg-cyan-400 text-white'
-                                        : 'bg-gray-200 text-muted-foreground hover:bg-gray-300'
+                                        : 'bg-black/20 text-muted-foreground hover:bg-black/30'
                                         }`}
                                 >
                                     <span>{type.icon}</span>
@@ -261,11 +309,11 @@ const IntegrationsPage: React.FC = () => {
                             {integrations.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {integrations.map((integration) => (
-                                        <div key={integration.id} className="bg-card rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                        <div key={integration.id} className="chronos-surface overflow-hidden hover:shadow-glow transition-shadow">
                                             <div className="p-4">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                                                        <div className="w-8 h-8 rounded-md flex items-center justify-center">
                                                             <ProviderLogo
                                                                 name={integration.name}
                                                                 url={integration.icon}
@@ -302,7 +350,7 @@ const IntegrationsPage: React.FC = () => {
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleViewDetails(integration.id)}
-                                                        className="flex-1 bg-gray-100 text-muted-foreground py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                                                        className="flex-1 bg-black/25 text-muted-foreground py-2 px-3 rounded-md text-sm hover:bg-black/35 transition-colors"
                                                     >
                                                         View Details
                                                     </button>
