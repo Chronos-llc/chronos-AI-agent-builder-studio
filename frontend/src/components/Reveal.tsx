@@ -51,9 +51,9 @@ export const Reveal: React.FC<RevealProps> = ({
   return (
     <div
       ref={ref}
-      style={{ transitionDelay: `${delay}ms` }}
+      style={{ '--transition-delay': `${delay}ms` } as React.CSSProperties}
       className={cn(
-        'transition-all duration-700 ease-out will-change-transform',
+        'transition-all duration-700 ease-out will-change-transform transition-delay-custom',
         isVisible ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${directionMap[direction]}`,
         className
       )}

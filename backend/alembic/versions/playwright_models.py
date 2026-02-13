@@ -8,7 +8,6 @@ Create Date: 2025-12-31 02:11:55.777000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'playwright_models_001'
@@ -184,11 +183,13 @@ def upgrade():
     op.create_index(op.f('ix_playwright_security_rules_rule_id'), 'playwright_security_rules', ['rule_id'], unique=True)
 
     # Update existing mcp_operation_logs table to include Playwright operation types
-    op.execute("""
-        ALTER TYPE operationtype ADD VALUE IF NOT EXISTS 'playwright_automation';
-        ALTER TYPE operationtype ADD VALUE IF NOT EXISTS 'playwright_session_management';
-        ALTER TYPE operationtype ADD VALUE IF NOT EXISTS 'playwright_pool_management';
-    """)
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute("""
+            ALTER TYPE operationtype ADD VALUE IF NOT EXISTS 'playwright_automation';
+            ALTER TYPE operationtype ADD VALUE IF NOT EXISTS 'playwright_session_management';
+            ALTER TYPE operationtype ADD VALUE IF NOT EXISTS 'playwright_pool_management';
+        """)
 
     # Add Playwright-specific indexes for performance
     op.create_index('ix_playwright_artifacts_created_at', 'playwright_artifacts', ['created_at'], unique=False)

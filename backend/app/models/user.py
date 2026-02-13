@@ -37,13 +37,19 @@ class User(BaseModel):
     usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
     plan = relationship("UserPlan", back_populates="user", uselist=False, cascade="all, delete-orphan")
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    integrations = relationship("Integration", back_populates="author", cascade="all, delete-orphan")
+    integrations = relationship(
+        "Integration",
+        back_populates="author",
+        cascade="all, delete-orphan",
+        foreign_keys="Integration.author_id",
+    )
     integration_configs = relationship("IntegrationConfig", back_populates="user", cascade="all, delete-orphan")
     integration_reviews = relationship("IntegrationReview", back_populates="user", cascade="all, delete-orphan")
     knowledge_searches = relationship("KnowledgeSearch", back_populates="user", cascade="all, delete-orphan")
     training_sessions = relationship("TrainingSession", back_populates="user", cascade="all, delete-orphan")
     personal_access_tokens = relationship("PersonalAccessToken", back_populates="user", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    social_accounts = relationship("SocialAccount", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"

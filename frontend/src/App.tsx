@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
+import { MarketingLanguageProvider } from './i18n/MarketingLanguageProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
@@ -15,12 +16,14 @@ import IntegrationDetailsPage from './pages/IntegrationDetailsPage'
 import IntegrationInstallPage from './pages/IntegrationInstallPage'
 import IntegrationConfigurationPage from './pages/IntegrationConfigurationPage'
 import IntegrationSuccessPage from './pages/IntegrationSuccessPage'
+import IntegrationCreatePage from './pages/IntegrationCreatePage'
 import CommunicationChannelsPage from './pages/CommunicationChannelsPage'
 import ChannelConfigurationPage from './pages/ChannelConfigurationPage'
 import WebChatConfigurationPage from './pages/WebChatConfigurationPage'
 import OnboardingPage from './pages/OnboardingPage'
 import AgentSuitePage from './pages/AgentSuitePage'
 import PricingPage from './pages/PricingPage'
+import DocsPage from './pages/DocsPage'
 import { StudioShell } from './components/studio/StudioShell'
 import './App.css'
 
@@ -37,12 +40,15 @@ function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
-                <Router>
-                    <div className="min-h-screen">
-                        <Routes>
+                <MarketingLanguageProvider>
+                    <Router>
+                        <div className="min-h-screen">
+                            <Routes>
                             <Route path="/" element={<LandingPage />} />
                             <Route path="/pricing" element={<PricingPage />} />
+                            <Route path="/docs" element={<DocsPage />} />
                             <Route path="/login" element={<LoginPage />} />
+                            <Route path="/signup" element={<LoginPage />} />
 
                             <Route
                                 path="/app"
@@ -62,6 +68,7 @@ function App() {
                                 <Route path="settings" element={<SettingsPage />} />
                                 <Route path="admin/*" element={<AdminPage />} />
                                 <Route path="integrations" element={<IntegrationsPage />} />
+                                <Route path="integrations/create" element={<IntegrationCreatePage />} />
                                 <Route path="integrations/:id" element={<IntegrationDetailsPage />} />
                                 <Route path="integrations/:id/install" element={<IntegrationInstallPage />} />
                                 <Route path="integrations/:id/configure" element={<IntegrationConfigurationPage />} />
@@ -79,20 +86,21 @@ function App() {
                             <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
 
                             <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
-                        <Toaster
-                            position="top-right"
-                            toastOptions={{
-                                duration: 4000,
-                                style: {
-                                    background: 'hsl(var(--card))',
-                                    color: 'hsl(var(--card-foreground))',
-                                    border: '1px solid hsl(var(--border))',
-                                },
-                            }}
-                        />
-                    </div>
-                </Router>
+                            </Routes>
+                            <Toaster
+                                position="top-right"
+                                toastOptions={{
+                                    duration: 4000,
+                                    style: {
+                                        background: 'hsl(var(--card))',
+                                        color: 'hsl(var(--card-foreground))',
+                                        border: '1px solid hsl(var(--border))',
+                                    },
+                                }}
+                            />
+                        </div>
+                    </Router>
+                </MarketingLanguageProvider>
             </AuthProvider>
         </QueryClientProvider>
     )

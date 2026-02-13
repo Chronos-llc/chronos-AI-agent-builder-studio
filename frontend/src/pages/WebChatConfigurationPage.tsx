@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
-import { useAuth } from '../contexts/AuthContext';
 
 interface WebChatConfig {
     embed_type: string;
@@ -54,7 +53,6 @@ interface WebChatSession {
 
 const WebChatConfigurationPage: React.FC = () => {
     const { session_id } = useParams<{ session_id: string }>();
-    const { user } = useAuth();
     const navigate = useNavigate();
     const [config, setConfig] = useState<WebChatConfig>({
         embed_type: 'bubble',
@@ -402,7 +400,7 @@ export default MyWebChat;`;
                 <div className="min-h-screen bg-background p-6">
                     <div className="max-w-4xl mx-auto">
                         <div className="bg-rose-500/10 border border-red-200 rounded-lg p-6">
-                            <p className="text-rose-400 mb-4">⚠️ {error}</p>
+                            <p className="text-rose-400 mb-4">Warning: {error}</p>
                             <button
                                 onClick={() => session_id && fetchWebChatConfig(session_id)}
                                 className="text-sm text-rose-400 hover:text-red-800"
@@ -431,7 +429,7 @@ export default MyWebChat;`;
                                 onClick={() => navigate('/app/channels')}
                                 className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
                             >
-                                ← Back to Channels
+                                {'<- Back to Channels'}
                             </button>
                             <button
                                 onClick={() => navigate('/app/integrations')}
@@ -446,7 +444,7 @@ export default MyWebChat;`;
                     <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
                         <h3 className="text-lg font-semibold text-foreground mb-4">WebChat Preview</h3>
                         <div className="bg-gray-100 rounded-lg p-8 text-center">
-                            <div className="text-6xl mb-4">💬</div>
+                            <div className="text-6xl mb-4">Chat</div>
                             <p className="text-muted-foreground mb-2">WebChat preview would appear here</p>
                             <p className="text-sm text-muted-foreground">Configure your settings and generate embed code to see the live preview</p>
                         </div>
@@ -732,7 +730,7 @@ export default MyWebChat;`;
 
                                     {/* Voice Features */}
                                     <div className="mb-6 bg-background rounded-lg p-4">
-                                        <h4 className="font-medium text-muted-foreground mb-3">🎤 Voice Input/Output</h4>
+                                        <h4 className="font-medium text-muted-foreground mb-3">Voice Input/Output</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="flex items-center">
                                                 <input
@@ -798,7 +796,7 @@ export default MyWebChat;`;
 
                                     {/* User Feedback */}
                                     <div className="mb-6 bg-background rounded-lg p-4">
-                                        <h4 className="font-medium text-muted-foreground mb-3">❤️ User Feedback</h4>
+                                        <h4 className="font-medium text-muted-foreground mb-3">User Feedback</h4>
                                         <div className="flex items-center mb-3">
                                             <input
                                                 type="checkbox"
@@ -815,12 +813,12 @@ export default MyWebChat;`;
                                                 <div className="flex flex-wrap gap-2 mb-3">
                                                     {config.feedback_types.map(type => (
                                                         <span key={type} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
-                                                            {type === 'thumbs_up' ? '👍' : type === 'thumbs_down' ? '👎' : '💬'}
+                                                            {type === 'thumbs_up' ? 'Up' : type === 'thumbs_down' ? 'Down' : 'Text'}
                                                             <button
                                                                 onClick={() => handleRemoveFeedbackType(type)}
                                                                 className="ml-2 text-cyan-300 hover:text-blue-800"
                                                             >
-                                                                ✕
+                                                                x
                                                             </button>
                                                         </span>
                                                     ))}
@@ -831,7 +829,7 @@ export default MyWebChat;`;
                                                             onClick={() => handleAddFeedbackType('thumbs_up')}
                                                             className="bg-gray-100 text-muted-foreground px-3 py-1 rounded-full text-sm hover:bg-gray-200"
                                                         >
-                                                            👍 Thumbs Up
+                                                            Thumbs Up
                                                         </button>
                                                     )}
                                                     {!config.feedback_types.includes('thumbs_down') && (
@@ -839,7 +837,7 @@ export default MyWebChat;`;
                                                             onClick={() => handleAddFeedbackType('thumbs_down')}
                                                             className="bg-gray-100 text-muted-foreground px-3 py-1 rounded-full text-sm hover:bg-gray-200"
                                                         >
-                                                            👎 Thumbs Down
+                                                            Thumbs Down
                                                         </button>
                                                     )}
                                                     {!config.feedback_types.includes('text') && (
@@ -847,7 +845,7 @@ export default MyWebChat;`;
                                                             onClick={() => handleAddFeedbackType('text')}
                                                             className="bg-gray-100 text-muted-foreground px-3 py-1 rounded-full text-sm hover:bg-gray-200"
                                                         >
-                                                            💬 Text Feedback
+                                                            Text Feedback
                                                         </button>
                                                     )}
                                                 </div>
@@ -857,7 +855,7 @@ export default MyWebChat;`;
 
                                     {/* File Uploads */}
                                     <div className="mb-6 bg-background rounded-lg p-4">
-                                        <h4 className="font-medium text-muted-foreground mb-3">📎 File Uploads</h4>
+                                        <h4 className="font-medium text-muted-foreground mb-3">File Uploads</h4>
                                         <div className="flex items-center mb-3">
                                             <input
                                                 type="checkbox"
@@ -894,7 +892,7 @@ export default MyWebChat;`;
                                                                 onClick={() => handleRemoveFileType(type)}
                                                                 className="ml-2 text-emerald-300 hover:text-green-800"
                                                             >
-                                                                ✕
+                                                                x
                                                             </button>
                                                         </span>
                                                     ))}
@@ -911,7 +909,7 @@ export default MyWebChat;`;
 
                                     {/* Behavior Settings */}
                                     <div className="mb-6 bg-background rounded-lg p-4">
-                                        <h4 className="font-medium text-muted-foreground mb-3">⚙️ Behavior Settings</h4>
+                                        <h4 className="font-medium text-muted-foreground mb-3">Behavior Settings</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="flex items-center">
                                                 <input
@@ -1255,7 +1253,7 @@ export default MyWebChat;`;
                                     <div className="mt-6 bg-background rounded-lg p-4">
                                         <h4 className="font-medium text-muted-foreground mb-3">Live Preview</h4>
                                         <div className="bg-card rounded border border-border p-8 text-center">
-                                            <div className="text-4xl mb-2">💬</div>
+                                            <div className="text-4xl mb-2">Chat</div>
                                             <p className="text-muted-foreground">WebChat preview based on your configuration</p>
                                             <p className="text-sm text-muted-foreground mt-2">
                                                 This preview shows how your WebChat will look with the current settings.

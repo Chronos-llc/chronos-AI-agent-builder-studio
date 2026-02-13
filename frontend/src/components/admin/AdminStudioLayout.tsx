@@ -4,6 +4,7 @@ import { AdminNavigation } from './AdminNavigation'
 import { AdminDashboard } from './AdminDashboard'
 import { ModeSwitcher } from './ModeSwitcher'
 import { MetaAgentMode } from './modes/MetaAgentMode'
+import { IntegrationSubmissionsMode } from './modes/IntegrationSubmissionsMode'
 import { AdminMode, AdminUser, AdminStatistics, AdminAlert } from '../../types/admin'
 import { Button } from '../ui/button'
 import {
@@ -176,6 +177,8 @@ export const AdminStudioLayout = () => {
                         <p>Marketplace listings and categories management.</p>
                     </div>
                 )
+            case 'integration-submissions':
+                return <IntegrationSubmissionsMode />
             case 'skills':
                 return (
                     <div className="p-6">

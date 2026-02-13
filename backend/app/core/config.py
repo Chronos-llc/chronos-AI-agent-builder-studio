@@ -64,6 +64,15 @@ class Settings(BaseSettings):
 
     # E2B Virtual Computer
     E2B_API_KEY: Optional[str] = Field(default=None, env="E2B_API_KEY")
+
+    # OAuth
+    FRONTEND_BASE_URL: str = Field(default="http://localhost:5173", env="FRONTEND_BASE_URL")
+    GOOGLE_OAUTH_CLIENT_ID: Optional[str] = Field(default=None, env="GOOGLE_OAUTH_CLIENT_ID")
+    GOOGLE_OAUTH_CLIENT_SECRET: Optional[str] = Field(default=None, env="GOOGLE_OAUTH_CLIENT_SECRET")
+    GOOGLE_OAUTH_REDIRECT_URI: Optional[str] = Field(default=None, env="GOOGLE_OAUTH_REDIRECT_URI")
+    GITHUB_OAUTH_CLIENT_ID: Optional[str] = Field(default=None, env="GITHUB_OAUTH_CLIENT_ID")
+    GITHUB_OAUTH_CLIENT_SECRET: Optional[str] = Field(default=None, env="GITHUB_OAUTH_CLIENT_SECRET")
+    GITHUB_OAUTH_REDIRECT_URI: Optional[str] = Field(default=None, env="GITHUB_OAUTH_REDIRECT_URI")
     
     # Telephony provider credentials
     TWILIO_ACCOUNT_SID: Optional[str] = Field(default=None, env="TWILIO_ACCOUNT_SID")

@@ -1,24 +1,32 @@
-﻿import React from 'react'
+import React from 'react'
 import { HeroSection } from '../components/landing/HeroSection'
-import { ModelAccessSection } from '../components/landing/ModelAccessSection'
-import { FeatureInventorySection } from '../components/landing/FeatureInventorySection'
-import { HowItWorksSection } from '../components/landing/HowItWorksSection'
-import { IntegrationsShowcaseSection } from '../components/landing/IntegrationsShowcaseSection'
-import { VoiceTelephonySection } from '../components/landing/VoiceTelephonySection'
-import { GalleryCarouselSection } from '../components/landing/GalleryCarouselSection'
+import { UnifiedStackSection } from '../components/landing/UnifiedStackSection'
+import { HowChronosWorksSection } from '../components/landing/HowChronosWorksSection'
+import { AgentSuiteDeepDiveSection } from '../components/landing/AgentSuiteDeepDiveSection'
+import { AgenticThinkingSection } from '../components/landing/AgenticThinkingSection'
+import { VoiceAndTelephonySection } from '../components/landing/VoiceAndTelephonySection'
+import { CommunicationsSection } from '../components/landing/CommunicationsSection'
+import { IntegrationsAndModelsSection } from '../components/landing/IntegrationsAndModelsSection'
+import { PublishIntegrationSection } from '../components/landing/PublishIntegrationSection'
+import { UseCasePlaceholdersSection } from '../components/landing/UseCasePlaceholdersSection'
+import { CapabilityNarrativesSection } from '../components/landing/CapabilityNarrativesSection'
 import { EnterpriseSection } from '../components/landing/EnterpriseSection'
 import { ComprehensiveFooter } from '../components/landing/ComprehensiveFooter'
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#070A10] text-white">
+    <div className="min-h-screen bg-[#06080D] text-white">
       <HeroSection />
-      <ModelAccessSection />
-      <FeatureInventorySection />
-      <HowItWorksSection />
-      <IntegrationsShowcaseSection />
-      <VoiceTelephonySection />
-      <GalleryCarouselSection />
+      <UnifiedStackSection />
+      <HowChronosWorksSection />
+      <AgentSuiteDeepDiveSection />
+      <AgenticThinkingSection />
+      <VoiceAndTelephonySection />
+      <CommunicationsSection />
+      <IntegrationsAndModelsSection />
+      <PublishIntegrationSection />
+      <CapabilityNarrativesSection />
+      <UseCasePlaceholdersSection />
       <EnterpriseSection />
       <ComprehensiveFooter />
     </div>

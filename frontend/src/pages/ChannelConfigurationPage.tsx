@@ -149,8 +149,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Welcome Message</label>
+                        <label htmlFor="telegram-welcomeMessage" className="block text-sm font-medium text-muted-foreground mb-1">Welcome Message</label>
                         <textarea
+                            id="telegram-welcomeMessage"
                             name="welcomeMessage"
                             value={telegramConfig.welcomeMessage || ''}
                             onChange={(e) => handleNestedInputChange('telegram', 'welcomeMessage', e.target.value)}
@@ -160,8 +161,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Help Command Response</label>
+                        <label htmlFor="telegram-helpMessage" className="block text-sm font-medium text-muted-foreground mb-1">Help Command Response</label>
                         <textarea
+                            id="telegram-helpMessage"
                             name="helpMessage"
                             value={telegramConfig.helpMessage || ''}
                             onChange={(e) => handleNestedInputChange('telegram', 'helpMessage', e.target.value)}
@@ -173,8 +175,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Inline Keyboards</label>
+                        <label htmlFor="telegram-enableInlineKeyboards" className="block text-sm font-medium text-muted-foreground mb-1">Enable Inline Keyboards</label>
                         <select
+                            id="telegram-enableInlineKeyboards"
                             name="enableInlineKeyboards"
                             value={telegramConfig.enableInlineKeyboards ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('telegram', 'enableInlineKeyboards', e.target.value === 'true')}
@@ -186,8 +189,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable File Uploads</label>
+                        <label htmlFor="telegram-enableFileUploads" className="block text-sm font-medium text-muted-foreground mb-1">Enable File Uploads</label>
                         <select
+                            id="telegram-enableFileUploads"
                             name="enableFileUploads"
                             value={telegramConfig.enableFileUploads ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('telegram', 'enableFileUploads', e.target.value === 'true')}
@@ -199,8 +203,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Max File Size (MB)</label>
+                        <label htmlFor="telegram-maxFileSize" className="block text-sm font-medium text-muted-foreground mb-1">Max File Size (MB)</label>
                         <input
+                            id="telegram-maxFileSize"
                             type="number"
                             name="maxFileSize"
                             value={telegramConfig.maxFileSize || 20}
@@ -208,14 +213,16 @@ const ChannelConfigurationPage: React.FC = () => {
                             className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             min="1"
                             max="50"
+                            placeholder="Enter max file size"
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Allowed File Types</label>
+                        <label htmlFor="telegram-allowedFileTypes" className="block text-sm font-medium text-muted-foreground mb-1">Allowed File Types</label>
                         <input
+                            id="telegram-allowedFileTypes"
                             type="text"
                             name="allowedFileTypes"
                             value={telegramConfig.allowedFileTypes?.join(', ') || 'jpg,png,gif,pdf,doc,docx'}
@@ -226,8 +233,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Rate Limit (messages/min)</label>
+                        <label htmlFor="telegram-rateLimit" className="block text-sm font-medium text-muted-foreground mb-1">Rate Limit (messages/min)</label>
                         <input
+                            id="telegram-rateLimit"
                             type="number"
                             name="rateLimit"
                             value={telegramConfig.rateLimit || 30}
@@ -235,6 +243,7 @@ const ChannelConfigurationPage: React.FC = () => {
                             className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             min="1"
                             max="100"
+                            placeholder="Enter rate limit"
                         />
                     </div>
                 </div>
@@ -252,8 +261,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Client ID</label>
+                        <label htmlFor="slack-clientId" className="block text-sm font-medium text-muted-foreground mb-1">Client ID</label>
                         <input
+                            id="slack-clientId"
                             type="text"
                             name="clientId"
                             value={slackConfig.clientId || ''}
@@ -264,8 +274,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Client Secret</label>
+                        <label htmlFor="slack-clientSecret" className="block text-sm font-medium text-muted-foreground mb-1">Client Secret</label>
                         <input
+                            id="slack-clientSecret"
                             type="password"
                             name="clientSecret"
                             value={slackConfig.clientSecret || ''}
@@ -278,8 +289,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Signing Secret</label>
+                        <label htmlFor="slack-signingSecret" className="block text-sm font-medium text-muted-foreground mb-1">Signing Secret</label>
                         <input
+                            id="slack-signingSecret"
                             type="password"
                             name="signingSecret"
                             value={slackConfig.signingSecret || ''}
@@ -290,8 +302,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Redirect URI</label>
+                        <label htmlFor="slack-redirectUri" className="block text-sm font-medium text-muted-foreground mb-1">Redirect URI</label>
                         <input
+                            id="slack-redirectUri"
                             type="url"
                             name="redirectUri"
                             value={slackConfig.redirectUri || ''}
@@ -304,8 +317,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Default Channel</label>
+                        <label htmlFor="slack-defaultChannel" className="block text-sm font-medium text-muted-foreground mb-1">Default Channel</label>
                         <input
+                            id="slack-defaultChannel"
                             type="text"
                             name="defaultChannel"
                             value={slackConfig.defaultChannel || ''}
@@ -316,8 +330,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Bot Username</label>
+                        <label htmlFor="slack-botUsername" className="block text-sm font-medium text-muted-foreground mb-1">Bot Username</label>
                         <input
+                            id="slack-botUsername"
                             type="text"
                             name="botUsername"
                             value={slackConfig.botUsername || ''}
@@ -330,8 +345,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Slash Commands</label>
+                        <label htmlFor="slack-enableSlashCommands" className="block text-sm font-medium text-muted-foreground mb-1">Enable Slash Commands</label>
                         <select
+                            id="slack-enableSlashCommands"
                             name="enableSlashCommands"
                             value={slackConfig.enableSlashCommands ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('slack', 'enableSlashCommands', e.target.value === 'true')}
@@ -343,8 +359,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Interactive Messages</label>
+                        <label htmlFor="slack-enableInteractiveMessages" className="block text-sm font-medium text-muted-foreground mb-1">Enable Interactive Messages</label>
                         <select
+                            id="slack-enableInteractiveMessages"
                             name="enableInteractiveMessages"
                             value={slackConfig.enableInteractiveMessages ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('slack', 'enableInteractiveMessages', e.target.value === 'true')}
@@ -356,8 +373,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable File Uploads</label>
+                        <label htmlFor="slack-enableFileUploads" className="block text-sm font-medium text-muted-foreground mb-1">Enable File Uploads</label>
                         <select
+                            id="slack-enableFileUploads"
                             name="enableFileUploads"
                             value={slackConfig.enableFileUploads ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('slack', 'enableFileUploads', e.target.value === 'true')}
@@ -382,8 +400,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Business Account ID</label>
+                        <label htmlFor="whatsapp-businessAccountId" className="block text-sm font-medium text-muted-foreground mb-1">Business Account ID</label>
                         <input
+                            id="whatsapp-businessAccountId"
                             type="text"
                             name="businessAccountId"
                             value={whatsappConfig.businessAccountId || ''}
@@ -394,8 +413,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">API Key</label>
+                        <label htmlFor="whatsapp-apiKey" className="block text-sm font-medium text-muted-foreground mb-1">API Key</label>
                         <input
+                            id="whatsapp-apiKey"
                             type="password"
                             name="apiKey"
                             value={whatsappConfig.apiKey || ''}
@@ -408,8 +428,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Phone Number ID</label>
+                        <label htmlFor="whatsapp-phoneNumberId" className="block text-sm font-medium text-muted-foreground mb-1">Phone Number ID</label>
                         <input
+                            id="whatsapp-phoneNumberId"
                             type="text"
                             name="phoneNumberId"
                             value={whatsappConfig.phoneNumberId || ''}
@@ -420,8 +441,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Webhook Verify Token</label>
+                        <label htmlFor="whatsapp-webhookVerifyToken" className="block text-sm font-medium text-muted-foreground mb-1">Webhook Verify Token</label>
                         <input
+                            id="whatsapp-webhookVerifyToken"
                             type="password"
                             name="webhookVerifyToken"
                             value={whatsappConfig.webhookVerifyToken || ''}
@@ -434,8 +456,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Welcome Message Template</label>
+                        <label htmlFor="whatsapp-welcomeTemplate" className="block text-sm font-medium text-muted-foreground mb-1">Welcome Message Template</label>
                         <textarea
+                            id="whatsapp-welcomeTemplate"
                             name="welcomeTemplate"
                             value={whatsappConfig.welcomeTemplate || ''}
                             onChange={(e) => handleNestedInputChange('whatsapp', 'welcomeTemplate', e.target.value)}
@@ -445,8 +468,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Default Template</label>
+                        <label htmlFor="whatsapp-defaultTemplate" className="block text-sm font-medium text-muted-foreground mb-1">Default Template</label>
                         <textarea
+                            id="whatsapp-defaultTemplate"
                             name="defaultTemplate"
                             value={whatsappConfig.defaultTemplate || ''}
                             onChange={(e) => handleNestedInputChange('whatsapp', 'defaultTemplate', e.target.value)}
@@ -458,8 +482,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Template Messages</label>
+                        <label htmlFor="whatsapp-enableTemplateMessages" className="block text-sm font-medium text-muted-foreground mb-1">Enable Template Messages</label>
                         <select
+                            id="whatsapp-enableTemplateMessages"
                             name="enableTemplateMessages"
                             value={whatsappConfig.enableTemplateMessages ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('whatsapp', 'enableTemplateMessages', e.target.value === 'true')}
@@ -471,8 +496,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Media Messages</label>
+                        <label htmlFor="whatsapp-enableMediaMessages" className="block text-sm font-medium text-muted-foreground mb-1">Enable Media Messages</label>
                         <select
+                            id="whatsapp-enableMediaMessages"
                             name="enableMediaMessages"
                             value={whatsappConfig.enableMediaMessages ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('whatsapp', 'enableMediaMessages', e.target.value === 'true')}
@@ -484,8 +510,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Max Media Size (MB)</label>
+                        <label htmlFor="whatsapp-maxMediaSize" className="block text-sm font-medium text-muted-foreground mb-1">Max Media Size (MB)</label>
                         <input
+                            id="whatsapp-maxMediaSize"
                             type="number"
                             name="maxMediaSize"
                             value={whatsappConfig.maxMediaSize || 16}
@@ -493,6 +520,7 @@ const ChannelConfigurationPage: React.FC = () => {
                             className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                             min="1"
                             max="100"
+                            placeholder="Enter max media size"
                         />
                     </div>
                 </div>
@@ -510,8 +538,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Bot Token</label>
+                        <label htmlFor="discord-botToken" className="block text-sm font-medium text-muted-foreground mb-1">Bot Token</label>
                         <input
+                            id="discord-botToken"
                             type="password"
                             name="botToken"
                             value={discordConfig.botToken || ''}
@@ -522,8 +551,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Client ID</label>
+                        <label htmlFor="discord-clientId" className="block text-sm font-medium text-muted-foreground mb-1">Client ID</label>
                         <input
+                            id="discord-clientId"
                             type="text"
                             name="clientId"
                             value={discordConfig.clientId || ''}
@@ -536,8 +566,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Client Secret</label>
+                        <label htmlFor="discord-clientSecret" className="block text-sm font-medium text-muted-foreground mb-1">Client Secret</label>
                         <input
+                            id="discord-clientSecret"
                             type="password"
                             name="clientSecret"
                             value={discordConfig.clientSecret || ''}
@@ -548,8 +579,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Redirect URI</label>
+                        <label htmlFor="discord-redirectUri" className="block text-sm font-medium text-muted-foreground mb-1">Redirect URI</label>
                         <input
+                            id="discord-redirectUri"
                             type="url"
                             name="redirectUri"
                             value={discordConfig.redirectUri || ''}
@@ -562,8 +594,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Default Command Prefix</label>
+                        <label htmlFor="discord-commandPrefix" className="block text-sm font-medium text-muted-foreground mb-1">Default Command Prefix</label>
                         <input
+                            id="discord-commandPrefix"
                             type="text"
                             name="commandPrefix"
                             value={discordConfig.commandPrefix || '!'}
@@ -574,8 +607,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Bot Status</label>
+                        <label htmlFor="discord-botStatus" className="block text-sm font-medium text-muted-foreground mb-1">Bot Status</label>
                         <input
+                            id="discord-botStatus"
                             type="text"
                             name="botStatus"
                             value={discordConfig.botStatus || 'Online'}
@@ -588,8 +622,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Embed Support</label>
+                        <label htmlFor="discord-enableEmbedSupport" className="block text-sm font-medium text-muted-foreground mb-1">Enable Embed Support</label>
                         <select
+                            id="discord-enableEmbedSupport"
                             name="enableEmbedSupport"
                             value={discordConfig.enableEmbedSupport ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('discord', 'enableEmbedSupport', e.target.value === 'true')}
@@ -601,8 +636,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable File Uploads</label>
+                        <label htmlFor="discord-enableFileUploads" className="block text-sm font-medium text-muted-foreground mb-1">Enable File Uploads</label>
                         <select
+                            id="discord-enableFileUploads"
                             name="enableFileUploads"
                             value={discordConfig.enableFileUploads ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('discord', 'enableFileUploads', e.target.value === 'true')}
@@ -614,8 +650,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Max File Size (MB)</label>
+                        <label htmlFor="discord-maxFileSize" className="block text-sm font-medium text-muted-foreground mb-1">Max File Size (MB)</label>
                         <input
+                            id="discord-maxFileSize"
                             type="number"
                             name="maxFileSize"
                             value={discordConfig.maxFileSize || 8}
@@ -623,6 +660,7 @@ const ChannelConfigurationPage: React.FC = () => {
                             className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                             min="1"
                             max="100"
+                            placeholder="Enter max file size"
                         />
                     </div>
                 </div>
@@ -640,8 +678,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Embed Type</label>
+                        <label htmlFor="webchat-embedType" className="block text-sm font-medium text-muted-foreground mb-1">Embed Type</label>
                         <select
+                            id="webchat-embedType"
                             name="embedType"
                             value={webchatConfig.embedType || 'bubble'}
                             onChange={(e) => handleNestedInputChange('webchat', 'embedType', e.target.value)}
@@ -655,8 +694,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Theme</label>
+                        <label htmlFor="webchat-theme" className="block text-sm font-medium text-muted-foreground mb-1">Theme</label>
                         <select
+                            id="webchat-theme"
                             name="theme"
                             value={webchatConfig.theme || 'light'}
                             onChange={(e) => handleNestedInputChange('webchat', 'theme', e.target.value)}
@@ -671,8 +711,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Primary Color</label>
+                        <label htmlFor="webchat-primaryColor" className="block text-sm font-medium text-muted-foreground mb-1">Primary Color</label>
                         <input
+                            id="webchat-primaryColor"
                             type="color"
                             name="primaryColor"
                             value={webchatConfig.primaryColor || '#3B82F6'}
@@ -682,8 +723,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Secondary Color</label>
+                        <label htmlFor="webchat-secondaryColor" className="block text-sm font-medium text-muted-foreground mb-1">Secondary Color</label>
                         <input
+                            id="webchat-secondaryColor"
                             type="color"
                             name="secondaryColor"
                             value={webchatConfig.secondaryColor || '#1E40AF'}
@@ -695,8 +737,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Welcome Message</label>
+                        <label htmlFor="webchat-welcomeMessage" className="block text-sm font-medium text-muted-foreground mb-1">Welcome Message</label>
                         <textarea
+                            id="webchat-welcomeMessage"
                             name="welcomeMessage"
                             value={webchatConfig.welcomeMessage || 'Hello! How can I help you today?'}
                             onChange={(e) => handleNestedInputChange('webchat', 'welcomeMessage', e.target.value)}
@@ -706,8 +749,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Placeholder Text</label>
+                        <label htmlFor="webchat-placeholderText" className="block text-sm font-medium text-muted-foreground mb-1">Placeholder Text</label>
                         <input
+                            id="webchat-placeholderText"
                             type="text"
                             name="placeholderText"
                             value={webchatConfig.placeholderText || 'Type your message...'}
@@ -720,8 +764,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Voice Input</label>
+                        <label htmlFor="webchat-enableVoiceInput" className="block text-sm font-medium text-muted-foreground mb-1">Enable Voice Input</label>
                         <select
+                            id="webchat-enableVoiceInput"
                             name="enableVoiceInput"
                             value={webchatConfig.enableVoiceInput ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('webchat', 'enableVoiceInput', e.target.value === 'true')}
@@ -733,8 +778,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable Voice Output</label>
+                        <label htmlFor="webchat-enableVoiceOutput" className="block text-sm font-medium text-muted-foreground mb-1">Enable Voice Output</label>
                         <select
+                            id="webchat-enableVoiceOutput"
                             name="enableVoiceOutput"
                             value={webchatConfig.enableVoiceOutput ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('webchat', 'enableVoiceOutput', e.target.value === 'true')}
@@ -746,8 +792,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Enable User Feedback</label>
+                        <label htmlFor="webchat-enableUserFeedback" className="block text-sm font-medium text-muted-foreground mb-1">Enable User Feedback</label>
                         <select
+                            id="webchat-enableUserFeedback"
                             name="enableUserFeedback"
                             value={webchatConfig.enableUserFeedback ? 'true' : 'false'}
                             onChange={(e) => handleNestedInputChange('webchat', 'enableUserFeedback', e.target.value === 'true')}
@@ -761,8 +808,9 @@ const ChannelConfigurationPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Custom CSS URL</label>
+                        <label htmlFor="webchat-customCssUrl" className="block text-sm font-medium text-muted-foreground mb-1">Custom CSS URL</label>
                         <input
+                            id="webchat-customCssUrl"
                             type="url"
                             name="customCssUrl"
                             value={webchatConfig.customCssUrl || ''}
@@ -773,8 +821,9 @@ const ChannelConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">Custom JS URL</label>
+                        <label htmlFor="webchat-customJsUrl" className="block text-sm font-medium text-muted-foreground mb-1">Custom JS URL</label>
                         <input
+                            id="webchat-customJsUrl"
                             type="url"
                             name="customJsUrl"
                             value={webchatConfig.customJsUrl || ''}

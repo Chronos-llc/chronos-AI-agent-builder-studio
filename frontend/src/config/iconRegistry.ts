@@ -13,7 +13,7 @@ export const aiProviders: IconRegistryMap = {
   google: { id: 'google', name: 'Google', url: 'https://i.postimg.cc/2SwWrKwz/download_1.jpg' },
   fireworks: { id: 'fireworks', name: 'Fireworks', url: 'https://i.postimg.cc/rmvQqnL7/download_10.png' },
   xai: { id: 'xai', name: 'xAI', url: 'https://i.postimg.cc/zvbZ76dr/download.png' },
-  openrouter: { id: 'openrouter', name: 'OpenRouter', url: 'https://i.postimg.cc/3Nf1mQJf/download_37.png' },
+  openrouter: { id: 'openrouter', name: 'OpenRouter', url: 'https://i.postimg.cc/QdMMqLYZ/openrouter-icon.png' },
 }
 
 export const modelFamilies: IconRegistryMap = {

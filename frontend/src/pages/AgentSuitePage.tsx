@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { conversationService, type Conversation, type ConversationAction, type ConversationDialogue, type ConversationMessage } from '../services/conversationService'
+import { Progress } from '../components/ui/progress'
 
 type SuiteTab = 'chat' | 'actions' | 'history' | 'settings' | 'fuzzy'
 
@@ -114,15 +115,15 @@ const AgentSuitePage = () => {
 
   if (loading) {
     return (
-      <div className="page-container flex min-h-[60vh] items-center justify-center">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="loading-spinner"></div>
       </div>
     )
   }
 
   return (
-    <div className="page-container space-y-4">
-      <div className="card p-4">
+    <div className="space-y-4">
+      <div className="chronos-surface p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Agent Suite</h1>
@@ -140,16 +141,18 @@ const AgentSuitePage = () => {
       </div>
 
       {activeConversation && (
-        <div className="card p-4 space-y-3">
+        <div className="chronos-surface p-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">Context Usage</span>
             <span className="text-muted-foreground">
               {activeConversation.context_tokens_used} / {activeConversation.context_tokens_max} tokens ({contextPercentage}%)
             </span>
           </div>
-          <div className="h-2 w-full rounded bg-muted">
-            <div className="h-2 rounded bg-primary transition-all" style={{ width: `${contextPercentage}%` }} />
-          </div>
+          <Progress 
+            value={contextPercentage} 
+            className="h-2 w-full rounded bg-muted"
+            indicatorClassName="h-2 rounded bg-primary"
+          />
           {activeConversation.context_summary && (
             <details className="rounded-md border border-border p-3">
               <summary className="cursor-pointer text-sm font-medium">Latest Context Summary</summary>
@@ -159,7 +162,7 @@ const AgentSuitePage = () => {
         </div>
       )}
 
-      <div className="card p-2">
+      <div className="chronos-surface p-2">
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'chat', label: 'Chat' },
@@ -180,7 +183,7 @@ const AgentSuitePage = () => {
       </div>
 
       {tab === 'chat' && (
-        <div className="card p-4 space-y-4">
+        <div className="chronos-surface p-4 space-y-4">
           <div className="space-y-2 rounded border border-border p-3">
             <label className="block text-xs uppercase tracking-wide text-muted-foreground">Agentic Thinking (Experimental Beta)</label>
             <textarea
@@ -241,7 +244,7 @@ const AgentSuitePage = () => {
       )}
 
       {tab === 'actions' && (
-        <div className="card p-4 space-y-2">
+        <div className="chronos-surface p-4 space-y-2">
           {actions.length === 0 && <div className="text-sm text-muted-foreground">No actions logged yet.</div>}
           {actions.map(action => (
             <div key={action.id} className="rounded border border-border p-3 text-sm">
@@ -261,7 +264,7 @@ const AgentSuitePage = () => {
       )}
 
       {tab === 'history' && (
-        <div className="card p-4 space-y-2">
+        <div className="chronos-surface p-4 space-y-2">
           {conversations.map(conversation => (
             <button
               key={conversation.id}
@@ -278,7 +281,7 @@ const AgentSuitePage = () => {
       )}
 
       {tab === 'settings' && (
-        <div className="card p-4">
+        <div className="chronos-surface p-4">
           <p className="text-sm text-muted-foreground">Agent configuration remains in Studio settings.</p>
           <Link to={`/app/agents/${agentId}/edit`} className="btn btn-primary mt-3 inline-flex">
             Open Bot Settings
@@ -287,7 +290,7 @@ const AgentSuitePage = () => {
       )}
 
       {tab === 'fuzzy' && (
-        <div className="card p-4">
+        <div className="chronos-surface p-4">
           <p className="text-sm text-muted-foreground">Use Fuzzy to edit architecture and orchestration behavior.</p>
           <Link to={`/app/agents/${agentId}/edit`} className="btn btn-secondary mt-3 inline-flex">
             Open In Studio (Fuzzy Tab)

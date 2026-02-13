@@ -1,24 +1,57 @@
-import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
+import React, { useMemo, useState } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { ChronosLogo } from '../components/brand/ChronosLogo'
+import { ProviderLogo } from '../components/brand/ProviderLogo'
+import { getProviderIcon } from '../config/iconRegistry'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const LoginPage: React.FC = () => {
+    const location = useLocation()
+    const isSignupMode = location.pathname === '/signup'
+    const navigate = useNavigate()
+    const { login, register } = useAuth()
+
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [username, setUsername] = useState('')
+    const [fullName, setFullName] = useState('')
+    const [passwordConfirm, setPasswordConfirm] = useState('')
     const [loading, setLoading] = useState(false)
-    const { login } = useAuth()
-    const navigate = useNavigate()
+    const [error, setError] = useState<string | null>(null)
+
+    const googleIcon = useMemo(() => getProviderIcon('google'), [])
+    const githubIcon = useMemo(() => getProviderIcon('github'), [])
+
+    const handleOAuth = (provider: 'google' | 'github') => {
+        window.location.href = `${API_BASE_URL}/api/v1/auth/oauth/${provider}/start?return_to=/app`
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
+        setError(null)
 
         try {
+            if (isSignupMode) {
+                const resolvedUsername = username.trim() || email.split('@')[0]
+                await register({
+                    email,
+                    username: resolvedUsername,
+                    full_name: fullName.trim() || undefined,
+                    password,
+                    password_confirm: passwordConfirm,
+                })
+                await login(email, password)
+                navigate('/app')
+                return
+            }
+
             await login(email, password)
             navigate('/app')
-        } catch (error) {
-            console.error('Login failed:', error)
+        } catch (submitError: any) {
+            setError(submitError?.message || 'Authentication failed')
         } finally {
             setLoading(false)
         }
@@ -45,12 +78,87 @@ const LoginPage: React.FC = () => {
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
-                    <h2 className="text-2xl font-semibold">Sign in</h2>
+                    <div className="mb-4 flex items-center gap-2">
+                        <Link
+                            to="/login"
+                            className={`rounded-full px-4 py-2 text-sm ${!isSignupMode ? 'bg-cyan-400 text-[#0B1016] font-semibold' : 'border border-white/20 text-white/80'}`}
+                        >
+                            Sign in
+                        </Link>
+                        <Link
+                            to="/signup"
+                            className={`rounded-full px-4 py-2 text-sm ${isSignupMode ? 'bg-cyan-400 text-[#0B1016] font-semibold' : 'border border-white/20 text-white/80'}`}
+                        >
+                            Sign up
+                        </Link>
+                    </div>
+
+                    <h2 className="text-2xl font-semibold">{isSignupMode ? 'Create account' : 'Sign in'}</h2>
                     <p className="mt-2 text-sm text-white/70">
-                        Use your Chronos Studio credentials to continue.
+                        {isSignupMode
+                            ? 'Create your Chronos Studio account to start building.'
+                            : 'Use your Chronos Studio credentials to continue.'}
                     </p>
 
-                    <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                    <div className="mt-6 grid gap-3">
+                        <button
+                            type="button"
+                            onClick={() => handleOAuth('google')}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+                        >
+                            <ProviderLogo name="Google" url={googleIcon?.url} size={20} className="border-white/30" />
+                            Continue with Google
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleOAuth('github')}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+                        >
+                            <ProviderLogo name="GitHub" url={githubIcon?.url} size={20} className="border-white/30" />
+                            Continue with GitHub
+                        </button>
+                    </div>
+
+                    <div className="my-5 flex items-center gap-3">
+                        <div className="h-px flex-1 bg-white/15" />
+                        <span className="text-xs uppercase tracking-[0.2em] text-white/50">or</span>
+                        <div className="h-px flex-1 bg-white/15" />
+                    </div>
+
+                    <form className="space-y-5" onSubmit={handleSubmit}>
+                        {isSignupMode && (
+                            <>
+                                <div>
+                                    <label htmlFor="username" className="text-sm text-white/70">
+                                        Username
+                                    </label>
+                                    <input
+                                        id="username"
+                                        name="username"
+                                        type="text"
+                                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                                        placeholder="chronos_builder"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="full-name" className="text-sm text-white/70">
+                                        Full name (optional)
+                                    </label>
+                                    <input
+                                        id="full-name"
+                                        name="fullName"
+                                        type="text"
+                                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                                        placeholder="Jane Doe"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                    />
+                                </div>
+                            </>
+                        )}
+
                         <div>
                             <label htmlFor="email-address" className="text-sm text-white/70">
                                 Email address
@@ -75,31 +183,48 @@ const LoginPage: React.FC = () => {
                                 id="password"
                                 name="password"
                                 type="password"
-                                autoComplete="current-password"
+                                autoComplete={isSignupMode ? 'new-password' : 'current-password'}
                                 required
                                 className="mt-2 w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
-                                placeholder="••••••••"
+                                placeholder="********"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
+
+                        {isSignupMode && (
+                            <div>
+                                <label htmlFor="password-confirm" className="text-sm text-white/70">
+                                    Confirm password
+                                </label>
+                                <input
+                                    id="password-confirm"
+                                    name="passwordConfirm"
+                                    type="password"
+                                    autoComplete="new-password"
+                                    required
+                                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                                    placeholder="********"
+                                    value={passwordConfirm}
+                                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                                />
+                            </div>
+                        )}
+
+                        {error && <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{error}</div>}
 
                         <button
                             type="submit"
                             disabled={loading}
                             className="flex w-full items-center justify-center rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#0B1016] transition hover:bg-cyan-300 disabled:opacity-50"
                         >
-                            {loading ? (
-                                <div className="loading-spinner border-[#0B1016]"></div>
-                            ) : (
-                                'Sign in to Studio'
-                            )}
+                            {loading ? <div className="loading-spinner border-[#0B1016]"></div> : isSignupMode ? 'Create account' : 'Sign in to Studio'}
                         </button>
 
                         <div className="text-center text-sm text-white/60">
-                            Need access?{' '}
-                            <Link to="/" className="text-cyan-300 hover:text-cyan-200">
-                                Request an invite
+                            {isSignupMode ? 'Already have an account? ' : 'Need an account? '}
+                            <Link to={isSignupMode ? '/login' : '/signup'} className="text-cyan-300 hover:text-cyan-200">
+                                {isSignupMode ? 'Sign in' : 'Create one'}
                             </Link>
                         </div>
                     </form>
@@ -110,3 +235,4 @@ const LoginPage: React.FC = () => {
 }
 
 export default LoginPage
+

@@ -1022,51 +1022,67 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                                        <label htmlFor="vc-provider" className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
                                         <select
+                                            id="vc-provider"
                                             value={virtualComputer.provider}
                                             onChange={(e) => updateVirtualComputerField('provider', e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            aria-label="Virtual computer provider"
+                                            title="Virtual computer provider"
                                         >
                                             <option value="e2b">E2B</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Idle Timeout (seconds)</label>
+                                        <label htmlFor="vc-idle-timeout" className="block text-sm font-medium text-gray-700 mb-1">Idle Timeout (seconds)</label>
                                         <input
+                                            id="vc-idle-timeout"
                                             type="number"
                                             min={30}
                                             max={3600}
                                             value={virtualComputer.idle_timeout_seconds}
                                             onChange={(e) => updateVirtualComputerField('idle_timeout_seconds', Number(e.target.value))}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="300"
+                                            aria-label="Idle timeout in seconds"
+                                            title="Idle timeout in seconds"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Max Runtime (seconds)</label>
+                                        <label htmlFor="vc-max-runtime" className="block text-sm font-medium text-gray-700 mb-1">Max Runtime (seconds)</label>
                                         <input
+                                            id="vc-max-runtime"
                                             type="number"
                                             min={60}
                                             max={7200}
                                             value={virtualComputer.max_runtime_seconds}
                                             onChange={(e) => updateVirtualComputerField('max_runtime_seconds', Number(e.target.value))}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="3600"
+                                            aria-label="Max runtime in seconds"
+                                            title="Max runtime in seconds"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Memory (MB)</label>
+                                        <label htmlFor="vc-memory" className="block text-sm font-medium text-gray-700 mb-1">Memory (MB)</label>
                                         <input
+                                            id="vc-memory"
                                             type="number"
                                             min={128}
                                             max={8192}
                                             value={virtualComputer.memory_mb}
                                             onChange={(e) => updateVirtualComputerField('memory_mb', Number(e.target.value))}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="1024"
+                                            aria-label="Memory in MB"
+                                            title="Memory in MB"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">CPU Cores</label>
+                                        <label htmlFor="vc-cpu-cores" className="block text-sm font-medium text-gray-700 mb-1">CPU Cores</label>
                                         <input
+                                            id="vc-cpu-cores"
                                             type="number"
                                             min={0.25}
                                             max={8}
@@ -1074,6 +1090,9 @@ const BotSettingsPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                             value={virtualComputer.cpu_cores}
                                             onChange={(e) => updateVirtualComputerField('cpu_cores', Number(e.target.value))}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="1"
+                                            aria-label="CPU cores"
+                                            title="CPU cores"
                                         />
                                     </div>
                                 </div>

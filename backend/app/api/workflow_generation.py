@@ -14,10 +14,13 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.enhanced_mcp_manager import enhanced_mcp_manager
 from app.core.virtual_computer import get_virtual_computer_manager
 from app.core.workflow_generation_engine import WorkflowGenerationEngine
 from app.models.user import User
 from app.models.agent import AgentModel
+from app.models.integration import Integration as IntegrationModel, IntegrationStatus, IntegrationVisibility
+from app.models.usage import UserPlan, has_team_visibility_access
 from app.models.workflow_generation import (
     WorkflowGenerationTemplate, GeneratedWorkflow, WorkflowGenerationExecution,
     WorkflowPattern, WorkflowStatus, ExecutionStatus, WorkflowCategory
@@ -529,6 +532,44 @@ async def _execute_workflow_steps(
                 "exit_code": exec_result.get("exit_code"),
                 "duration_ms": exec_result.get("duration_ms", 0)
             }
+        elif step_type in {"integration_api_call", "integration_mcp_call"}:
+            config = step.get("config") or {}
+            request_url = config.get("url")
+            method = (config.get("method") or "GET").upper()
+            headers = config.get("headers") or {}
+            body = config.get("body")
+            params = config.get("params") or {}
+
+            if not request_url:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Missing config.url for step {step_name}",
+                )
+            request_start = time.time()
+            response_payload = await enhanced_mcp_manager.make_api_request(
+                method=method,
+                url=request_url,
+                headers=headers,
+                body=body,
+                params=params,
+                server_id=config.get("server_id"),
+            )
+            duration_ms = int((time.time() - request_start) * 1000)
+            results[step_name] = {
+                "executed": True,
+                "integration_id": config.get("integration_id"),
+                "node_type": step_type,
+                "response": response_payload,
+                "duration_ms": duration_ms,
+            }
+            logs["steps"][step_name] = {
+                "type": step_type,
+                "stdout": "",
+                "stderr": "",
+                "exit_code": 0,
+                "duration_ms": duration_ms,
+                "response": response_payload,
+            }
         else:
             results[step_name] = {"executed": True, "result": step_input}
     
@@ -613,3 +654,41 @@ async def optimize_workflow(
         improvements=improvements,
         estimated_performance_gain=0.15 if improvements else 0.0
     )
+@router.get("/integration-nodes")
+async def list_integration_nodes(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List published integrations that can be used as workflow nodes."""
+    user_plan = (await db.execute(select(UserPlan).where(UserPlan.user_id == current_user.id))).scalar_one_or_none()
+
+    query = select(IntegrationModel).where(
+        IntegrationModel.status.in_([IntegrationStatus.APPROVED.value, IntegrationStatus.PUBLISHED.value]),
+        IntegrationModel.is_workflow_node_enabled == True
+    )
+    if has_team_visibility_access(user_plan.plan_type if user_plan else None):
+        query = query.where(
+            IntegrationModel.visibility.in_(
+                [IntegrationVisibility.PUBLIC.value, IntegrationVisibility.TEAM.value]
+            )
+        )
+    else:
+        query = query.where(IntegrationModel.visibility == IntegrationVisibility.PUBLIC.value)
+
+    integrations = (await db.execute(query.order_by(IntegrationModel.name.asc()))).scalars().all()
+    nodes = []
+    for integration in integrations:
+        node_type = "integration_mcp_call" if integration.integration_type == "mcp_server" else "integration_api_call"
+        nodes.append(
+            {
+                "node_type": node_type,
+                "integration_id": integration.id,
+                "name": integration.name,
+                "description": integration.description,
+                "category": integration.category,
+                "icon": integration.icon or integration.app_icon_url,
+                "config_schema": integration.config_schema or {},
+                "credentials_schema": integration.credentials_schema or {},
+            }
+        )
+    return {"nodes": nodes, "total": len(nodes)}

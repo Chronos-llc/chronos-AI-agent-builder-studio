@@ -29,6 +29,7 @@ export const GalleryCarouselSection: React.FC = () => {
               type="button"
               onClick={() => scrollByAmount(-420)}
               className="rounded-full border border-white/20 bg-white/5 p-2 text-white/80 hover:border-white/40"
+              aria-label="Scroll left"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -36,6 +37,7 @@ export const GalleryCarouselSection: React.FC = () => {
               type="button"
               onClick={() => scrollByAmount(420)}
               className="rounded-full border border-white/20 bg-white/5 p-2 text-white/80 hover:border-white/40"
+              aria-label="Scroll right"
             >
               <ChevronRight className="h-5 w-5" />
             </button>

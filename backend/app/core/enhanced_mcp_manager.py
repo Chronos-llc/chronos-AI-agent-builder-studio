@@ -8,7 +8,7 @@ import logging
 from typing import Optional, Dict, Any, List, Union
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, desc, func, select
 
 from app.models.mcp_server import (
     MCPServer, MCPOperationLog, MCPServerMetric, 
@@ -24,7 +24,7 @@ from app.core.advanced_mcp_client import (
     AdvancedMCPClient, LoadBalancer, RequestCache, 
     MCPServerError, RetryPolicy
 )
-from app.core.database import get_db
+from app.core.database import SessionLocal
 
 
 logger = logging.getLogger(__name__)
@@ -95,39 +95,47 @@ class EnhancedMCPManager:
     async def _load_servers_from_database(self):
         """Load MCP servers from database"""
         try:
-            db = next(get_db())
-            try:
-                servers = db.query(MCPServer).filter(MCPServer.is_active == True).all()
-                
+            async with SessionLocal() as db:
+                servers = (
+                    await db.execute(
+                        select(MCPServer).where(MCPServer.is_active.is_(True))
+                    )
+                ).scalars().all()
+
                 for server in servers:
                     await self._add_server_to_client(server)
-                
+
                 logger.info(f"Loaded {len(servers)} MCP servers from database")
-            finally:
-                db.close()
         except Exception as e:
             logger.error(f"Failed to load servers from database: {e}")
     
     async def _load_server_groups_from_database(self):
         """Load server groups from database"""
         try:
-            db = next(get_db())
-            try:
-                groups = db.query(MCPServerGroup).filter(MCPServerGroup.is_active == True).all()
-                
+            async with SessionLocal() as db:
+                groups = (
+                    await db.execute(
+                        select(MCPServerGroup).where(MCPServerGroup.is_active.is_(True))
+                    )
+                ).scalars().all()
+
                 for group in groups:
-                    members = db.query(MCPServerGroupMember).filter(
-                        and_(
-                            MCPServerGroupMember.group_id == group.id,
-                            MCPServerGroupMember.is_active == True
+                    members = (
+                        await db.execute(
+                            select(MCPServerGroupMember).where(
+                                and_(
+                                    MCPServerGroupMember.group_id == group.id,
+                                    MCPServerGroupMember.is_active.is_(True),
+                                )
+                            )
                         )
-                    ).all()
-                    
+                    ).scalars().all()
+
                     self.server_groups[group.name] = group
-                    
+
                     # Add group members to load balancer
                     for member in members:
-                        server = db.query(MCPServer).filter(MCPServer.id == member.server_id).first()
+                        server = await db.get(MCPServer, member.server_id)
                         if server and server.server_id in self.clients:
                             self.load_balancer.add_server(server.server_id, {
                                 'weight': member.weight,
@@ -135,10 +143,8 @@ class EnhancedMCPManager:
                                 'health_status': server.health_status,
                                 'current_connections': server.current_connections
                             })
-                
+
                 logger.info(f"Loaded {len(groups)} server groups from database")
-            finally:
-                db.close()
         except Exception as e:
             logger.error(f"Failed to load server groups from database: {e}")
     

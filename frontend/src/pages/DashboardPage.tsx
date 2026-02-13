@@ -95,21 +95,22 @@ const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-[60vh] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-300"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-6">
+      <div>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Overview</p>
+          <h1 className="mt-2 text-3xl font-bold text-white">
             Welcome back, {user?.username || 'User'}!
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="mt-2 text-white/65">
             Manage your AI agents and monitor their performance.
           </p>
         </div>
@@ -118,8 +119,8 @@ const DashboardPage: React.FC = () => {
         {getUsagePercentage() >= 75 && (
           <div className={`mb-6 p-4 rounded-lg border ${
             getUsagePercentage() >= 90 
-              ? 'bg-rose-500/10 border-rose-500/30 text-rose-200' 
-              : 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-100' 
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-100'
           }`}>
             <div className="flex items-center">
               <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
@@ -138,7 +139,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-card rounded-lg shadow p-6">
+          <div className="chronos-surface p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <UsersIcon className="h-8 w-8 text-cyan-300" />
@@ -150,7 +151,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-card rounded-lg shadow p-6">
+          <div className="chronos-surface p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <CheckCircleIcon className="h-8 w-8 text-emerald-400" />
@@ -162,7 +163,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-card rounded-lg shadow p-6">
+          <div className="chronos-surface p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <ChartBarIcon className="h-8 w-8 text-sky-400" />
@@ -174,7 +175,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-card rounded-lg shadow p-6">
+          <div className="chronos-surface p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <Cog6ToothIcon className={`h-8 w-8 ${getUsageColor()}`} />
@@ -193,7 +194,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Usage Progress Bar */}
-        <div className="bg-card rounded-lg shadow p-6 mb-8">
+        <div className="chronos-surface p-6 mb-8">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-medium text-foreground">Monthly Usage</h3>
             <span className={`text-sm font-medium ${getUsageColor()}`}>
@@ -214,7 +215,7 @@ const DashboardPage: React.FC = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Agents */}
-          <div className="bg-card rounded-lg shadow">
+          <div className="chronos-surface">
             <div className="p-6 border-b border-border">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-foreground">Recent Agents</h3>
@@ -238,7 +239,7 @@ const DashboardPage: React.FC = () => {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-card rounded-lg shadow">
+          <div className="chronos-surface">
             <div className="p-6 border-b border-border">
               <h3 className="text-lg font-medium text-foreground">Recent Activity</h3>
             </div>

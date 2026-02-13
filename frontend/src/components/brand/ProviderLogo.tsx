@@ -34,9 +34,9 @@ export const ProviderLogo: React.FC<ProviderLogoProps> = ({
     <div
       className={cn(
         'inline-flex items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 text-xs font-semibold text-white/90',
+        `w-[${size}px] h-[${size}px] min-w-[${size}px] min-h-[${size}px]`,
         className
       )}
-      style={{ width: size, height: size, minWidth: size, minHeight: size }}
       title={name}
       aria-label={name}
     >

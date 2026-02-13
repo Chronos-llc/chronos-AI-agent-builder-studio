@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { ProviderLogo } from '../components/brand/ProviderLogo';
+import { getProviderIcon } from '../config/iconRegistry';
 
 interface CommunicationChannel {
     channel_id: string;
@@ -16,6 +18,7 @@ interface ChannelTypeConfig {
     type: string;
     name: string;
     icon: string;
+    logo_key: string;
     description: string;
     config_fields: Array<{
         name: string;
@@ -54,7 +57,8 @@ const CommunicationChannelsPage: React.FC = () => {
         {
             type: 'telegram',
             name: 'Telegram',
-            icon: '🤖',
+            icon: 'telegram',
+            logo_key: 'telegram',
             description: 'Integrate with Telegram bot API',
             config_fields: [
                 { name: 'bot_token', label: 'Bot Token', type: 'password', required: true, help_text: 'Telegram bot token from BotFather' },
@@ -69,7 +73,8 @@ const CommunicationChannelsPage: React.FC = () => {
         {
             type: 'slack',
             name: 'Slack',
-            icon: '💼',
+            icon: 'slack',
+            logo_key: 'slack',
             description: 'Integrate with Slack API',
             config_fields: [
                 { name: 'bot_token', label: 'Bot Token', type: 'password', required: true, help_text: 'Slack bot token (xoxb-...)' },
@@ -85,7 +90,8 @@ const CommunicationChannelsPage: React.FC = () => {
         {
             type: 'whatsapp',
             name: 'WhatsApp',
-            icon: '📱',
+            icon: 'whatsapp',
+            logo_key: 'whatsapp',
             description: 'Integrate with WhatsApp Business API',
             config_fields: [
                 { name: 'api_key', label: 'API Key', type: 'password', required: true, help_text: 'WhatsApp Business API key' },
@@ -100,7 +106,8 @@ const CommunicationChannelsPage: React.FC = () => {
         {
             type: 'discord',
             name: 'Discord',
-            icon: '🎮',
+            icon: 'discord',
+            logo_key: 'discord',
             description: 'Integrate with Discord bot API',
             config_fields: [
                 { name: 'bot_token', label: 'Bot Token', type: 'password', required: true, help_text: 'Discord bot token' },
@@ -115,7 +122,8 @@ const CommunicationChannelsPage: React.FC = () => {
         {
             type: 'webchat',
             name: 'WebChat',
-            icon: '🌐',
+            icon: 'webchat',
+            logo_key: 'webchat',
             description: 'Advanced WebChat integration',
             config_fields: [
                 { name: 'embed_type', label: 'Embed Type', type: 'select', required: true, options: [
@@ -394,13 +402,16 @@ const CommunicationChannelsPage: React.FC = () => {
         const analytics = analyticsData?.channel_analytics?.[channel.channel_id] || {};
 
         return (
-            <div key={channel.channel_id} className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+            <div key={channel.channel_id} className="chronos-surface overflow-hidden">
                 <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                                <span className="text-cyan-300 text-lg">{channelTypeConfig?.icon || '🔌'}</span>
-                            </div>
+                            <ProviderLogo
+                                name={channelTypeConfig?.name || channel.channel_type}
+                                url={getProviderIcon(channelTypeConfig?.logo_key || channel.channel_type)?.url}
+                                size={30}
+                                className="rounded-md border-white/20"
+                            />
                             <div>
                                 <h3 className="font-semibold text-foreground">{channelTypeConfig?.name || channel.channel_type}</h3>
                                 <p className="text-sm text-muted-foreground">ID: {channel.channel_id}</p>
@@ -567,7 +578,7 @@ const CommunicationChannelsPage: React.FC = () => {
             <ProtectedRoute>
                 <div className="min-h-screen bg-background p-6">
                     <div className="max-w-7xl mx-auto">
-                        <div className="bg-card rounded-lg shadow-sm p-6 animate-pulse">
+                        <div className="chronos-surface p-6 animate-pulse">
                             <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
                             <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
                             <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
@@ -609,24 +620,25 @@ const CommunicationChannelsPage: React.FC = () => {
 
     return (
         <ProtectedRoute>
-            <div className="min-h-screen bg-background p-6">
+            <div className="space-y-6">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-wrap justify-between gap-4 items-center mb-6">
                         <div>
-                            <h1 className="text-3xl font-bold text-foreground">Communication Channels</h1>
-                            <p className="text-muted-foreground mt-1">Manage your multi-channel communication integrations</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">Channels</p>
+                            <h1 className="mt-2 text-3xl font-bold text-white">Communication Channels</h1>
+                            <p className="text-white/65 mt-1">Manage your multi-channel communication integrations</p>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={handleAddChannel}
-                                className="bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300 transition-colors"
+                                className="bg-cyan-300 text-[#081018] px-4 py-2 rounded-md hover:bg-cyan-200 transition-colors font-semibold"
                             >
                                 + Add Channel
                             </button>
                             <button
                                 onClick={() => navigate('/app/integrations')}
-                                className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
+                                className="bg-black/25 text-muted-foreground px-4 py-2 rounded-md hover:bg-black/35"
                             >
                                 View Integrations
                             </button>
@@ -634,7 +646,7 @@ const CommunicationChannelsPage: React.FC = () => {
                     </div>
 
                     {/* Tabs */}
-                    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
+                    <div className="chronos-surface overflow-hidden mb-6">
                         <div className="border-b border-border px-6">
                             <div className="flex -mb-px">
                                 <button
@@ -670,8 +682,8 @@ const CommunicationChannelsPage: React.FC = () => {
                         <div>
                             {/* Add Channel Modal */}
                             {showAddChannel && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                                    <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                                    <div className="chronos-surface w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                                         <div className="p-6 border-b border-border">
                                             <div className="flex justify-between items-center">
                                                 <h3 className="text-xl font-semibold text-foreground">Add New Communication Channel</h3>
@@ -696,9 +708,12 @@ const CommunicationChannelsPage: React.FC = () => {
                                                             className="bg-background border-2 border-transparent rounded-lg p-4 cursor-pointer hover:border-blue-300 transition-colors"
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                                                                    <span className="text-cyan-300 text-lg">{channelType.icon}</span>
-                                                                </div>
+                                                                <ProviderLogo
+                                                                    name={channelType.name}
+                                                                    url={getProviderIcon(channelType.logo_key)?.url}
+                                                                    size={32}
+                                                                    className="rounded-md border-white/20"
+                                                                />
                                                                 <div>
                                                                     <h5 className="font-semibold text-foreground">{channelType.name}</h5>
                                                                     <p className="text-sm text-muted-foreground">{channelType.description}</p>
@@ -780,7 +795,7 @@ const CommunicationChannelsPage: React.FC = () => {
 
                     {/* Analytics Tab */}
                     {activeTab === 'analytics' && (
-                        <div className="bg-card rounded-lg shadow-sm p-6">
+                        <div className="chronos-surface p-6">
                             <h3 className="text-xl font-semibold text-foreground mb-6">Communication Analytics Dashboard</h3>
 
                             {/* Summary Cards */}
@@ -828,7 +843,12 @@ const CommunicationChannelsPage: React.FC = () => {
                                                     <tr key={channel.channel_id} className="border-t border-border">
                                                         <td className="px-4 py-3">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-lg">{channelTypeConfig?.icon}</span>
+                                                                <ProviderLogo
+                                                                    name={channelTypeConfig?.name || channel.channel_type}
+                                                                    url={getProviderIcon(channelTypeConfig?.logo_key || channel.channel_type)?.url}
+                                                                    size={24}
+                                                                    className="border-white/20"
+                                                                />
                                                                 <span className="font-medium text-foreground">{channelTypeConfig?.name || channel.channel_type}</span>
                                                             </div>
                                                         </td>
@@ -854,13 +874,13 @@ const CommunicationChannelsPage: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-background rounded-lg p-4">
                                     <h5 className="font-medium text-muted-foreground mb-3">Message Volume by Channel</h5>
-                                    <div className="h-48 bg-card rounded border border-border flex items-center justify-center">
+                                    <div className="h-48 chronos-surface flex items-center justify-center">
                                         <p className="text-muted-foreground">Chart would display here in real implementation</p>
                                     </div>
                                 </div>
                                 <div className="bg-background rounded-lg p-4">
                                     <h5 className="font-medium text-muted-foreground mb-3">Success Rate by Channel</h5>
-                                    <div className="h-48 bg-card rounded border border-border flex items-center justify-center">
+                                    <div className="h-48 chronos-surface flex items-center justify-center">
                                         <p className="text-muted-foreground">Chart would display here in real implementation</p>
                                     </div>
                                 </div>
@@ -870,7 +890,7 @@ const CommunicationChannelsPage: React.FC = () => {
 
                     {/* Routing Tab */}
                     {activeTab === 'routing' && (
-                        <div className="bg-card rounded-lg shadow-sm p-6">
+                        <div className="chronos-surface p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-semibold text-foreground">Message Routing Rules</h3>
                                 <button
@@ -978,7 +998,7 @@ const CommunicationChannelsPage: React.FC = () => {
                             {/* Routing Visualization */}
                             <div className="mt-6 bg-background rounded-lg p-4">
                                 <h4 className="font-medium text-muted-foreground mb-3">Routing Flow Visualization</h4>
-                                <div className="h-64 bg-card rounded border border-border flex items-center justify-center">
+                                <div className="h-64 chronos-surface flex items-center justify-center">
                                     <p className="text-muted-foreground">Interactive routing flow diagram would display here</p>
                                 </div>
                             </div>
@@ -991,3 +1011,5 @@ const CommunicationChannelsPage: React.FC = () => {
 };
 
 export default CommunicationChannelsPage;
+
+

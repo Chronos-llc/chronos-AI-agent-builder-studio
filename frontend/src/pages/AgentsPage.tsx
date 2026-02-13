@@ -153,12 +153,13 @@ const AgentsPage: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between gap-4 items-center">
         <div>
-          <h1 className="text-2xl font-bold">My Agents</h1>
-          <p className="text-muted-foreground mt-1">Manage your AI agent workspace</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Workspace</p>
+          <h1 className="mt-2 text-2xl font-bold text-white">My Agents</h1>
+          <p className="text-white/65 mt-1">Manage your AI agent workspace</p>
         </div>
         <div className="flex items-center gap-4">
           <PlatformSwitcher 
@@ -182,14 +183,14 @@ const AgentsPage: React.FC = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="card p-4 mb-6">
+      <div className="chronos-surface p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
             <input
               type="text"
               placeholder="Search agents by name, description, or type..."
-              className="input pl-10 w-full"
+              className="input pl-10 w-full bg-black/25"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -197,7 +198,7 @@ const AgentsPage: React.FC = () => {
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
             <select
-              className="input pl-10 pr-8 appearance-none bg-card min-w-[150px]"
+              className="input pl-10 pr-8 appearance-none bg-black/25 min-w-[150px]"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filter by status"
@@ -213,7 +214,7 @@ const AgentsPage: React.FC = () => {
 
       {/* Agents Grid */}
       {filteredAgents.length === 0 ? (
-        <div className="card p-8 text-center">
+        <div className="chronos-surface p-8 text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Activity className="w-8 h-8 text-muted-foreground/70" />
           </div>
@@ -235,7 +236,7 @@ const AgentsPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            {filteredAgents.map((agent) => (
-            <div key={agent.id} className="card hover:shadow-lg transition-shadow">
+            <div key={agent.id} className="chronos-surface p-5 hover:shadow-glow transition-shadow">
               {/* Agent Header */}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
@@ -320,7 +321,7 @@ const AgentsPage: React.FC = () => {
                 </Link>
                 <Link
                   to={`/app/agents/${agent.id}/edit`}
-                  className="flex items-center justify-center px-3 py-2 bg-card text-muted-foreground rounded hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex items-center justify-center px-3 py-2 bg-black/25 text-muted-foreground rounded hover:bg-muted hover:text-foreground transition-colors"
                   title="Settings"
                   aria-label="Settings"
                 >
@@ -344,23 +345,23 @@ const AgentsPage: React.FC = () => {
       {/* Quick Stats Footer */}
       {filteredAgents.length > 0 && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="card p-4 text-center">
+          <div className="chronos-surface p-4 text-center">
             <div className="text-2xl font-bold text-cyan-300">{filteredAgents.length}</div>
             <div className="text-sm text-muted-foreground">Total {agentTypeFilter.charAt(0).toUpperCase() + agentTypeFilter.slice(1)} Agents</div>
           </div>
-          <div className="card p-4 text-center">
+          <div className="chronos-surface p-4 text-center">
             <div className="text-2xl font-bold text-emerald-400">
               {filteredAgents.filter(a => a.status === 'active').length}
             </div>
             <div className="text-sm text-muted-foreground">Active</div>
           </div>
-          <div className="card p-4 text-center">
+          <div className="chronos-surface p-4 text-center">
             <div className="text-2xl font-bold text-amber-400">
               {filteredAgents.filter(a => a.status === 'paused').length}
             </div>
             <div className="text-sm text-muted-foreground">Paused</div>
           </div>
-          <div className="card p-4 text-center">
+          <div className="chronos-surface p-4 text-center">
             <div className="text-2xl font-bold text-sky-400">
               {filteredAgents.reduce((sum, a) => sum + a.usage_count, 0).toLocaleString()}
             </div>
