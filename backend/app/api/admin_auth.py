@@ -1,11 +1,15 @@
+from datetime import timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, desc
 from pydantic import BaseModel, Field
 import json
 
 from app.core.database import get_db
+from app.core.config import settings
+from app.core.security import create_access_token, create_refresh_token
 from app.core.rbac import (
     get_admin_user,
     check_admin_permission,
@@ -22,7 +26,7 @@ from app.models.admin import (
     AdminRoleEnum,
     PermissionEnum
 )
-from app.api.auth import get_current_user
+from app.schemas.auth import Token
 
 router = APIRouter()
 
@@ -113,6 +117,10 @@ class AdminStatsResponse(BaseModel):
     recent_actions: int
 
 
+class SwitchProfileRequest(BaseModel):
+    identifier: str = Field(..., min_length=3, max_length=255)
+
+
 # Admin authentication endpoints
 @router.get("/me", response_model=AdminUserResponse)
 async def get_current_admin(
@@ -144,6 +152,103 @@ async def get_current_admin_permissions(
     checker = AdminPermissionChecker(admin_user)
     permissions = checker.get_permissions()
     return [perm.value for perm in permissions]
+
+
+@router.post("/switch-profile/start", response_model=Token)
+async def switch_profile_start(
+    payload: SwitchProfileRequest,
+    response: Response,
+    request: Request,
+    admin_user: AdminUser = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start an admin impersonation session for a non-admin user."""
+    identifier = payload.identifier.strip()
+    user_result = await db.execute(
+        select(User).where(
+            or_(
+                User.email == identifier.lower(),
+                User.username == identifier,
+            )
+        )
+    )
+    target_user = user_result.scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target user not found",
+        )
+
+    if not target_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Target user is inactive",
+        )
+
+    target_admin_result = await db.execute(
+        select(AdminUser).where(
+            AdminUser.user_id == target_user.id,
+            AdminUser.is_active == True,
+        )
+    )
+    if target_admin_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Switch profile only supports non-admin target accounts",
+        )
+
+    impersonation_claims = {
+        "is_impersonation": True,
+        "impersonator_user_id": admin_user.user_id,
+        "impersonator_admin_user_id": admin_user.id,
+    }
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=target_user.id,
+        expires_delta=access_token_expires,
+        additional_claims=impersonation_claims,
+    )
+    refresh_token = create_refresh_token(
+        subject=target_user.id,
+        additional_claims=impersonation_claims,
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    )
+
+    await log_admin_action(
+        admin_user=admin_user,
+        action="switch_profile_start",
+        resource_type="user",
+        resource_id=target_user.id,
+        details={
+            "target_user_id": target_user.id,
+            "target_username": target_user.username,
+        },
+        request=request,
+        db=db,
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
 
 
 # Admin user management endpoints

@@ -16,6 +16,10 @@ depends_on = None
 
 def upgrade():
     bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "agent_skills" in inspector.get_table_names():
+        return
+
     now_expr = sa.text("NOW()") if bind.dialect.name == "postgresql" else sa.text("CURRENT_TIMESTAMP")
 
     # Create agent_skills table

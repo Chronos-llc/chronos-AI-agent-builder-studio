@@ -41,6 +41,14 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+class SessionContextResponse(BaseModel):
+    user: UserResponse
+    is_admin: bool
+    is_impersonating: bool
+    impersonator_user_id: Optional[int] = None
+    impersonator_admin_user_id: Optional[int] = None
+
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str

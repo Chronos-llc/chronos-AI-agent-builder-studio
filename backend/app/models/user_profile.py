@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, Enum as SQLEnum, DateTime
 from sqlalchemy.types import JSON
 from sqlalchemy.orm import relationship
 import enum
@@ -10,6 +10,12 @@ class UserPersona(str, enum.Enum):
     DEVELOPER = "developer"
     POWER_USER = "power_user"
     ENTERPRISE = "enterprise"
+
+
+class FuzzyOnboardingState(str, enum.Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
 
 
 class UserProfile(BaseModel):
@@ -30,6 +36,8 @@ class UserProfile(BaseModel):
     tools_stack = Column(JSON, nullable=True)
 
     onboarding_completed = Column(Boolean, default=False, nullable=False)
+    fuzzy_onboarding_state = Column(String(20), nullable=False, default=FuzzyOnboardingState.PENDING.value)
+    fuzzy_onboarding_completed_at = Column(DateTime(timezone=True), nullable=True)
+    fuzzy_onboarding_skipped_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", back_populates="profile")
-

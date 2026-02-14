@@ -1024,10 +1024,9 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
             continue
             
         # Create new integration
-        integration = IntegrationModel(
-            **integration_data,
-            author_id=default_user_id
-        )
+        allowed_fields = set(IntegrationModel.__table__.columns.keys())
+        payload = {k: v for k, v in integration_data.items() if k in allowed_fields}
+        integration = IntegrationModel(**payload, author_id=default_user_id)
         db.add(integration)
         created_count += 1
         

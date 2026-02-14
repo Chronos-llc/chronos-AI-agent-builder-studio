@@ -1,6 +1,7 @@
 import { AdminMode } from '../../types/admin'
 import { Button } from '../ui/button'
 import { 
+    Home,
     Users, 
     UserPlus, 
     ShoppingCart, 
@@ -25,6 +26,12 @@ export const ModeSwitcher = ({
         icon: React.ReactNode 
         description: string 
     }[] = [
+        {
+            mode: 'dashboard',
+            label: 'Dashboard',
+            icon: <Home className="w-4 h-4" />,
+            description: 'View admin-wide summary and quick actions'
+        },
         {
             mode: 'meta-agents',
             label: 'Meta Agents',

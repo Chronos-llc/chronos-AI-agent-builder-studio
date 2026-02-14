@@ -18,11 +18,45 @@ const LoginPage: React.FC = () => {
     const [username, setUsername] = useState('')
     const [fullName, setFullName] = useState('')
     const [passwordConfirm, setPasswordConfirm] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const minPasswordLength = 8
+    const passwordTooShort = password.length > 0 && password.length < minPasswordLength
+    const passwordConfirmMismatch =
+        isSignupMode &&
+        passwordConfirm.length > 0 &&
+        password !== passwordConfirm
 
     const googleIcon = useMemo(() => getProviderIcon('google'), [])
     const githubIcon = useMemo(() => getProviderIcon('github'), [])
+
+    const resolvePostLoginRoute = async (): Promise<string> => {
+        const accessToken =
+            localStorage.getItem('chronos_access_token') || localStorage.getItem('access_token')
+        if (!accessToken) {
+            return '/app'
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/auth/session-context`, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                credentials: 'include',
+            })
+            if (!response.ok) {
+                return '/app'
+            }
+            const payload = await response.json()
+            if (payload?.is_admin && !payload?.is_impersonating) {
+                return '/app/admin'
+            }
+            return '/app'
+        } catch {
+            return '/app'
+        }
+    }
 
     const handleOAuth = (provider: 'google' | 'github') => {
         window.location.href = `${API_BASE_URL}/api/v1/auth/oauth/${provider}/start?return_to=/app`
@@ -44,12 +78,12 @@ const LoginPage: React.FC = () => {
                     password_confirm: passwordConfirm,
                 })
                 await login(email, password)
-                navigate('/app')
+                navigate(await resolvePostLoginRoute())
                 return
             }
 
             await login(email, password)
-            navigate('/app')
+            navigate(await resolvePostLoginRoute())
         } catch (submitError: any) {
             setError(submitError?.message || 'Authentication failed')
         } finally {
@@ -179,17 +213,31 @@ const LoginPage: React.FC = () => {
                             <label htmlFor="password" className="text-sm text-white/70">
                                 Password
                             </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                autoComplete={isSignupMode ? 'new-password' : 'current-password'}
-                                required
-                                className="mt-2 w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
-                                placeholder="********"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
+                            <div className="relative mt-2">
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    autoComplete={isSignupMode ? 'new-password' : 'current-password'}
+                                    required
+                                    className="w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 pr-16 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                                    placeholder="********"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                                >
+                                    {showPassword ? 'Hide' : 'Show'}
+                                </button>
+                            </div>
+                            {passwordTooShort && (
+                                <p className="mt-2 text-xs text-amber-300">
+                                    Password should be at least {minPasswordLength} characters.
+                                </p>
+                            )}
                         </div>
 
                         {isSignupMode && (
@@ -197,17 +245,31 @@ const LoginPage: React.FC = () => {
                                 <label htmlFor="password-confirm" className="text-sm text-white/70">
                                     Confirm password
                                 </label>
-                                <input
-                                    id="password-confirm"
-                                    name="passwordConfirm"
-                                    type="password"
-                                    autoComplete="new-password"
-                                    required
-                                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
-                                    placeholder="********"
-                                    value={passwordConfirm}
-                                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                                />
+                                <div className="relative mt-2">
+                                    <input
+                                        id="password-confirm"
+                                        name="passwordConfirm"
+                                        type={showPasswordConfirm ? 'text' : 'password'}
+                                        autoComplete="new-password"
+                                        required
+                                        className="w-full rounded-lg border border-white/10 bg-[#101720] px-3 py-2 pr-16 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                                        placeholder="********"
+                                        value={passwordConfirm}
+                                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPasswordConfirm((prev) => !prev)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                                    >
+                                        {showPasswordConfirm ? 'Hide' : 'Show'}
+                                    </button>
+                                </div>
+                                {passwordConfirmMismatch && (
+                                    <p className="mt-2 text-xs text-amber-300">
+                                        Passwords do not match yet.
+                                    </p>
+                                )}
                             </div>
                         )}
 

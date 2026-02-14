@@ -13,20 +13,20 @@ import {
     MessageSquare,
     CreditCard,
     Settings,
-    BarChart3,
-    Shield,
-    FileText
+    ClipboardCheck
 } from 'lucide-react'
 import { useState } from 'react'
 
 export const AdminNavigation = ({
     items,
     activeItemId,
-    onNavigate
+    onNavigate,
+    collapsed = false,
 }: {
     items: AdminNavigationItem[]
     activeItemId?: string
     onNavigate: (path: string) => void
+    collapsed?: boolean
 }) => {
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
@@ -43,18 +43,24 @@ export const AdminNavigation = ({
     }
 
     const renderNavigationItem = (item: AdminNavigationItem, level = 0) => {
+        if (collapsed && level > 0) {
+            return null
+        }
+
         const hasSubItems = item.subItems && item.subItems.length > 0
+        const shouldExpand = hasSubItems && !collapsed
         const isExpanded = expandedItems.has(item.id)
         const isActive = activeItemId === item.id
 
         return (
-            <div key={item.id} className={`${level > 0 ? 'ml-6' : ''}`}>
+            <div key={item.id} className={collapsed ? '' : `${level > 0 ? 'ml-6' : ''}`}>
                 <Button
                     variant={isActive ? 'secondary' : 'ghost'}
                     size="sm"
-                    className={`w-full justify-start gap-2 h-9 ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
+                    title={collapsed ? item.title : undefined}
+                    className={`w-full h-9 ${collapsed ? 'justify-center px-2' : 'justify-start gap-2'} ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
                     onClick={() => {
-                        if (hasSubItems) {
+                        if (shouldExpand) {
                             toggleExpand(item.id)
                         } else if (item.path) {
                             onNavigate(item.path)
@@ -62,15 +68,15 @@ export const AdminNavigation = ({
                     }}
                 >
                     {item.icon}
-                    <span className="flex-1 text-left truncate">{item.title}</span>
-                    {hasSubItems && (
+                    {!collapsed && <span className="flex-1 text-left truncate">{item.title}</span>}
+                    {shouldExpand && (
                         isExpanded ?
                             <ChevronDown className="w-4 h-4" /> :
                             <ChevronRight className="w-4 h-4" />
                     )}
                 </Button>
 
-                {hasSubItems && isExpanded && (
+                {shouldExpand && isExpanded && (
                     <div className="mt-1 space-y-1">
                         {(item.subItems || []).map(subItem => renderNavigationItem(subItem, level + 1))}
                     </div>
@@ -85,167 +91,61 @@ export const AdminNavigation = ({
             id: 'dashboard',
             title: 'Dashboard',
             icon: <Home className="w-4 h-4" />,
-            path: '/admin'
+            path: '/app/admin/dashboard'
         },
         {
             id: 'meta-agents',
             title: 'Meta Agents',
             icon: <Users className="w-4 h-4" />,
-            path: '/admin/meta-agents',
-            subItems: [
-                {
-                    id: 'meta-agents-list',
-                    title: 'All Meta Agents',
-                    icon: <Users className="w-4 h-4" />,
-                    path: '/admin/meta-agents/list'
-                },
-                {
-                    id: 'meta-agents-create',
-                    title: 'Create Meta Agent',
-                    icon: <UserPlus className="w-4 h-4" />,
-                    path: '/admin/meta-agents/create'
-                }
-            ]
+            path: '/app/admin/meta-agents'
         },
         {
             id: 'subagents',
             title: 'Subagents',
             icon: <UserPlus className="w-4 h-4" />,
-            path: '/admin/subagents',
-            subItems: [
-                {
-                    id: 'subagents-list',
-                    title: 'All Subagents',
-                    icon: <UserPlus className="w-4 h-4" />,
-                    path: '/admin/subagents/list'
-                },
-                {
-                    id: 'subagents-create',
-                    title: 'Create Subagent',
-                    icon: <UserPlus className="w-4 h-4" />,
-                    path: '/admin/subagents/create'
-                }
-            ]
+            path: '/app/admin/subagents'
         },
         {
             id: 'marketplace',
             title: 'Marketplace',
             icon: <ShoppingCart className="w-4 h-4" />,
-            path: '/admin/marketplace',
-            subItems: [
-                {
-                    id: 'marketplace-listings',
-                    title: 'Listings',
-                    icon: <ShoppingCart className="w-4 h-4" />,
-                    path: '/admin/marketplace/listings'
-                },
-                {
-                    id: 'marketplace-categories',
-                    title: 'Categories',
-                    icon: <FileText className="w-4 h-4" />,
-                    path: '/admin/marketplace/categories'
-                }
-            ]
+            path: '/app/admin/marketplace'
+        },
+        {
+            id: 'integration-submissions',
+            title: 'Integrations',
+            icon: <ClipboardCheck className="w-4 h-4" />,
+            path: '/app/admin/integration-submissions'
         },
         {
             id: 'skills',
             title: 'Skills',
             icon: <BrainCircuit className="w-4 h-4" />,
-            path: '/admin/skills',
-            subItems: [
-                {
-                    id: 'skills-library',
-                    title: 'Skills Library',
-                    icon: <BrainCircuit className="w-4 h-4" />,
-                    path: '/admin/skills/library'
-                },
-                {
-                    id: 'skills-create',
-                    title: 'Create Skill',
-                    icon: <BrainCircuit className="w-4 h-4" />,
-                    path: '/admin/skills/create'
-                }
-            ]
+            path: '/app/admin/skills'
         },
         {
             id: 'platform-updates',
             title: 'Platform Updates',
             icon: <Package className="w-4 h-4" />,
-            path: '/admin/platform-updates',
-            subItems: [
-                {
-                    id: 'updates-releases',
-                    title: 'Releases',
-                    icon: <Package className="w-4 h-4" />,
-                    path: '/admin/platform-updates/releases'
-                },
-                {
-                    id: 'updates-changelog',
-                    title: 'Changelog',
-                    icon: <FileText className="w-4 h-4" />,
-                    path: '/admin/platform-updates/changelog'
-                }
-            ]
+            path: '/app/admin/platform-updates'
         },
         {
             id: 'support',
             title: 'Support',
             icon: <MessageSquare className="w-4 h-4" />,
-            path: '/admin/support',
-            subItems: [
-                {
-                    id: 'support-tickets',
-                    title: 'Tickets',
-                    icon: <MessageSquare className="w-4 h-4" />,
-                    path: '/admin/support/tickets'
-                },
-                {
-                    id: 'support-knowledge-base',
-                    title: 'Knowledge Base',
-                    icon: <FileText className="w-4 h-4" />,
-                    path: '/admin/support/knowledge-base'
-                }
-            ]
+            path: '/app/admin/support'
         },
         {
             id: 'payments',
             title: 'Payments',
             icon: <CreditCard className="w-4 h-4" />,
-            path: '/admin/payments',
-            subItems: [
-                {
-                    id: 'payments-transactions',
-                    title: 'Transactions',
-                    icon: <CreditCard className="w-4 h-4" />,
-                    path: '/admin/payments/transactions'
-                },
-                {
-                    id: 'payments-subscriptions',
-                    title: 'Subscriptions',
-                    icon: <CreditCard className="w-4 h-4" />,
-                    path: '/admin/payments/subscriptions'
-                }
-            ]
+            path: '/app/admin/payments'
         },
         {
-            id: 'system',
+            id: 'settings',
             title: 'System',
             icon: <Settings className="w-4 h-4" />,
-            path: '/admin/system',
-            subItems: [
-                {
-                    id: 'system-statistics',
-                    title: 'Statistics',
-                    icon: <BarChart3 className="w-4 h-4" />,
-                    path: '/admin/system/statistics'
-                },
-                {
-                    id: 'system-security',
-                    title: 'Security',
-                    icon: <Shield className="w-4 h-4" />,
-                    path: '/admin/system/security'
-                }
-            ]
+            path: '/app/admin/settings'
         }
     ]
 
