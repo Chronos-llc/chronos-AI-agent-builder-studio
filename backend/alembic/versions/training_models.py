@@ -17,6 +17,10 @@ depends_on = None
 
 def upgrade():
     bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "training_sessions" in inspector.get_table_names():
+        return
+
     is_postgres = bind.dialect.name == "postgresql"
     uuid_type = postgresql.UUID(as_uuid=True) if is_postgres else sa.String(length=36)
     json_type = postgresql.JSON() if is_postgres else sa.JSON()

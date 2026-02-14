@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, support_system, payment_methods, platform_updates, skills
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -89,9 +89,12 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$"
+    if settings.ENVIRONMENT == "development"
+    else None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["*"],
 )
 
 # Include API routers
@@ -124,6 +127,10 @@ app.include_router(messaging_api.router, prefix="/api/v1/messaging", tags=["mess
 app.include_router(marketplace.router, prefix="/api/v1/marketplace", tags=["marketplace"])
 app.include_router(admin_auth.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(fuzzy_tools.router, tags=["fuzzy-tools"])  # FUZZY studio manipulation tools
+app.include_router(support_system.router, prefix="/api/support", tags=["support-system"])
+app.include_router(payment_methods.router, prefix="/api/payment", tags=["payment-methods"])
+app.include_router(platform_updates.router, prefix="/api", tags=["platform-updates"])
+app.include_router(skills.router, prefix="/api/skills", tags=["skills"])
 
 
 @app.get("/")

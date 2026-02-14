@@ -17,8 +17,28 @@ import type {
   SupportCategory
 } from '../types/support';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_BASE = `${API_BASE_URL}/api/support`;
+
+const getAccessToken = () => {
+  if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+    return null;
+  }
+  return globalThis.localStorage.getItem('chronos_access_token') || globalThis.localStorage.getItem('access_token');
+};
+
+function withAuth(init: RequestInit = {}): RequestInit {
+  const token = getAccessToken();
+  const headers = new Headers(init.headers || {});
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return {
+    ...init,
+    headers,
+    credentials: 'include',
+  };
+}
 
 // Helper Functions
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -65,21 +85,21 @@ export async function getSupportMessages(
   if (searchQuery) params.search_query = searchQuery;
   
   const queryString = buildQueryString(params);
-  const response = await fetch(`${API_BASE}/messages${queryString}`);
+  const response = await fetch(`${API_BASE}/messages${queryString}`, withAuth());
   return handleResponse<SupportMessageList>(response);
 }
 
 export async function getSupportMessage(messageId: number): Promise<SupportMessage> {
-  const response = await fetch(`${API_BASE}/messages/${messageId}`);
+  const response = await fetch(`${API_BASE}/messages/${messageId}`, withAuth());
   return handleResponse<SupportMessage>(response);
 }
 
 export async function createSupportMessage(message: SupportMessageCreate): Promise<SupportMessage> {
-  const response = await fetch(`${API_BASE}/messages`, {
+  const response = await fetch(`${API_BASE}/messages`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(message),
-  });
+  }));
   return handleResponse<SupportMessage>(response);
 }
 
@@ -87,11 +107,11 @@ export async function updateSupportMessage(
   messageId: number,
   message: SupportMessageUpdate
 ): Promise<SupportMessage> {
-  const response = await fetch(`${API_BASE}/messages/${messageId}`, {
+  const response = await fetch(`${API_BASE}/messages/${messageId}`, withAuth({
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(message),
-  });
+  }));
   return handleResponse<SupportMessage>(response);
 }
 
@@ -99,25 +119,25 @@ export async function createSupportReply(
   messageId: number,
   reply: SupportMessageReplyCreate
 ): Promise<SupportMessageReply> {
-  const response = await fetch(`${API_BASE}/messages/${messageId}/replies`, {
+  const response = await fetch(`${API_BASE}/messages/${messageId}/replies`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reply),
-  });
+  }));
   return handleResponse<SupportMessageReply>(response);
 }
 
 export async function getSupportReplies(messageId: number): Promise<SupportMessageReplyList> {
-  const response = await fetch(`${API_BASE}/messages/${messageId}/replies`);
+  const response = await fetch(`${API_BASE}/messages/${messageId}/replies`, withAuth());
   return handleResponse<SupportMessageReplyList>(response);
 }
 
 export async function searchSupportMessages(params: SupportSearchParams): Promise<SupportMessageList> {
-  const response = await fetch(`${API_BASE}/messages/search`, {
+  const response = await fetch(`${API_BASE}/messages/search`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
-  });
+  }));
   return handleResponse<SupportMessageList>(response);
 }
 
@@ -128,14 +148,14 @@ export async function getMySupportStats(): Promise<{
   closed: number;
   total: number;
 }> {
-  const response = await fetch(`${API_BASE}/my-messages/stats`);
+  const response = await fetch(`${API_BASE}/my-messages/stats`, withAuth());
   return handleResponse<{ open: number; in_progress: number; resolved: number; closed: number; total: number }>(response);
 }
 
 export async function deleteSupportMessage(messageId: number): Promise<void> {
-  const response = await fetch(`${API_BASE}/messages/${messageId}`, {
+  const response = await fetch(`${API_BASE}/messages/${messageId}`, withAuth({
     method: 'DELETE'
-  });
+  }));
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
     throw new Error(error.detail || `HTTP error ${response.status}`);
@@ -147,7 +167,7 @@ export async function getAdminSupportStats(): Promise<{
   by_priority: Record<string, number>;
   by_category: Record<string, number>;
 }> {
-  const response = await fetch(`${API_BASE}/admin/stats`);
+  const response = await fetch(`${API_BASE}/admin/stats`, withAuth());
   return handleResponse<{
     by_status: Record<string, number>;
     by_priority: Record<string, number>;

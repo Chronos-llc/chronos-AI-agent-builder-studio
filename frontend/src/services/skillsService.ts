@@ -18,8 +18,28 @@ import type {
   SkillStatistics
 } from '../types/skills';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_BASE = `${API_BASE_URL}/api/skills`;
+
+const getAccessToken = () => {
+  if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+    return null;
+  }
+  return globalThis.localStorage.getItem('chronos_access_token') || globalThis.localStorage.getItem('access_token');
+};
+
+function withAuth(init: RequestInit = {}): RequestInit {
+  const token = getAccessToken();
+  const headers = new Headers(init.headers || {});
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return {
+    ...init,
+    headers,
+    credentials: 'include',
+  };
+}
 
 // ============== Helper Functions ==============
 
@@ -72,67 +92,67 @@ export async function getSkills(
   if (searchQuery) params.search_query = searchQuery;
 
   const queryString = buildQueryString(params);
-  const response = await fetch(`${API_BASE}/skills${queryString}`);
+  const response = await fetch(`${API_BASE}/skills${queryString}`, withAuth());
   return handleResponse<SkillList>(response);
 }
 
 export async function getSkill(skillId: number): Promise<Skill> {
-  const response = await fetch(`${API_BASE}/skills/${skillId}`);
+  const response = await fetch(`${API_BASE}/skills/${skillId}`, withAuth());
   return handleResponse<Skill>(response);
 }
 
 export async function createSkill(skill: SkillCreate): Promise<Skill> {
-  const response = await fetch(`${API_BASE}/skills`, {
+  const response = await fetch(`${API_BASE}/skills`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(skill),
-  });
+  }));
   return handleResponse<Skill>(response);
 }
 
 export async function updateSkill(skillId: number, skill: SkillUpdate): Promise<Skill> {
-  const response = await fetch(`${API_BASE}/skills/${skillId}`, {
+  const response = await fetch(`${API_BASE}/skills/${skillId}`, withAuth({
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(skill),
-  });
+  }));
   return handleResponse<Skill>(response);
 }
 
 export async function deleteSkill(skillId: number): Promise<void> {
-  const response = await fetch(`${API_BASE}/skills/${skillId}`, {
+  const response = await fetch(`${API_BASE}/skills/${skillId}`, withAuth({
     method: 'DELETE',
-  });
+  }));
   if (!response.ok) {
     throw new Error('Failed to delete skill');
   }
 }
 
 export async function discoverSkills(): Promise<{ message: string; discovered: number; created: number; updated: number; errors: string[] }> {
-  const response = await fetch(`${API_BASE}/skills/discover`, {
+  const response = await fetch(`${API_BASE}/skills/discover`, withAuth({
     method: 'POST',
-  });
+  }));
   return handleResponse<{ message: string; discovered: number; created: number; updated: number; errors: string[] }>(response);
 }
 
 export async function getSkillCategories(): Promise<{ categories: { name: string; count: number }[] }> {
-  const response = await fetch(`${API_BASE}/skills/categories/list`);
+  const response = await fetch(`${API_BASE}/skills/categories/list`, withAuth());
   return handleResponse<{ categories: { name: string; count: number }[] }>(response);
 }
 
 // ============== Agent Skill Installation API ==============
 
 export async function getAgentSkills(agentId: number): Promise<AgentSkillInstallationList> {
-  const response = await fetch(`${API_BASE}/agents/${agentId}/skills`);
+  const response = await fetch(`${API_BASE}/agents/${agentId}/skills`, withAuth());
   return handleResponse<AgentSkillInstallationList>(response);
 }
 
 export async function installSkillToAgent(agentId: number, installation: AgentSkillInstallationCreate): Promise<AgentSkillInstallation> {
-  const response = await fetch(`${API_BASE}/agents/${agentId}/skills`, {
+  const response = await fetch(`${API_BASE}/agents/${agentId}/skills`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(installation),
-  });
+  }));
   return handleResponse<AgentSkillInstallation>(response);
 }
 
@@ -141,18 +161,18 @@ export async function updateAgentSkillInstallation(
   installationId: number,
   installation: AgentSkillInstallationUpdate
 ): Promise<AgentSkillInstallation> {
-  const response = await fetch(`${API_BASE}/agents/${agentId}/skills/${installationId}`, {
+  const response = await fetch(`${API_BASE}/agents/${agentId}/skills/${installationId}`, withAuth({
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(installation),
-  });
+  }));
   return handleResponse<AgentSkillInstallation>(response);
 }
 
 export async function uninstallSkillFromAgent(agentId: number, installationId: number): Promise<void> {
-  const response = await fetch(`${API_BASE}/agents/${agentId}/skills/${installationId}`, {
+  const response = await fetch(`${API_BASE}/agents/${agentId}/skills/${installationId}`, withAuth({
     method: 'DELETE',
-  });
+  }));
   if (!response.ok) {
     throw new Error('Failed to uninstall skill');
   }
@@ -161,18 +181,18 @@ export async function uninstallSkillFromAgent(agentId: number, installationId: n
 // ============== Skill Execution API ==============
 
 export async function executeSkill(skillId: number, request: SkillExecutionRequest): Promise<SkillExecutionResponse> {
-  const response = await fetch(`${API_BASE}/skills/${skillId}/execute`, {
+  const response = await fetch(`${API_BASE}/skills/${skillId}/execute`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
-  });
+  }));
   return handleResponse<SkillExecutionResponse>(response);
 }
 
 // ============== Statistics API ==============
 
 export async function getSkillsStatistics(): Promise<SkillStatistics> {
-  const response = await fetch(`${API_BASE}/skills/statistics/overview`);
+  const response = await fetch(`${API_BASE}/skills/statistics/overview`, withAuth());
   return handleResponse<SkillStatistics>(response);
 }
 
@@ -182,10 +202,10 @@ export async function uploadSkillFile(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_BASE}/upload`, {
+  const response = await fetch(`${API_BASE}/upload`, withAuth({
     method: 'POST',
     body: formData,
-  });
+  }));
 
   if (!response.ok) {
     throw new Error('File upload failed');

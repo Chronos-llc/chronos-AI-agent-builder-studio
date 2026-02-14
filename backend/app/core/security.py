@@ -2,17 +2,21 @@ from datetime import datetime, timedelta
 from typing import Any, Union, Optional
 from jose import jwt
 from passlib.context import CryptContext
-from passlib.hash import bcrypt
 import uuid
 
 from app.core.config import settings
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Prefer pbkdf2_sha256 as the default hashing scheme for compatibility with
+# environments where bcrypt 5+ causes passlib backend detection issues.
+# Keep bcrypt variants for backward compatibility with existing hashes.
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt_sha256", "bcrypt"], deprecated="auto")
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: Optional[timedelta] = None
+    subject: Union[str, Any],
+    expires_delta: Optional[timedelta] = None,
+    additional_claims: Optional[dict[str, Any]] = None,
 ) -> str:
     """Create JWT access token"""
     if expires_delta:
@@ -26,6 +30,12 @@ def create_access_token(
         "type": "access",
         "jti": str(uuid.uuid4())  # Add JWT ID for token blacklisting
     }
+    if additional_claims:
+        claims = dict(additional_claims)
+        # Do not allow callers to override access-token identity core fields.
+        for reserved in {"sub", "type", "exp", "jti"}:
+            claims.pop(reserved, None)
+        to_encode.update(claims)
     
     encoded_jwt = jwt.encode(
         to_encode, 
@@ -36,7 +46,10 @@ def create_access_token(
     return encoded_jwt
 
 
-def create_refresh_token(subject: Union[str, Any]) -> str:
+def create_refresh_token(
+    subject: Union[str, Any],
+    additional_claims: Optional[dict[str, Any]] = None,
+) -> str:
     """Create JWT refresh token"""
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     
@@ -46,6 +59,11 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
         "type": "refresh",
         "jti": str(uuid.uuid4())  # Add JWT ID for token blacklisting
     }
+    if additional_claims:
+        claims = dict(additional_claims)
+        for reserved in {"sub", "type", "exp", "jti"}:
+            claims.pop(reserved, None)
+        to_encode.update(claims)
     
     encoded_jwt = jwt.encode(
         to_encode, 

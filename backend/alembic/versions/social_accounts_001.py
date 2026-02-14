@@ -17,6 +17,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if 'social_accounts' in inspector.get_table_names():
+        return
+
     op.create_table(
         'social_accounts',
         sa.Column('id', sa.Integer(), nullable=False),

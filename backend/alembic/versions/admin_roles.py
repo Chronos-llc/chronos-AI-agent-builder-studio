@@ -17,6 +17,10 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "admin_roles" in inspector.get_table_names():
+        return
+
     now_expr = sa.text("now()") if bind.dialect.name == "postgresql" else sa.text("CURRENT_TIMESTAMP")
 
     # Create admin_roles table

@@ -1,4 +1,5 @@
 export type AdminMode =
+    'dashboard' |
     'meta-agents' |
     'subagents' |
     'marketplace' |

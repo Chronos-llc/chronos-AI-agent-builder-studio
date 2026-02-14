@@ -1,4 +1,5 @@
 from datetime import timedelta, datetime
+import json
 import re
 import secrets
 from urllib.parse import urlencode
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from jose import jwt, JWTError
 
 from app.core.database import get_db
@@ -27,9 +28,10 @@ from app.core.security import (
 from app.core.redis import blacklist_token, is_token_blacklisted, get_redis_client
 from app.models.user import User
 from app.models.social_account import SocialAccount
+from app.models.admin import AdminUser, AdminAuditLog
 from app.schemas.auth import (
     UserCreate, UserLogin, UserResponse, Token,
-    PasswordReset, PasswordResetConfirm, PasswordChange
+    PasswordReset, PasswordResetConfirm, PasswordChange, SessionContextResponse
 )
 
 router = APIRouter()
@@ -288,6 +290,16 @@ async def get_current_user(
     return user
 
 
+async def _get_active_admin_profile_for_user(db: AsyncSession, user_id: int) -> AdminUser | None:
+    result = await db.execute(
+        select(AdminUser).where(
+            AdminUser.user_id == user_id,
+            AdminUser.is_active == True,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("/oauth/{provider}/start")
 async def oauth_start(provider: str, return_to: Optional[str] = "/app"):
     normalized_provider = provider.lower()
@@ -522,12 +534,25 @@ async def refresh_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    additional_claims: dict[str, Any] = {}
+    if payload.get("is_impersonation"):
+        additional_claims = {
+            "is_impersonation": True,
+            "impersonator_user_id": payload.get("impersonator_user_id"),
+            "impersonator_admin_user_id": payload.get("impersonator_admin_user_id"),
+        }
+
     # Create new tokens
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     new_access_token = create_access_token(
-        subject=user.id, expires_delta=access_token_expires
+        subject=user.id,
+        expires_delta=access_token_expires,
+        additional_claims=additional_claims or None,
     )
-    new_refresh_token = create_refresh_token(subject=user.id)
+    new_refresh_token = create_refresh_token(
+        subject=user.id,
+        additional_claims=additional_claims or None,
+    )
     
     # Set new tokens as cookies
     response.set_cookie(
@@ -583,6 +608,124 @@ async def logout(
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
     return current_user
+
+
+@router.get("/session-context", response_model=SessionContextResponse)
+async def get_session_context(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    payload = verify_token(token) or {}
+    is_impersonating = bool(payload.get("is_impersonation"))
+    impersonator_user_id = payload.get("impersonator_user_id")
+    impersonator_admin_user_id = payload.get("impersonator_admin_user_id")
+
+    active_admin = await _get_active_admin_profile_for_user(db, current_user.id)
+    return SessionContextResponse(
+        user=current_user,
+        is_admin=bool(active_admin) and not is_impersonating,
+        is_impersonating=is_impersonating,
+        impersonator_user_id=int(impersonator_user_id) if impersonator_user_id is not None else None,
+        impersonator_admin_user_id=int(impersonator_admin_user_id) if impersonator_admin_user_id is not None else None,
+    )
+
+
+@router.post("/impersonation/exit", response_model=Token)
+async def exit_impersonation(
+    response: Response,
+    request: Request,
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    payload = verify_token(token)
+    if not payload or payload.get("type") != "access" or not payload.get("is_impersonation"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Impersonation session required",
+        )
+
+    impersonator_user_id = payload.get("impersonator_user_id")
+    impersonator_admin_user_id = payload.get("impersonator_admin_user_id")
+    if not impersonator_user_id or not impersonator_admin_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid impersonation token",
+        )
+
+    user_result = await db.execute(select(User).where(User.id == int(impersonator_user_id)))
+    impersonator_user = user_result.scalar_one_or_none()
+    if not impersonator_user or not impersonator_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Impersonator account is invalid",
+        )
+
+    admin_result = await db.execute(
+        select(AdminUser).where(
+            and_(
+                AdminUser.id == int(impersonator_admin_user_id),
+                AdminUser.user_id == impersonator_user.id,
+                AdminUser.is_active == True,
+            )
+        )
+    )
+    admin_profile = admin_result.scalar_one_or_none()
+    if not admin_profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Impersonator no longer has admin access",
+        )
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    restored_access_token = create_access_token(
+        subject=impersonator_user.id,
+        expires_delta=access_token_expires,
+    )
+    restored_refresh_token = create_refresh_token(subject=impersonator_user.id)
+
+    response.set_cookie(
+        key="access_token",
+        value=restored_access_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=restored_refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    )
+
+    db.add(
+        AdminAuditLog(
+            admin_user_id=admin_profile.id,
+            action="switch_profile_exit",
+            resource_type="user",
+            resource_id=int(payload.get("sub")),
+            details=json.dumps(
+                {
+                    "impersonated_user_id": int(payload.get("sub")),
+                    "restored_admin_user_id": impersonator_user.id,
+                }
+            ),
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            status="success",
+        )
+    )
+    await db.commit()
+
+    return {
+        "access_token": restored_access_token,
+        "refresh_token": restored_refresh_token,
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
 
 
 @router.post("/password-reset")

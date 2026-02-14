@@ -4,7 +4,7 @@ from .base import BaseModel
 from .user import User
 from .social_account import SocialAccount
 from .personal_access_token import PersonalAccessToken
-from .user_profile import UserProfile, UserPersona
+from .user_profile import UserProfile, UserPersona, FuzzyOnboardingState
 from .agent import AgentModel, AgentVersion, Action, AgentStatus
 from .settings import UserSettings
 from .usage import UsageRecord, UserPlan, UsageType, PlanType
@@ -52,6 +52,7 @@ __all__ = [
     "PersonalAccessToken",
     "UserProfile",
     "UserPersona",
+    "FuzzyOnboardingState",
     "AgentModel", 
     "AgentVersion",
     "Action",

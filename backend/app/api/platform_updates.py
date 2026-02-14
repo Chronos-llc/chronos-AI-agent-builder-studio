@@ -8,6 +8,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.models.user import User
+from app.models.admin import AdminUser
 from app.models.platform_updates import PlatformUpdate, UserUpdateView
 from app.api.auth import get_current_user
 from app.schemas.platform_updates import (
@@ -19,9 +20,19 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def is_admin(user: User) -> bool:
-    """Check if user is admin"""
-    return user.is_superuser
+async def is_admin(user: User, db: AsyncSession) -> bool:
+    """Check whether user has effective admin access."""
+    if user.is_superuser:
+        return True
+    result = await db.execute(
+        select(AdminUser).where(
+            and_(
+                AdminUser.user_id == user.id,
+                AdminUser.is_active == True,
+            )
+        )
+    )
+    return result.scalar_one_or_none() is not None
 
 
 # Platform Updates Endpoints
@@ -41,6 +52,8 @@ async def get_platform_updates(
 ):
     """Get platform updates with filtering and sorting"""
     
+    admin_access = await is_admin(current_user, db)
+
     # Base query
     query = select(PlatformUpdate)
     
@@ -55,7 +68,7 @@ async def get_platform_updates(
         query = query.where(PlatformUpdate.target_audience == target_audience)
     else:
         # Default: only show updates for user's audience type
-        audience = TargetAudience.ADMIN if current_user.is_superuser else TargetAudience.USER
+        audience = TargetAudience.ADMIN if admin_access else TargetAudience.USER
         query = query.where(
             or_(
                 PlatformUpdate.target_audience == TargetAudience.ALL,
@@ -67,7 +80,7 @@ async def get_platform_updates(
         query = query.where(PlatformUpdate.is_published == is_published)
     else:
         # Default: only show published updates for non-admins
-        if not current_user.is_superuser:
+        if not admin_access:
             query = query.where(PlatformUpdate.is_published == True)
     
     if search_query:
@@ -118,6 +131,8 @@ async def get_platform_update(
 ):
     """Get specific platform update"""
     
+    admin_access = await is_admin(current_user, db)
+
     result = await db.execute(select(PlatformUpdate).where(PlatformUpdate.id == update_id))
     update = result.scalar_one_or_none()
     
@@ -128,7 +143,7 @@ async def get_platform_update(
         )
     
     # Check visibility
-    if not current_user.is_superuser:
+    if not admin_access:
         if update.target_audience != TargetAudience.ALL and update.target_audience != TargetAudience.USER:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -174,7 +189,7 @@ async def create_platform_update(
 ):
     """Create new platform update (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -210,7 +225,7 @@ async def update_platform_update(
 ):
     """Update platform update (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -251,7 +266,7 @@ async def delete_platform_update(
 ):
     """Delete platform update (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -280,7 +295,7 @@ async def get_update_views(
 ):
     """Get users who have viewed an update (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
