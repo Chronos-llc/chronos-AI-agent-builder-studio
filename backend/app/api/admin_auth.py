@@ -111,10 +111,12 @@ class UpdateAdminUserRequest(BaseModel):
 
 
 class AdminStatsResponse(BaseModel):
-    total_admins: int
-    active_admins: int
-    total_audit_logs: int
-    recent_actions: int
+    total_users: int
+    active_agents: int
+    marketplace_listings: int
+    pending_support_tickets: int
+    revenue: float
+    system_health: str
 
 
 class SwitchProfileRequest(BaseModel):
@@ -596,31 +598,43 @@ async def get_admin_stats(
     db: AsyncSession = Depends(get_db)
 ):
     """Get admin statistics"""
-    # Count total admins
-    total_admins_result = await db.execute(select(func.count(AdminUser.id)))
-    total_admins = total_admins_result.scalar()
+    # Count total users
+    from app.models.user import User
+    total_users_result = await db.execute(select(func.count(User.id)))
+    total_users = total_users_result.scalar()
     
-    # Count active admins
-    active_admins_result = await db.execute(
-        select(func.count(AdminUser.id)).where(AdminUser.is_active == True)
+    # Count active agents
+    from app.models.agent import Agent
+    active_agents_result = await db.execute(
+        select(func.count(Agent.id)).where(Agent.is_active == True)
     )
-    active_admins = active_admins_result.scalar()
+    active_agents = active_agents_result.scalar()
     
-    # Count total audit logs
-    total_logs_result = await db.execute(select(func.count(AdminAuditLog.id)))
-    total_logs = total_logs_result.scalar()
-    
-    # Count recent actions (last 24 hours)
-    from datetime import datetime, timedelta
-    yesterday = datetime.utcnow() - timedelta(days=1)
-    recent_logs_result = await db.execute(
-        select(func.count(AdminAuditLog.id)).where(AdminAuditLog.created_at >= yesterday)
+    # Count marketplace listings
+    from app.models.marketplace import MarketplaceListing
+    marketplace_listings_result = await db.execute(
+        select(func.count(MarketplaceListing.id)).where(MarketplaceListing.is_active == True)
     )
-    recent_logs = recent_logs_result.scalar()
+    marketplace_listings = marketplace_listings_result.scalar()
+    
+    # Count pending support tickets
+    from app.models.support_system import SupportTicket
+    pending_support_tickets_result = await db.execute(
+        select(func.count(SupportTicket.id)).where(SupportTicket.status == "pending")
+    )
+    pending_support_tickets = pending_support_tickets_result.scalar()
+    
+    # Calculate revenue (mock data for now)
+    revenue = 45678.90
+    
+    # System health (mock data for now)
+    system_health = "good"
     
     return {
-        "total_admins": total_admins,
-        "active_admins": active_admins,
-        "total_audit_logs": total_logs,
-        "recent_actions": recent_logs
+        "total_users": total_users,
+        "active_agents": active_agents,
+        "marketplace_listings": marketplace_listings,
+        "pending_support_tickets": pending_support_tickets,
+        "revenue": revenue,
+        "system_health": system_health
     }

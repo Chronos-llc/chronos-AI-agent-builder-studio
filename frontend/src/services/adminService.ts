@@ -105,10 +105,12 @@ export const adminService = {
 
     // Get admin stats
     getAdminStats: async (): Promise<{
-        total_admins: number;
-        active_admins: number;
-        total_audit_logs: number;
-        recent_actions: number;
+        total_users: number;
+        active_agents: number;
+        marketplace_listings: number;
+        pending_support_tickets: number;
+        revenue: number;
+        system_health: string;
     }> => {
         const response = await axios.get(`${API_BASE_URL}/api/v1/admin/stats`, {
             headers: getAuthHeaders(),
