@@ -31,7 +31,7 @@ export const AboutUsSection: React.FC = () => {
         <Reveal delay={150}>
           <div className="mt-10 max-w-4xl">
             <p className="text-lg leading-relaxed text-white/75">
-              At Chronos Studio, we architect the infrastructure where intelligent systems transition from concept to deployment. We are a full-stack AI agent platform a unified foundation purpose-built for constructing both general-purpose AI agents and voice-enabled autonomous systems within a single, cohesive stack.
+              At Chronos Studio, we architect the infrastructure where intelligent systems transition from concept to deployment. We are a full-stack AI agent platform, a unified foundation purpose-built for constructing both general-purpose AI agents and voice-enabled autonomous systems within a single, cohesive stack.
             </p>
           </div>
         </Reveal>
