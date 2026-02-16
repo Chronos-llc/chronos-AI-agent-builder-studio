@@ -141,109 +141,111 @@ export const StudioLayout = () => {
     }
 
     return (
-        <div className="flex min-h-full bg-background">
-            {/* Sidebar */}
-            <div className="w-64 border-r border-border bg-card">
-                <div className="p-4 border-b border-border">
-                    <h2 className="font-semibold text-lg">Agent Studio</h2>
-                </div>
-                <div className="p-2 space-y-1">
-                    <button
-                        onClick={() => setActiveTab('instructions')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'instructions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <FileText className="w-4 h-4" />
-                        <span>Instructions</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('knowledge')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'knowledge' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Database className="w-4 h-4" />
-                        <span>Knowledge</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('tools')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'tools' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Code className="w-4 h-4" />
-                        <span>Tools</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('chat')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'chat' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <MessageSquare className="w-4 h-4" />
-                        <span>Chat</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('config')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'config' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Settings className="w-4 h-4" />
-                        <span>Configuration</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('actions')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'actions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Zap className="w-4 h-4" />
-                        <span>Actions</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('versions')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'versions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <GitBranch className="w-4 h-4" />
-                        <span>Versions</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'settings' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Settings2 className="w-4 h-4" />
-                        <span>Settings</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('sub-agents')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'sub-agents' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Users className="w-4 h-4" />
-                        <span>Sub-Agents</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('fuzzy')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'fuzzy' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Keyboard className="w-4 h-4" />
-                        <span>Fuzzy Commands</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('workflow')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'workflow' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <Workflow className="w-4 h-4" />
-                        <span>Workflow</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('optimization')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'optimization' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <BarChart3 className="w-4 h-4" />
-                        <span>Optimization</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('marketplace')}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'marketplace' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                    >
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>Marketplace</span>
-                    </button>
+        <div className="flex h-screen bg-background overflow-hidden">
+            {/* Sidebar - Fixed position with independent scrolling */}
+            <div className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card z-30">
+                <div className="h-full flex flex-col">
+                    <div className="p-4 border-b border-border shrink-0">
+                        <h2 className="font-semibold text-lg">Agent Studio</h2>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                        <button
+                            onClick={() => setActiveTab('instructions')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'instructions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <FileText className="w-4 h-4" />
+                            <span>Instructions</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('knowledge')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'knowledge' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Database className="w-4 h-4" />
+                            <span>Knowledge</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('tools')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'tools' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Code className="w-4 h-4" />
+                            <span>Tools</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('chat')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'chat' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>Chat</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('config')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'config' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Settings className="w-4 h-4" />
+                            <span>Configuration</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('actions')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'actions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Zap className="w-4 h-4" />
+                            <span>Actions</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('versions')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'versions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <GitBranch className="w-4 h-4" />
+                            <span>Versions</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'settings' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Settings2 className="w-4 h-4" />
+                            <span>Settings</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('sub-agents')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'sub-agents' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Users className="w-4 h-4" />
+                            <span>Sub-Agents</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('fuzzy')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'fuzzy' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Keyboard className="w-4 h-4" />
+                            <span>Fuzzy Commands</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('workflow')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'workflow' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Workflow className="w-4 h-4" />
+                            <span>Workflow</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('optimization')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'optimization' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <BarChart3 className="w-4 h-4" />
+                            <span>Optimization</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('marketplace')}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'marketplace' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <ShoppingCart className="w-4 h-4" />
+                            <span>Marketplace</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Main Content - Add margin-left to account for fixed sidebar */}
+            <div className="flex-1 flex flex-col overflow-hidden ml-64">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border bg-card">
                     <div className="flex items-center gap-4">

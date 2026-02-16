@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { AdminHeader } from './AdminHeader'
 import { AdminNavigation } from './AdminNavigation'
 import { AdminDashboard } from './AdminDashboard'
-import { ModeSwitcher } from './ModeSwitcher'
 import { MetaAgentMode } from './modes/MetaAgentMode'
 import { IntegrationSubmissionsMode } from './modes/IntegrationSubmissionsMode'
 import { SkillsMode } from './modes/SkillsMode'
@@ -25,6 +24,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate, useParams } from 'react-router-dom'
 import SwitchProfileDialog from './SwitchProfileDialog'
 import { cn } from '../../lib/utils'
+import { adminService } from '../../services/adminService'
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = 'chronos_admin_sidebar_collapsed'
 const ADMIN_ALERTS_STORAGE_KEY = 'chronos_admin_alerts_state'
@@ -102,15 +102,36 @@ export const AdminStudioLayout = () => {
         status: 'active'
     }
 
-    // Mock statistics data
-    const statistics: AdminStatistics = {
-        total_users: 1248,
-        active_agents: 342,
-        marketplace_listings: 89,
-        pending_support_tickets: 12,
-        revenue: 45678.90,
+    // Fetch real statistics data
+    const [statistics, setStatistics] = useState<AdminStatistics>({
+        total_users: 0,
+        active_agents: 0,
+        marketplace_listings: 0,
+        pending_support_tickets: 0,
+        revenue: 0,
         system_health: 'good'
-    }
+    })
+
+    useEffect(() => {
+        const fetchStatistics = async () => {
+            try {
+                const data = await adminService.getAdminStats()
+                // Validate system_health value to match the union type
+                const validHealthStatuses = ['warning', 'critical', 'good'] as const
+                const systemHealth = validHealthStatuses.includes(data.system_health as typeof validHealthStatuses[number])
+                    ? data.system_health as 'warning' | 'critical' | 'good'
+                    : 'good'
+                setStatistics({
+                    ...data,
+                    system_health: systemHealth
+                })
+            } catch (error) {
+                console.error('Failed to fetch admin statistics:', error)
+            }
+        }
+
+        fetchStatistics()
+    }, [])
 
     // Mock recent activity data
     const recentActivity = [
@@ -316,7 +337,7 @@ export const AdminStudioLayout = () => {
     }
 
     return (
-        <div className="relative flex min-h-full bg-background overflow-hidden admin-studio-layout">
+        <div className="flex h-screen bg-background overflow-hidden admin-studio-layout">
             {isMobile && mobileSidebarOpen && (
                 <button
                     type="button"
@@ -326,13 +347,13 @@ export const AdminStudioLayout = () => {
                 />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar - Fixed position with independent scrolling */}
             <div
                 className={cn(
-                    'z-40 transition-all duration-300 ease-in-out',
+                    'fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-in-out',
                     isMobile
                         ? cn(
-                            'fixed inset-y-0 left-0 w-64 transform',
+                            'w-64 transform',
                             mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                         )
                         : sidebarCollapsed
@@ -342,15 +363,15 @@ export const AdminStudioLayout = () => {
             >
                 <div className="h-full flex flex-col border-r border-border bg-card admin-navigation">
                     {/* Logo/Brand */}
-                    <div className={cn('border-b border-border flex items-center', sidebarCollapsed && !isMobile ? 'justify-center p-3' : 'gap-2 p-4')}>
+                    <div className={cn('border-b border-border flex items-center shrink-0', sidebarCollapsed && !isMobile ? 'justify-center p-3' : 'gap-2 p-4')}>
                         <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
                             <span className="text-primary-foreground font-bold text-sm">ADMIN</span>
                         </div>
                         {(!sidebarCollapsed || isMobile) && <span className="font-semibold text-lg">Chronos Admin</span>}
                     </div>
 
-                    {/* Navigation */}
-                    <div className="flex-1 overflow-hidden">
+                    {/* Navigation - Independent scroll container */}
+                    <div className="flex-1 overflow-y-auto">
                         <AdminNavigation
                             items={[]} // Using default items
                             activeItemId={currentMode}
@@ -360,7 +381,7 @@ export const AdminStudioLayout = () => {
                     </div>
 
                     {/* Sidebar toggle */}
-                    <div className="p-2 border-t border-border">
+                    <div className="shrink-0 p-2 border-t border-border">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -380,8 +401,13 @@ export const AdminStudioLayout = () => {
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden transition-all duration-300 admin-main-content">
+            {/* Main Content - Add margin-left to account for fixed sidebar */}
+            <div
+                className={cn(
+                    'flex-1 min-w-0 flex flex-col overflow-hidden transition-all duration-300 admin-main-content',
+                    isMobile ? 'ml-0' : sidebarCollapsed ? 'ml-20' : 'ml-64'
+                )}
+            >
                 {/* Header */}
                 <AdminHeader
                     user={adminUser}
@@ -396,14 +422,6 @@ export const AdminStudioLayout = () => {
                     onLogout={handleLogout}
                     onToggleSidebar={toggleSidebar}
                 />
-
-                {/* Mode Switcher */}
-                <div className="p-4 border-b border-border bg-card">
-                    <ModeSwitcher
-                        currentMode={currentMode}
-                        onModeChange={handleModeChange}
-                    />
-                </div>
 
                 {/* Content Area */}
                 <main className="flex-1 overflow-auto p-6 mode-content">
