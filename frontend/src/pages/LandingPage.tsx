@@ -1,5 +1,6 @@
 import React from 'react'
 import { HeroSection } from '../components/landing/HeroSection'
+import { AboutUsSection } from '../components/landing/AboutUsSection'
 import { UnifiedStackSection } from '../components/landing/UnifiedStackSection'
 import { HowChronosWorksSection } from '../components/landing/HowChronosWorksSection'
 import { AgentSuiteDeepDiveSection } from '../components/landing/AgentSuiteDeepDiveSection'
@@ -17,6 +18,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#06080D] text-white">
       <HeroSection />
+      <AboutUsSection />
       <UnifiedStackSection />
       <HowChronosWorksSection />
       <AgentSuiteDeepDiveSection />
