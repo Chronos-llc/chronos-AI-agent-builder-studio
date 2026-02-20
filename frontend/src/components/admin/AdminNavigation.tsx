@@ -57,6 +57,7 @@ export const AdminNavigation = ({
                 <Button
                     variant={isActive ? 'secondary' : 'ghost'}
                     size="sm"
+                    data-testid={`admin-nav-${item.id}`}
                     title={collapsed ? item.title : undefined}
                     className={`w-full h-9 ${collapsed ? 'justify-center px-2' : 'justify-start gap-2'} ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
                     onClick={() => {

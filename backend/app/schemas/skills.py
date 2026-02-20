@@ -47,6 +47,16 @@ class SkillResponse(SkillBase):
     file_size: Optional[int] = None
     content_preview: Optional[str] = None
     install_count: int
+    download_count: int = 0
+    submission_status: Optional[str] = None
+    visibility: Optional[str] = None
+    published_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[int] = None
+    review_notes: Optional[str] = None
+    scan_status: Optional[str] = None
+    scan_confidence: Optional[int] = None
+    scan_summary: Optional[str] = None
     created_by: Optional[int] = None
     created_at: datetime
     updated_at: datetime

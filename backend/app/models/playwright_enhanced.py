@@ -309,7 +309,13 @@ class PlaywrightToolExecution(Base):
     
     # Console and debugging
     console_logs = Column(JSON, default=list, nullable=False)
-    screenshot_base64 = Column(Text, nullable=True)  # Screenshot on error or if requested
+    screenshot_base64 = Column(Text, nullable=True)  # Legacy fallback during object-storage transition.
+    object_key = Column(String(1024), nullable=True, index=True)
+    object_size = Column(Integer, nullable=True)
+    object_content_type = Column(String(255), nullable=True)
+    object_etag = Column(String(128), nullable=True)
+    storage_provider = Column(String(32), nullable=True)
+    storage_bucket = Column(String(128), nullable=True)
     trace_data = Column(JSON, nullable=True)  # Execution trace
     
     # Validation and security
@@ -788,6 +794,12 @@ class PlaywrightArtifact(Base):
     artifact_name = Column(String(255), nullable=False)
     file_name = Column(String(500), nullable=False)
     file_path = Column(String(1000), nullable=False)
+    object_key = Column(String(1024), nullable=True, index=True)
+    object_size = Column(Integer, nullable=True)
+    object_content_type = Column(String(255), nullable=True)
+    object_etag = Column(String(128), nullable=True)
+    storage_provider = Column(String(32), nullable=True)
+    storage_bucket = Column(String(128), nullable=True)
     file_size_bytes = Column(Integer, nullable=True)
     
     # Storage and access

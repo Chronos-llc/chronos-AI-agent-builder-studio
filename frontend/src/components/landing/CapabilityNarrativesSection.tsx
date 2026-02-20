@@ -68,30 +68,32 @@ const capabilityNarratives = [
 
 export const CapabilityNarrativesSection: React.FC = () => {
   return (
-    <section className="mx-auto w-full max-w-7xl px-6 py-16">
-      <Reveal>
-        <h2 className="text-3xl font-semibold text-white md:text-4xl">Platform capabilities explained</h2>
-      </Reveal>
-      <Reveal delay={80}>
-        <p className="mt-4 max-w-3xl text-white/70">
-          Chronos capabilities are designed to work as one system: build, route, execute, observe, and improve without context loss.
-        </p>
-      </Reveal>
-      <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {capabilityNarratives.map((item, index) => (
-          <Reveal key={item.title} delay={index * 50}>
-            <Link
-              to={item.href}
-              className="group block rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-cyan-300/40 hover:bg-white/[0.06]"
-            >
-              <div className="flex items-center gap-3">
-                <item.icon className="h-5 w-5 text-cyan-200" />
-                <h3 className="text-base font-semibold text-white">{item.title}</h3>
-              </div>
-              <p className="mt-3 text-sm text-white/75">{item.detail}</p>
-            </Link>
-          </Reveal>
-        ))}
+    <section className="landing-section">
+      <div className="landing-container">
+        <Reveal>
+          <h2 className="landing-heading">Platform capabilities explained</h2>
+        </Reveal>
+        <Reveal delay={80}>
+          <p className="landing-lead">
+            Chronos capabilities are designed to work as one system: build, route, execute, observe, and improve without context loss.
+          </p>
+        </Reveal>
+        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {capabilityNarratives.map((item, index) => (
+            <Reveal key={item.title} delay={index * 50}>
+              <Link
+                to={item.href}
+                className="landing-card group block p-5 transition hover:border-[#ff8ea6]/45 hover:bg-white/[0.06]"
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="h-5 w-5 text-[#ff9bb0]" />
+                  <h3 className="text-base font-semibold text-white">{item.title}</h3>
+                </div>
+                <p className="mt-3 text-sm text-white/75">{item.detail}</p>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   )

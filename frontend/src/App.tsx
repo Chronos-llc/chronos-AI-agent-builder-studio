@@ -27,6 +27,8 @@ import FuzzyOnboardingPage from './pages/FuzzyOnboardingPage'
 import AgentSuitePage from './pages/AgentSuitePage'
 import PricingPage from './pages/PricingPage'
 import DocsPage from './pages/DocsPage'
+import TermsPage from './pages/TermsPage'
+import PrivacyPage from './pages/PrivacyPage'
 import { StudioShell } from './components/studio/StudioShell'
 import './App.css'
 
@@ -51,6 +53,8 @@ function App() {
                             <Route path="/" element={<LandingPage />} />
                             <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/docs" element={<DocsPage />} />
+                            <Route path="/terms" element={<TermsPage />} />
+                            <Route path="/privacy" element={<PrivacyPage />} />
                             <Route path="/login" element={<LoginPage />} />
                             <Route path="/signup" element={<LoginPage />} />
 

@@ -32,41 +32,43 @@ const blocks = [
 
 export const UnifiedStackSection: React.FC = () => {
   return (
-    <section id="unified-stack" className="mx-auto w-full max-w-7xl px-6 py-16">
-      <Reveal>
-        <h2 className="text-3xl font-semibold text-white md:text-4xl">
-          Chronos is a unified stack for voice and work-based chat agents.
-        </h2>
-      </Reveal>
-      <Reveal delay={80}>
-        <p className="mt-4 max-w-4xl text-white/70">
-          Instead of separate tools for build, orchestration, deployment, and operations, Chronos gives one control plane for model
-          routing, communication channels, workflows, and agent execution history.
-        </p>
-      </Reveal>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {blocks.map((block, index) => (
-          <Reveal key={block.title} delay={index * 70}>
-            <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex items-center gap-3">
-                <block.icon className="h-5 w-5 text-cyan-200" />
-                <h3 className="text-lg font-semibold text-white">{block.title}</h3>
-              </div>
-              <p className="mt-3 text-sm text-white/75">{block.description}</p>
-            </article>
-          </Reveal>
-        ))}
-      </div>
-      <Reveal delay={180}>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link to="/app/agents/new" className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-[#081018] hover:bg-cyan-200">
-            Build an agent
-          </Link>
-          <Link to="/app/agents" className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white hover:border-white/40">
-            Open existing agents
-          </Link>
+    <section id="unified-stack" className="landing-section">
+      <div className="landing-container">
+        <Reveal>
+          <h2 className="landing-heading">
+            Chronos is a unified stack for voice and work-based chat agents.
+          </h2>
+        </Reveal>
+        <Reveal delay={80}>
+          <p className="landing-lead max-w-4xl">
+            Instead of separate tools for build, orchestration, deployment, and operations, Chronos gives one control plane for model
+            routing, communication channels, workflows, and agent execution history.
+          </p>
+        </Reveal>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {blocks.map((block, index) => (
+            <Reveal key={block.title} delay={index * 70}>
+              <article className="landing-card p-5">
+                <div className="flex items-center gap-3">
+                  <block.icon className="h-5 w-5 text-[#ff9bb0]" />
+                  <h3 className="text-lg font-semibold text-white">{block.title}</h3>
+                </div>
+                <p className="mt-3 text-sm text-white/75">{block.description}</p>
+              </article>
+            </Reveal>
+          ))}
         </div>
-      </Reveal>
+        <Reveal delay={180}>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/app/agents/new" className="rounded-full bg-[#ff607f] px-5 py-2.5 text-sm font-semibold text-[#0a0e1a] transition hover:bg-[#ff7893]">
+              Build an agent
+            </Link>
+            <Link to="/app/agents" className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/40">
+              Open existing agents
+            </Link>
+          </div>
+        </Reveal>
+      </div>
     </section>
   )
 }

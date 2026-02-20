@@ -379,6 +379,7 @@ async def discover_skills(
         )
 
 
+@router.get("/categories/list")
 @router.get("/skills/categories/list")
 async def get_skill_categories(
     current_user: User = Depends(get_current_user),
@@ -701,6 +702,7 @@ async def execute_skill(
 
 
 # Statistics Endpoint
+@router.get("/statistics/overview", response_model=SkillStatistics)
 @router.get("/skills/statistics/overview", response_model=SkillStatistics)
 async def get_skills_statistics(
     current_user: User = Depends(get_current_user),

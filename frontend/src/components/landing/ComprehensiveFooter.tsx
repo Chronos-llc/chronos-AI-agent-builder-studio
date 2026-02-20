@@ -7,8 +7,8 @@ const saasBadgeSnippet =
 
 export const ComprehensiveFooter: React.FC = () => {
   return (
-    <footer className="border-t border-white/10 bg-[#06080D] py-12">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-6 md:grid-cols-2 lg:grid-cols-5">
+    <footer className="border-t border-white/10 bg-[#050910]/80 py-12">
+      <div className="landing-container grid gap-8 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <ChronosLogo textClassName="text-white" markClassName="text-white" />
           <p className="mt-4 text-sm text-white/70">
@@ -70,22 +70,22 @@ export const ComprehensiveFooter: React.FC = () => {
               </a>
             </li>
             <li>
-              <a href="https://mohex.org/privacy-policy/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
+              <Link to="/privacy" className="hover:text-white">
                 Privacy Policy
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="https://mohex.org/terms-of-service/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
+              <Link to="/terms" className="hover:text-white">
                 Terms of Service
-              </a>
+              </Link>
             </li>
           </ul>
           <div className="mt-4" dangerouslySetInnerHTML={{ __html: saasBadgeSnippet }} />
         </div>
       </div>
 
-      <div className="mx-auto mt-8 flex w-full max-w-7xl items-center justify-between border-t border-white/10 px-6 pt-6 text-xs text-white/55">
-        <span>{`© ${new Date().getFullYear()} Chronos AI. All rights reserved.`}</span>
+      <div className="landing-container mt-8 flex items-center justify-between border-t border-white/10 pt-6 text-xs text-white/55">
+        <span>{`(c) ${new Date().getFullYear()} Chronos AI. All rights reserved.`}</span>
         <span>Port Harcourt, Rivers State, Nigeria</span>
       </div>
     </footer>

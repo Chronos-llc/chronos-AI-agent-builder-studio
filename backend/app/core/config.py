@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     AWS_REGION: Optional[str] = Field(default=None, env="AWS_REGION")
     DEEPGRAM_API_KEY: Optional[str] = Field(default=None, env="DEEPGRAM_API_KEY")
     ASSEMBLYAI_API_KEY: Optional[str] = Field(default=None, env="ASSEMBLYAI_API_KEY")
+    VIRUSTOTAL_API_KEY: Optional[str] = Field(default=None, env="VIRUSTOTAL_API_KEY")
+    VIRUSTOTAL_TIMEOUT_SECONDS: int = Field(default=10, env="VIRUSTOTAL_TIMEOUT_SECONDS")
+    VIRUSTOTAL_POLL_ATTEMPTS: int = Field(default=5, env="VIRUSTOTAL_POLL_ATTEMPTS")
+    SKILL_LOCAL_SUSPICIOUS_THRESHOLD: int = Field(default=40, env="SKILL_LOCAL_SUSPICIOUS_THRESHOLD")
+    SKILL_LOCAL_MALICIOUS_THRESHOLD: int = Field(default=80, env="SKILL_LOCAL_MALICIOUS_THRESHOLD")
     
     # MCP Server Configuration
     MCP_SERVER_URL: Optional[str] = Field(default=None, env="MCP_SERVER_URL")
@@ -91,6 +96,32 @@ class Settings(BaseSettings):
     ALLOWED_FILE_TYPES: List[str] = Field(
         default=["txt", "pdf", "doc", "docx", "png", "jpg", "jpeg", "gif", "mp4", "avi", "mov"],
         env="ALLOWED_FILE_TYPES"
+    )
+    OBJECT_STORAGE_PROVIDER: str = Field(default="s3", env="OBJECT_STORAGE_PROVIDER")
+    OBJECT_STORAGE_ENDPOINT_URL: Optional[str] = Field(
+        default="http://127.0.0.1:9000",
+        env="OBJECT_STORAGE_ENDPOINT_URL",
+    )
+    OBJECT_STORAGE_REGION: str = Field(default="us-east-1", env="OBJECT_STORAGE_REGION")
+    OBJECT_STORAGE_BUCKET: str = Field(default="chronos-objects", env="OBJECT_STORAGE_BUCKET")
+    OBJECT_STORAGE_ACCESS_KEY_ID: Optional[str] = Field(
+        default=None,
+        env="OBJECT_STORAGE_ACCESS_KEY_ID",
+    )
+    OBJECT_STORAGE_SECRET_ACCESS_KEY: Optional[str] = Field(
+        default=None,
+        env="OBJECT_STORAGE_SECRET_ACCESS_KEY",
+    )
+    OBJECT_STORAGE_USE_SSL: bool = Field(default=False, env="OBJECT_STORAGE_USE_SSL")
+    OBJECT_STORAGE_FORCE_PATH_STYLE: bool = Field(default=True, env="OBJECT_STORAGE_FORCE_PATH_STYLE")
+    OBJECT_STORAGE_SIGNED_URL_TTL_SECONDS: int = Field(
+        default=3600,
+        env="OBJECT_STORAGE_SIGNED_URL_TTL_SECONDS",
+    )
+    OBJECT_STORAGE_BASE_PREFIX: str = Field(default="chronos", env="OBJECT_STORAGE_BASE_PREFIX")
+    OBJECT_STORAGE_AUTO_CREATE_BUCKET: bool = Field(
+        default=True,
+        env="OBJECT_STORAGE_AUTO_CREATE_BUCKET",
     )
 
     # WebSocket Configuration

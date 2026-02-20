@@ -25,6 +25,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import SwitchProfileDialog from './SwitchProfileDialog'
 import { cn } from '../../lib/utils'
 import { adminService } from '../../services/adminService'
+import { ChronosLogo } from '../brand/ChronosLogo'
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = 'chronos_admin_sidebar_collapsed'
 const ADMIN_ALERTS_STORAGE_KEY = 'chronos_admin_alerts_state'
@@ -364,9 +365,7 @@ export const AdminStudioLayout = () => {
                 <div className="h-full flex flex-col border-r border-border bg-card admin-navigation">
                     {/* Logo/Brand */}
                     <div className={cn('border-b border-border flex items-center shrink-0', sidebarCollapsed && !isMobile ? 'justify-center p-3' : 'gap-2 p-4')}>
-                        <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-                            <span className="text-primary-foreground font-bold text-sm">ADMIN</span>
-                        </div>
+                        <ChronosLogo showWordmark={false} size={32} />
                         {(!sidebarCollapsed || isMobile) && <span className="font-semibold text-lg">Chronos Admin</span>}
                     </div>
 

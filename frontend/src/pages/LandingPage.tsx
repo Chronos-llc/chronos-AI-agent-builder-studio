@@ -16,21 +16,23 @@ import { ComprehensiveFooter } from '../components/landing/ComprehensiveFooter'
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#06080D] text-white">
-      <HeroSection />
-      <AboutUsSection />
-      <UnifiedStackSection />
-      <HowChronosWorksSection />
-      <AgentSuiteDeepDiveSection />
-      <AgenticThinkingSection />
-      <VoiceAndTelephonySection />
-      <CommunicationsSection />
-      <IntegrationsAndModelsSection />
-      <PublishIntegrationSection />
-      <CapabilityNarrativesSection />
-      <UseCasePlaceholdersSection />
-      <EnterpriseSection />
-      <ComprehensiveFooter />
+    <div className="landing-page min-h-screen text-white">
+      <div className="landing-content">
+        <HeroSection />
+        <AboutUsSection />
+        <UnifiedStackSection />
+        <HowChronosWorksSection />
+        <AgentSuiteDeepDiveSection />
+        <AgenticThinkingSection />
+        <VoiceAndTelephonySection />
+        <CommunicationsSection />
+        <IntegrationsAndModelsSection />
+        <PublishIntegrationSection />
+        <CapabilityNarrativesSection />
+        <UseCasePlaceholdersSection />
+        <EnterpriseSection />
+        <ComprehensiveFooter />
+      </div>
     </div>
   )
 }

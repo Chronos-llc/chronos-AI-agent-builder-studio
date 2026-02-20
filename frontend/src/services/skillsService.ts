@@ -136,7 +136,7 @@ export async function discoverSkills(): Promise<{ message: string; discovered: n
 }
 
 export async function getSkillCategories(): Promise<{ categories: { name: string; count: number }[] }> {
-  const response = await fetch(`${API_BASE}/skills/categories/list`, withAuth());
+  const response = await fetch(`${API_BASE}/categories/list`, withAuth());
   return handleResponse<{ categories: { name: string; count: number }[] }>(response);
 }
 
@@ -192,7 +192,7 @@ export async function executeSkill(skillId: number, request: SkillExecutionReque
 // ============== Statistics API ==============
 
 export async function getSkillsStatistics(): Promise<SkillStatistics> {
-  const response = await fetch(`${API_BASE}/skills/statistics/overview`, withAuth());
+  const response = await fetch(`${API_BASE}/statistics/overview`, withAuth());
   return handleResponse<SkillStatistics>(response);
 }
 
