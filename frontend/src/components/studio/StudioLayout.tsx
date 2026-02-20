@@ -12,9 +12,10 @@ import ConfigManager from './ConfigManager'
 import OptimizationDashboard from './OptimizationDashboard'
 import { ActionsPanel } from './ActionsPanel'
 import { ToolsPanel, ToolIntegration } from './ToolsPanel'
-import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Keyboard, Plus, GitBranch, Send, Zap, Workflow, Settings2, BarChart3, ShoppingCart, Copy } from 'lucide-react'
+import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare, Keyboard, Plus, GitBranch, Send, Zap, Workflow, Settings2, BarChart3, ShoppingCart, Copy, Wrench } from 'lucide-react'
 import { PublishButton } from './PublishButton'
 import CopiedAgentsManager from './CopiedAgentsManager'
+import { AgentSkillMarketplace } from './AgentSkillMarketplace'
 
 // Types
 interface AgentConfig {
@@ -66,7 +67,7 @@ export const StudioLayout = () => {
     const [newMessage, setNewMessage] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions' | 'versions' | 'settings' | 'sub-agents' | 'fuzzy' | 'workflow' | 'optimization' | 'marketplace'>('instructions')
+    const [activeTab, setActiveTab] = useState<'instructions' | 'knowledge' | 'tools' | 'chat' | 'config' | 'actions' | 'versions' | 'settings' | 'sub-agents' | 'fuzzy' | 'workflow' | 'optimization' | 'skills-marketplace' | 'marketplace'>('instructions')
     const [workflowSubTab, setWorkflowSubTab] = useState<'builder' | 'generator' | 'patterns'>('builder')
     const [marketplaceSubTab, setMarketplaceSubTab] = useState<'copied-agents' | 'browse'>('copied-agents')
 
@@ -234,6 +235,14 @@ export const StudioLayout = () => {
                             <span>Optimization</span>
                         </button>
                         <button
+                            onClick={() => setActiveTab('skills-marketplace')}
+                            data-testid="studio-tab-skills-marketplace"
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'skills-marketplace' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                        >
+                            <Wrench className="w-4 h-4" />
+                            <span>Skills</span>
+                        </button>
+                        <button
                             onClick={() => setActiveTab('marketplace')}
                             className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${activeTab === 'marketplace' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
                         >
@@ -371,6 +380,9 @@ export const StudioLayout = () => {
                     )}
                     {activeTab === 'optimization' && (
                         <OptimizationDashboard />
+                    )}
+                    {activeTab === 'skills-marketplace' && (
+                        <AgentSkillMarketplace currentAgentId={Number(id) || undefined} />
                     )}
                     {activeTab === 'tools' && (
                         <ToolsPanel

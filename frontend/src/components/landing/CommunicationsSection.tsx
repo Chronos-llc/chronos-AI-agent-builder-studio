@@ -33,13 +33,13 @@ const channelNarratives = [
 
 export const CommunicationsSection: React.FC = () => {
   return (
-    <section id="channels" className="bg-[#0B111A] py-16">
-      <div className="mx-auto w-full max-w-7xl px-6">
+    <section id="channels" className="landing-section">
+      <div className="landing-container">
         <Reveal>
-          <h2 className="text-3xl font-semibold text-white md:text-4xl">Communication channels with unified continuity</h2>
+          <h2 className="landing-heading">Communication channels with unified continuity</h2>
         </Reveal>
         <Reveal delay={80}>
-          <p className="mt-4 max-w-3xl text-white/70">
+          <p className="landing-lead">
             Chronos keeps conversations and task context connected across channels so users can resume work from the suite without
             losing operational state.
           </p>
@@ -49,7 +49,7 @@ export const CommunicationsSection: React.FC = () => {
             const channel = channels[item.id]
             return (
               <Reveal key={item.id} delay={index * 70}>
-                <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <article className="landing-card p-5">
                   <div className="flex items-center gap-3">
                     <ProviderLogo name={channel?.name || item.title} url={channel?.url} size={32} />
                     <h3 className="text-lg font-semibold text-white">{item.title}</h3>

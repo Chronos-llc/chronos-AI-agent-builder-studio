@@ -16,6 +16,16 @@ from .template import (
 from .hook import Hook
 from .integration import Integration
 from .integration_submission import IntegrationSubmissionEvent
+from .skills import (
+    Skill,
+    SkillVersion,
+    SkillReviewEvent,
+    AgentSkillInstallation,
+    SkillSubmissionStatus,
+    SkillScanStatus,
+    SkillVisibility,
+)
+from .fuzzy_knowledge import FuzzyKnowledgeEntry, FuzzySkillInstallation
 from .knowledge import KnowledgeFile, KnowledgeChunk, KnowledgeSearch, KnowledgeFileStatus, FileType
 from .training import TrainingSession, TrainingInteraction, TrainingCorrection, TrainingSessionStatus, TrainingMode, CorrectionType
 from .mcp_server import (
@@ -77,6 +87,15 @@ __all__ = [
     "Hook",
     "Integration",
     "IntegrationSubmissionEvent",
+    "Skill",
+    "SkillVersion",
+    "SkillReviewEvent",
+    "AgentSkillInstallation",
+    "SkillSubmissionStatus",
+    "SkillScanStatus",
+    "SkillVisibility",
+    "FuzzyKnowledgeEntry",
+    "FuzzySkillInstallation",
     "KnowledgeFile",
     "KnowledgeChunk",
     "KnowledgeSearch",

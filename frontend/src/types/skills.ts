@@ -21,6 +21,12 @@ export interface Skill {
     is_active: boolean;
     is_premium: boolean;
     install_count: number;
+    download_count?: number;
+    submission_status?: string;
+    visibility?: string;
+    scan_status?: string;
+    scan_confidence?: number;
+    scan_summary?: string;
     created_by?: number;
     created_at: string;
     updated_at: string;

@@ -28,35 +28,37 @@ const suiteFlows = [
 
 export const AgentSuiteDeepDiveSection: React.FC = () => {
   return (
-    <section id="suite" className="mx-auto w-full max-w-7xl px-6 py-16">
-      <Reveal>
-        <h2 className="text-3xl font-semibold text-white md:text-4xl">Agent Suite: where operations happen</h2>
-      </Reveal>
-      <Reveal delay={80}>
-        <p className="mt-4 max-w-3xl text-white/70">
-          Build in Studio, operate in Suite. Chronos Suite centralizes conversations, action traces, and task continuity for ongoing agent work.
-        </p>
-      </Reveal>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        {suiteFlows.map((flow, index) => (
-          <Reveal key={flow.title} delay={index * 70}>
-            <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex items-center gap-3">
-                <flow.icon className="h-5 w-5 text-cyan-200" />
-                <h3 className="text-lg font-semibold text-white">{flow.title}</h3>
-              </div>
-              <p className="mt-3 text-sm text-white/75">{flow.detail}</p>
-            </article>
-          </Reveal>
-        ))}
-      </div>
-      <Reveal delay={180}>
-        <div className="mt-6">
-          <Link to="/app/agents" className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white hover:border-white/40">
-            Open Agent Suite
-          </Link>
+    <section id="suite" className="landing-section">
+      <div className="landing-container">
+        <Reveal>
+          <h2 className="landing-heading">Agent Suite: where operations happen</h2>
+        </Reveal>
+        <Reveal delay={80}>
+          <p className="landing-lead">
+            Build in Studio, operate in Suite. Chronos Suite centralizes conversations, action traces, and task continuity for ongoing agent work.
+          </p>
+        </Reveal>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {suiteFlows.map((flow, index) => (
+            <Reveal key={flow.title} delay={index * 70}>
+              <article className="landing-card p-5">
+                <div className="flex items-center gap-3">
+                  <flow.icon className="h-5 w-5 text-[#ff9bb0]" />
+                  <h3 className="text-lg font-semibold text-white">{flow.title}</h3>
+                </div>
+                <p className="mt-3 text-sm text-white/75">{flow.detail}</p>
+              </article>
+            </Reveal>
+          ))}
         </div>
-      </Reveal>
+        <Reveal delay={180}>
+          <div className="mt-6">
+            <Link to="/app/agents" className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/40">
+              Open Agent Suite
+            </Link>
+          </div>
+        </Reveal>
+      </div>
     </section>
   )
 }

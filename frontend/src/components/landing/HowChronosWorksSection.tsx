@@ -26,13 +26,13 @@ const phases = [
 
 export const HowChronosWorksSection: React.FC = () => {
   return (
-    <section className="bg-[#0B111A] py-16">
-      <div className="mx-auto w-full max-w-7xl px-6">
+    <section className="landing-section">
+      <div className="landing-container">
         <Reveal>
-          <h2 className="text-3xl font-semibold text-white md:text-4xl">How Chronos Studio works</h2>
+          <h2 className="landing-heading">How Chronos Studio works</h2>
         </Reveal>
         <Reveal delay={90}>
-          <p className="mt-4 max-w-3xl text-white/70">
+          <p className="landing-lead">
             Chronos combines planning, execution, and operations so teams can move from idea to production agent systems without
             switching platforms.
           </p>
@@ -40,8 +40,8 @@ export const HowChronosWorksSection: React.FC = () => {
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {phases.map((phase, index) => (
             <Reveal key={phase.title} delay={index * 80}>
-              <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="inline-flex rounded-full border border-white/20 px-2 py-1 text-xs text-white/60">Step {index + 1}</p>
+              <article className="landing-card p-5">
+                <p className="inline-flex rounded-full border border-[#ff8ea6]/35 bg-[#ff7a96]/12 px-2 py-1 text-xs text-[#ff9fb3]">Step {index + 1}</p>
                 <h3 className="mt-3 text-lg font-semibold text-white">{phase.title}</h3>
                 <p className="mt-2 text-sm text-white/75">{phase.detail}</p>
               </article>

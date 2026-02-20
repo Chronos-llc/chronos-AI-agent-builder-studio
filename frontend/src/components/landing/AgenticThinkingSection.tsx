@@ -10,11 +10,11 @@ const stages = [
 
 export const AgenticThinkingSection: React.FC = () => {
   return (
-    <section className="bg-[#0C121C] py-16">
-      <div className="mx-auto w-full max-w-7xl px-6">
+    <section className="landing-section">
+      <div className="landing-container">
         <Reveal>
-          <div className="rounded-3xl border border-amber-300/40 bg-amber-300/10 p-6">
-            <p className="inline-flex rounded-full border border-amber-200/60 px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-amber-100">
+          <div className="landing-surface border-[#ff8ea6]/35 bg-gradient-to-br from-[#ff6f89]/14 via-transparent to-cyan-400/10 p-6">
+            <p className="inline-flex rounded-full border border-[#ff9fb3]/55 bg-[#ff7a96]/10 px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-[#ffafbf]">
               Beta / Experimental
             </p>
             <h2 className="mt-4 text-3xl font-semibold text-white md:text-4xl">
@@ -31,7 +31,7 @@ export const AgenticThinkingSection: React.FC = () => {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {stages.map((stage, index) => (
             <Reveal key={stage} delay={index * 80}>
-              <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <article className="landing-card p-5">
                 <p className="text-xs uppercase tracking-[0.12em] text-white/55">Stage {index + 1}</p>
                 <p className="mt-2 text-sm text-white/80">{stage}</p>
               </article>

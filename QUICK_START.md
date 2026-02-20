@@ -22,6 +22,20 @@ This will start:
 - PostgreSQL database on localhost:5432
 - Redis cache on localhost:6379
 
+### 1b. Start Object Storage (MinIO)
+
+Skills, knowledge uploads, screenshots, and marketplace media now use object storage.
+
+```bash
+docker-compose up -d minio minio-init
+```
+
+This will start:
+
+- MinIO API on localhost:9000
+- MinIO Console on localhost:9001
+- Bucket bootstrap via `minio-init` (`chronos-objects`)
+
 ### 2. Install Backend Dependencies
 
 ```bash
@@ -67,6 +81,19 @@ The frontend will be available at:
 
 - **Frontend**: <http://localhost:3000>
 
+## Object Storage Backfill (existing local records)
+
+After enabling object storage, migrate legacy file/image rows:
+
+```bash
+cd backend
+python scripts/backfill_object_storage_objects.py
+```
+
+Report output is written to:
+
+- `backend/backfill_object_storage_report.json`
+
 ## 🎉 Access Your Application
 
 Once both servers are running, you can access:
@@ -82,6 +109,19 @@ Once both servers are running, you can access:
 3. **Upload knowledge files** to test the knowledge base
 4. **Test real-time collaboration** features
 5. **Explore API endpoints** in the documentation
+
+### Skills Marketplace E2E Smoke (upload -> review -> publish -> install)
+
+```bash
+cd frontend
+npm run e2e
+```
+
+This runs Playwright against:
+
+- frontend: `http://127.0.0.1:3000`
+- backend: `http://127.0.0.1:8000`
+- MinIO: `http://127.0.0.1:9000`
 
 ## 📁 Project Structure
 

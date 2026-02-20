@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, support_system, payment_methods, platform_updates, skills
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, support_system, payment_methods, platform_updates, skills, skills_marketplace
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -16,9 +16,12 @@ from app.core.ai_providers import initialize_ai_providers
 from app.core.integration_monitoring import initialize_integration_monitoring
 from app.core.communication_channels import initialize_communication_channels
 from app.core.webchat import initialize_webchat
+from app.core.object_storage import initialize_object_storage
 from app.core.agent_engine import initialize_agent_engine, cleanup_agent_engine
 from app.core.data_retention import purge_due_deleted_users, retention_loop
+from app.core.skills_schema_alignment import ensure_skills_schema_alignment
 from scripts.initialize_mcp_integrations import initialize_mcp_integrations
+from scripts.seed_skills_marketplace import seed_skills_marketplace
 
 # Setup logging
 setup_logging()
@@ -35,6 +38,15 @@ async def lifespan(app: FastAPI):
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Align legacy skills tables with current model columns.
+    await ensure_skills_schema_alignment()
+
+    # Seed default marketplace skills (idempotent).
+    await seed_skills_marketplace()
+
+    # Prepare object storage bucket (non-fatal in dev if unavailable).
+    await initialize_object_storage()
       
     # Initialize AgentEngine for training
     await initialize_agent_engine()
@@ -131,6 +143,7 @@ app.include_router(support_system.router, prefix="/api/support", tags=["support-
 app.include_router(payment_methods.router, prefix="/api/payment", tags=["payment-methods"])
 app.include_router(platform_updates.router, prefix="/api", tags=["platform-updates"])
 app.include_router(skills.router, prefix="/api/skills", tags=["skills"])
+app.include_router(skills_marketplace.router, prefix="/api/skills", tags=["skills-marketplace"])
 
 
 @app.get("/")
