@@ -8,6 +8,9 @@ export type AdminMode =
     'integrations-review' |
     'integrations-update' |
     'integrations-submissions' |
+    'integration-submissions' |
+    'integration-create' |
+    'integration-edit' |
     'skills-marketplace' |
     'skills-publish' |
     'skills-review' |
