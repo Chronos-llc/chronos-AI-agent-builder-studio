@@ -1,3 +1,6 @@
+import React, { useState } from 'react'
+import { CreateIntegrationWizard } from '../../integrations/CreateIntegrationWizard'
+import type { IntegrationSubmission, IntegrationSubmissionCreate } from '../../../services/integrationSubmissionService'
 import React, { useState } from 'react';
 import { adminIntegrationService, CreateIntegrationPayload } from '../../../services/adminIntegrationService';
 
@@ -6,6 +9,30 @@ interface IntegrationCreateModeProps {
   onCancel?: () => void;
 }
 
+  const initialData: Partial<IntegrationSubmissionCreate> = {
+    config_schema: {},
+    credentials_schema: {},
+    supported_features: [],
+    app_screenshots: [],
+    is_workflow_node_enabled: false,
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold">Create Integrations</h2>
+        <p className="text-sm text-muted-foreground">
+          Build and publish integrations directly to the user integrations hub.
+        </p>
+      </div>
+
+      <CreateIntegrationWizard
+        adminPublish
+        initialData={initialData}
+        onCreated={async (integration) => {
+          setLastPublished(integration)
+        }}
+      />
 const IntegrationCreateMode: React.FC<IntegrationCreateModeProps> = ({ onSuccess, onCancel }) => {
   const [formData, setFormData] = useState<CreateIntegrationPayload>({
     name: '',

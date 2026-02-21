@@ -3,6 +3,7 @@ import type { IntegrationSubmissionCreate } from './integrationSubmissionService
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const ADMIN_HUB_BASE = `${API_BASE_URL}/api/v1/admin/integrations/hub`
+const ADMIN_SUBMISSIONS_BASE = `${API_BASE_URL}/api/v1/admin/integrations/submissions`
 
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem('access_token') || ''}`,
@@ -142,6 +143,13 @@ export const adminIntegrationService = {
     return response.data
   },
 
+  async listSubmissions(params?: {
+    status?: string
+    integration_type?: string
+  }): Promise<Record<string, any>[]> {
+    const response = await axios.get<Record<string, any>[]>(ADMIN_SUBMISSIONS_BASE, {
+      headers: authHeaders(),
+      params,
   // ─── Code-review-specified CRUD methods ──────────────────────────────────
 
   async getIntegrations(): Promise<AdminIntegration[]> {
@@ -151,6 +159,8 @@ export const adminIntegrationService = {
     return response.data
   },
 
+  async getSubmission(integrationId: number): Promise<Record<string, any>> {
+    const response = await axios.get<Record<string, any>>(`${ADMIN_SUBMISSIONS_BASE}/${integrationId}`, {
   async getIntegration(id: string): Promise<AdminIntegration> {
     const response = await axios.get<AdminIntegration>(`${API_BASE_URL}/api/admin/integrations/${id}`, {
       headers: authHeaders(),
@@ -158,6 +168,26 @@ export const adminIntegrationService = {
     return response.data
   },
 
+  async reviewSubmission(
+    integrationId: number,
+    payload: { action: string; moderation_notes?: string; visibility?: string; is_workflow_node_enabled?: boolean },
+  ): Promise<Record<string, any>> {
+    const response = await axios.post<Record<string, any>>(
+      `${ADMIN_SUBMISSIONS_BASE}/${integrationId}/review`,
+      payload,
+      { headers: authHeaders() },
+    )
+    return response.data
+  },
+
+  async publishSubmission(integrationId: number): Promise<Record<string, any>> {
+    const response = await axios.post<Record<string, any>>(
+      `${ADMIN_SUBMISSIONS_BASE}/${integrationId}/publish`,
+      {},
+      { headers: authHeaders() },
+    )
+    return response.data
+  },
   async createIntegration(payload: CreateIntegrationPayload): Promise<AdminIntegration> {
     const response = await axios.post<AdminIntegration>(`${API_BASE_URL}/api/admin/integrations`, payload, {
       headers: authHeaders(),
