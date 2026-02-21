@@ -16,6 +16,10 @@ export default {
             },
         },
         extend: {
+            fontFamily: {
+                heading: ['"Space Grotesk"', 'sans-serif'],
+                body: ['Manrope', 'sans-serif'],
+            },
             colors: {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
@@ -56,6 +60,9 @@ export default {
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
             },
+            boxShadow: {
+                glow: "0 0 0 1px rgba(56, 189, 248, 0.16), 0 18px 45px rgba(8, 145, 178, 0.22)",
+            },
             keyframes: {
                 "accordion-down": {
                     from: { height: 0 },
@@ -65,10 +72,15 @@ export default {
                     from: { height: "var(--radix-accordion-content-height)" },
                     to: { height: 0 },
                 },
+                float: {
+                    "0%, 100%": { transform: "translateY(0px)" },
+                    "50%": { transform: "translateY(-6px)" },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
                 "accordion-up": "accordion-up 0.2s ease-out",
+                float: "float 6s ease-in-out infinite",
             },
         },
     },

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from app.core.database import get_db
 from app.models.user import User
+from app.models.admin import AdminUser
 from app.models.agent import AgentModel
 from app.models.skills import Skill, AgentSkillInstallation
 from app.api.auth import get_current_user
@@ -31,9 +32,19 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def is_admin(user: User) -> bool:
-    """Check if user is admin"""
-    return user.is_superuser
+async def is_admin(user: User, db: AsyncSession) -> bool:
+    """Check whether user has effective admin access."""
+    if user.is_superuser:
+        return True
+    result = await db.execute(
+        select(AdminUser).where(
+            and_(
+                AdminUser.user_id == user.id,
+                AdminUser.is_active == True,
+            )
+        )
+    )
+    return result.scalar_one_or_none() is not None
 
 
 # Skills Management Endpoints (Admin)
@@ -140,7 +151,7 @@ async def create_skill(
 ):
     """Create new skill (admin only)"""
     
-    if not is_admin(current_user):
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -214,7 +225,7 @@ async def update_skill(
 ):
     """Update skill (admin only)"""
     
-    if not is_admin(current_user):
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -279,7 +290,7 @@ async def delete_skill(
 ):
     """Delete skill (admin only)"""
     
-    if not is_admin(current_user):
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -311,7 +322,7 @@ async def discover_skills(
 ):
     """Discover skills from file system and sync with database (admin only)"""
     
-    if not is_admin(current_user):
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -368,6 +379,7 @@ async def discover_skills(
         )
 
 
+@router.get("/categories/list")
 @router.get("/skills/categories/list")
 async def get_skill_categories(
     current_user: User = Depends(get_current_user),
@@ -690,6 +702,7 @@ async def execute_skill(
 
 
 # Statistics Endpoint
+@router.get("/statistics/overview", response_model=SkillStatistics)
 @router.get("/skills/statistics/overview", response_model=SkillStatistics)
 async def get_skills_statistics(
     current_user: User = Depends(get_current_user),

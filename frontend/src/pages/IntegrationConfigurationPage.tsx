@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
 
 interface IntegrationConfig {
   id: number;
@@ -106,7 +107,8 @@ const IntegrationConfigurationPage: React.FC = () => {
   };
 
   const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
@@ -197,7 +199,7 @@ const IntegrationConfigurationPage: React.FC = () => {
   const renderFormField = (name: string, label: string, type: string = 'text', options: string[] = []) => {
     return (
       <div key={name} className="mb-4">
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={name} className="block text-sm font-medium text-muted-foreground mb-1">
           {label}
         </label>
         {type === 'select' ? (
@@ -206,7 +208,7 @@ const IntegrationConfigurationPage: React.FC = () => {
             name={name}
             value={formData[name] || ''}
             onChange={handleConfigChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {options.map((option) => (
               <option key={option} value={option}>{option}</option>
@@ -220,7 +222,7 @@ const IntegrationConfigurationPage: React.FC = () => {
               name={name}
               checked={formData[name] || false}
               onChange={handleConfigChange}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="h-4 w-4 text-cyan-300 border-border rounded focus:ring-blue-500"
             />
           </div>
         ) : (
@@ -230,7 +232,7 @@ const IntegrationConfigurationPage: React.FC = () => {
             name={name}
             value={formData[name] || ''}
             onChange={handleConfigChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         )}
       </div>
@@ -240,7 +242,7 @@ const IntegrationConfigurationPage: React.FC = () => {
   const renderCredentialField = (name: string, label: string, type: string = 'password') => {
     return (
       <div key={name} className="mb-4">
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={name} className="block text-sm font-medium text-muted-foreground mb-1">
           {label}
         </label>
         <input
@@ -249,7 +251,7 @@ const IntegrationConfigurationPage: React.FC = () => {
           name={name}
           value={credentialData[name] || ''}
           onChange={handleCredentialChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder={`Enter ${label.toLowerCase()}`}
         />
       </div>
@@ -259,20 +261,7 @@ const IntegrationConfigurationPage: React.FC = () => {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-              <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
-              <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
-              <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
-              <div className="h-6 bg-gray-200 rounded mb-6 w-1/4"></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PlatformLoadingScreen />
       </ProtectedRoute>
     );
   }
@@ -280,10 +269,10 @@ const IntegrationConfigurationPage: React.FC = () => {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-background p-6">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-600 mb-4">⚠️ {error}</p>
+            <div className="bg-rose-500/10 border border-red-200 rounded-lg p-6">
+              <p className="text-rose-400 mb-4">⚠️ {error}</p>
               <button
                 onClick={() => {
                   if (id) {
@@ -291,7 +280,7 @@ const IntegrationConfigurationPage: React.FC = () => {
                     fetchIntegrationConfig(parseInt(id));
                   }
                 }}
-                className="text-sm text-red-600 hover:text-red-800"
+                className="text-sm text-rose-400 hover:text-red-800"
               >
                 Try again
               </button>
@@ -305,14 +294,14 @@ const IntegrationConfigurationPage: React.FC = () => {
   if (!integration) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-background p-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-center py-12">
               <div className="text-6xl text-gray-300 mb-4">🔍</div>
-              <p className="text-gray-600 mb-2">Integration not found</p>
+              <p className="text-muted-foreground mb-2">Integration not found</p>
               <button
-                onClick={() => navigate('/integrations')}
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                onClick={() => navigate('/app/integrations')}
+                className="mt-4 bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300"
               >
                 Back to Marketplace
               </button>
@@ -325,24 +314,24 @@ const IntegrationConfigurationPage: React.FC = () => {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Configure {integration.name}</h1>
-              <p className="text-gray-600 mt-1">Customize integration settings and credentials</p>
+              <h1 className="text-3xl font-bold text-foreground">Configure {integration.name}</h1>
+              <p className="text-muted-foreground mt-1">Customize integration settings and credentials</p>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => navigate(`/integrations/${integration.id}`)}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                onClick={() => navigate(`/app/integrations/${integration.id}`)}
+                className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
               >
                 ← Back to Details
               </button>
               <button
-                onClick={() => navigate('/integrations')}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                onClick={() => navigate('/app/integrations')}
+                className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
               >
                 View All Integrations
               </button>
@@ -350,19 +339,19 @@ const IntegrationConfigurationPage: React.FC = () => {
           </div>
 
           {/* Integration Info */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-600 text-2xl">{integration.icon || '🔌'}</span>
+                <span className="text-cyan-300 text-2xl">{integration.icon || '🔌'}</span>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">{integration.name}</h3>
-                <p className="text-gray-600">{integration.description}</p>
+                <h3 className="text-xl font-semibold text-foreground">{integration.name}</h3>
+                <p className="text-muted-foreground">{integration.description}</p>
                 <div className="flex gap-2 mt-2">
-                  <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-green-100 text-emerald-300 px-2 py-1 rounded-full">
                     {integration.category.replace('_', ' ')}
                   </span>
-                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-blue-100 text-cyan-300 px-2 py-1 rounded-full">
                     {integration.integration_type.replace('_', ' ')}
                   </span>
                 </div>
@@ -371,30 +360,30 @@ const IntegrationConfigurationPage: React.FC = () => {
           </div>
 
           {/* Configuration Tabs */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="border-b border-gray-200 px-6">
+          <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+            <div className="border-b border-border px-6">
               <div className="flex -mb-px">
                 <button
                   onClick={() => setActiveTab('settings')}
                   className={`flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'settings' 
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    ? 'border-blue-600 text-cyan-300'
+                    : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'}`}
                 >
                   General Settings
                 </button>
                 <button
                   onClick={() => setActiveTab('credentials')}
                   className={`flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'credentials'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    ? 'border-blue-600 text-cyan-300'
+                    : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'}`}
                 >
                   Credentials
                 </button>
                 <button
                   onClick={() => setActiveTab('advanced')}
                   className={`flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === 'advanced'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    ? 'border-blue-600 text-cyan-300'
+                    : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'}`}
                 >
                   Advanced
                 </button>
@@ -404,8 +393,8 @@ const IntegrationConfigurationPage: React.FC = () => {
             <div className="p-6">
               {activeTab === 'settings' && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">General Configuration</h3>
-                  <p className="text-gray-600 mb-6">Configure basic settings for this integration.</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">General Configuration</h3>
+                  <p className="text-muted-foreground mb-6">Configure basic settings for this integration.</p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderFormField('timeout', 'Timeout (seconds)', 'number')}
@@ -420,8 +409,8 @@ const IntegrationConfigurationPage: React.FC = () => {
 
               {activeTab === 'credentials' && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">API Credentials</h3>
-                  <p className="text-gray-600 mb-6">Enter your API credentials for this integration.</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">API Credentials</h3>
+                  <p className="text-muted-foreground mb-6">Enter your API credentials for this integration.</p>
 
                   <div className="max-w-md">
                     {renderCredentialField('api_key', 'API Key')}
@@ -430,7 +419,7 @@ const IntegrationConfigurationPage: React.FC = () => {
                     {renderCredentialField('webhook_url', 'Webhook URL', 'text')}
                   </div>
 
-                  <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="mt-6 bg-cyan-500/10 border border-blue-200 rounded-lg p-4">
                     <p className="text-blue-800 text-sm">
                       🔒 Your credentials are encrypted and stored securely. They will never be shared or exposed.
                     </p>
@@ -440,12 +429,12 @@ const IntegrationConfigurationPage: React.FC = () => {
 
               {activeTab === 'advanced' && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Settings</h3>
-                  <p className="text-gray-600 mb-6">Configure advanced options for this integration.</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Advanced Settings</h3>
+                  <p className="text-muted-foreground mb-6">Configure advanced options for this integration.</p>
 
                   <div className="space-y-6">
                     <div>
-                      <h4 className="font-medium text-gray-700 mb-3">Error Handling</h4>
+                      <h4 className="font-medium text-muted-foreground mb-3">Error Handling</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {renderFormField('auto_retry', 'Auto Retry on Failure', 'checkbox')}
                         {renderFormField('retry_delay', 'Retry Delay (ms)', 'number')}
@@ -454,7 +443,7 @@ const IntegrationConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="font-medium text-gray-700 mb-3">Performance</h4>
+                      <h4 className="font-medium text-muted-foreground mb-3">Performance</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {renderFormField('connection_timeout', 'Connection Timeout (ms)', 'number')}
                         {renderFormField('read_timeout', 'Read Timeout (ms)', 'number')}
@@ -463,7 +452,7 @@ const IntegrationConfigurationPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h4 className="font-medium text-gray-700 mb-3">Logging</h4>
+                      <h4 className="font-medium text-muted-foreground mb-3">Logging</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {renderFormField('log_level', 'Log Level', 'select', ['DEBUG', 'INFO', 'WARNING', 'ERROR'])}
                         {renderFormField('log_retention_days', 'Log Retention (days)', 'number')}
@@ -475,13 +464,13 @@ const IntegrationConfigurationPage: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="border-t border-gray-200 px-6 py-4">
+            <div className="border-t border-border px-6 py-4">
               <div className="flex justify-between items-center">
                 <div className="flex gap-2">
                   <button
                     onClick={handleTestConnection}
                     disabled={isTesting}
-                    className={`bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors ${isTesting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300 transition-colors ${isTesting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {isTesting ? (
                       <>
@@ -496,8 +485,8 @@ const IntegrationConfigurationPage: React.FC = () => {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate(`/integrations/${integration.id}`)}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                    onClick={() => navigate(`/app/integrations/${integration.id}`)}
+                    className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
                   >
                     Cancel
                   </button>
@@ -520,8 +509,8 @@ const IntegrationConfigurationPage: React.FC = () => {
 
               {/* Test Result */}
               {testResult && (
-                <div className={`mt-4 p-3 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                  <p className={testResult.success ? 'text-green-600' : 'text-red-600'}>
+                <div className={`mt-4 p-3 rounded-md ${testResult.success ? 'bg-emerald-500/10 border border-green-200' : 'bg-rose-500/10 border border-red-200'}`}>
+                  <p className={testResult.success ? 'text-emerald-300' : 'text-rose-400'}>
                     {testResult.success ? '✅ ' : '❌ '}{testResult.message}
                   </p>
                 </div>

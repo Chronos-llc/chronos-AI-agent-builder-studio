@@ -1,16 +1,17 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
 
 
 class AgentTemplateBase(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     category: str = Field(..., min_length=1, max_length=50)
     system_prompt: str = Field(..., min_length=1)
     user_prompt_template: Optional[str] = None
-    model_config: Optional[dict] = None
+    model_config_data: Optional[dict] = Field(None, alias="model_config")
     tags: Optional[List[str]] = None
     preview_image_url: Optional[str] = None
 
@@ -21,12 +22,13 @@ class AgentTemplateCreate(AgentTemplateBase):
 
 
 class AgentTemplateUpdate(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     category: Optional[str] = Field(None, min_length=1, max_length=50)
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
-    model_config: Optional[dict] = None
+    model_config_data: Optional[dict] = Field(None, alias="model_config")
     tags: Optional[List[str]] = None
     preview_image_url: Optional[str] = None
     is_featured: Optional[bool] = None
@@ -115,7 +117,7 @@ class WorkflowTemplateBase(BaseModel):
     workflow_definition: Dict[str, Any] = Field(..., description="Complete workflow structure")
     tags: Optional[List[str]] = None
     preview_image_url: Optional[str] = None
-    complexity_level: str = Field(default="beginner", regex="^(beginner|intermediate|advanced)$")
+    complexity_level: str = Field(default="beginner", pattern="^(beginner|intermediate|advanced)$")
     estimated_duration: Optional[int] = Field(None, description="Duration in seconds")
     required_permissions: Optional[List[str]] = None
 
@@ -135,7 +137,7 @@ class WorkflowTemplateUpdate(BaseModel):
     workflow_definition: Optional[Dict[str, Any]] = None
     tags: Optional[List[str]] = None
     preview_image_url: Optional[str] = None
-    complexity_level: Optional[str] = Field(None, regex="^(beginner|intermediate|advanced)$")
+    complexity_level: Optional[str] = Field(None, pattern="^(beginner|intermediate|advanced)$")
     estimated_duration: Optional[int] = None
     required_permissions: Optional[List[str]] = None
     is_featured: Optional[bool] = None
@@ -181,7 +183,7 @@ class WorkflowStepBase(BaseModel):
     condition_expression: Optional[str] = Field(None, description="Conditional execution logic")
     retry_count: int = Field(default=0, ge=0)
     timeout_seconds: int = Field(default=300, gt=0)
-    failure_action: Optional[str] = Field(None, regex="^(fail|retry|skip|continue)$")
+    failure_action: Optional[str] = Field(None, pattern="^(fail|retry|skip|continue)$")
     is_optional: bool = Field(default=False)
     is_test_step: bool = Field(default=False)
 
@@ -202,7 +204,7 @@ class WorkflowStepUpdate(BaseModel):
     condition_expression: Optional[str] = None
     retry_count: Optional[int] = Field(None, ge=0)
     timeout_seconds: Optional[int] = Field(None, gt=0)
-    failure_action: Optional[str] = Field(None, regex="^(fail|retry|skip|continue)$")
+    failure_action: Optional[str] = Field(None, pattern="^(fail|retry|skip|continue)$")
     is_optional: Optional[bool] = None
     is_test_step: Optional[bool] = None
 
@@ -230,7 +232,7 @@ class ExecutionStatus(str, Enum):
 class WorkflowExecutionBase(BaseModel):
     execution_name: Optional[str] = Field(None, max_length=100)
     input_data: Optional[Dict[str, Any]] = None
-    trigger_type: Optional[str] = Field(None, regex="^(manual|webhook|schedule|event)$")
+    trigger_type: Optional[str] = Field(None, pattern="^(manual|webhook|schedule|event)$")
     trigger_config: Optional[Dict[str, Any]] = None
 
 
@@ -304,7 +306,7 @@ class WorkflowStepExecutionResponse(WorkflowStepExecutionBase):
 
 
 class WorkflowVersionBase(BaseModel):
-    version_number: str = Field(..., regex=r"^\d+\.\d+\.\d+$")
+    version_number: str = Field(..., pattern=r"^\d+\.\d+\.\d+$")
     version_name: Optional[str] = Field(None, max_length=100)
     change_log: Optional[str] = None
     template_snapshot: Dict[str, Any] = Field(..., description="Complete template at this version")

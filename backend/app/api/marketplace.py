@@ -4,9 +4,16 @@ from sqlalchemy import select, and_, or_, func, desc, asc
 from sqlalchemy.orm import joinedload, selectinload
 from typing import List, Optional, Dict, Any
 import logging
+import hashlib
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.object_storage import (
+    ObjectStorageError,
+    build_marketplace_media_key,
+    get_object_storage_client,
+    make_object_uri,
+)
 from app.models.user import User
 from app.models.agent import AgentModel
 from app.models.marketplace import (
@@ -26,6 +33,7 @@ from app.core.marketplace_engine import MarketplaceEngine, get_marketplace_engin
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+object_storage_client = get_object_storage_client()
 
 # File Upload Endpoint
 @router.post("/upload")
@@ -52,15 +60,40 @@ async def upload_file(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="File size exceeds maximum limit (10MB)"
             )
-        
-        # In a real implementation, you would upload the file to cloud storage (like S3)
-        # For now, we'll just return a mock URL
-        file_url = f"/uploads/{file.filename}"
+
+        sha256 = hashlib.sha256(contents).hexdigest()
+        object_key = build_marketplace_media_key(str(current_user.id), sha256, file.filename or "media.bin")
+        try:
+            stored_object = await object_storage_client.put_object_bytes(
+                key=object_key,
+                data=contents,
+                content_type=file.content_type or "application/octet-stream",
+                metadata={"uploaded_by": str(current_user.id)},
+            )
+            try:
+                file_url = await object_storage_client.generate_signed_url(stored_object.key)
+            except ObjectStorageError:
+                file_url = make_object_uri(stored_object.bucket, stored_object.key)
+        except ObjectStorageError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Object storage unavailable: {exc}",
+            ) from exc
         
         logger.info(f"File uploaded successfully by user {current_user.id}: {file.filename}")
         
-        return {"url": file_url}
+        return {
+            "url": file_url,
+            "object_key": stored_object.key,
+            "storage_provider": stored_object.provider,
+            "storage_bucket": stored_object.bucket,
+            "object_size": stored_object.size,
+            "object_content_type": stored_object.content_type,
+            "object_etag": stored_object.etag,
+        }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to upload file: {str(e)}", exc_info=True)
         raise HTTPException(

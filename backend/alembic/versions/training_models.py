@@ -16,17 +16,26 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "training_sessions" in inspector.get_table_names():
+        return
+
+    is_postgres = bind.dialect.name == "postgresql"
+    uuid_type = postgresql.UUID(as_uuid=True) if is_postgres else sa.String(length=36)
+    json_type = postgresql.JSON() if is_postgres else sa.JSON()
+
     # Create training_sessions table
     op.create_table(
         'training_sessions',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', uuid_type, nullable=False),
         sa.Column('agent_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('session_name', sa.String(length=255), nullable=False),
         sa.Column('started_at', sa.DateTime(), nullable=True),
         sa.Column('ended_at', sa.DateTime(), nullable=True),
         sa.Column('status', sa.Enum('active', 'completed', 'aborted', name='trainingsessionstatus'), nullable=False),
-        sa.Column('configuration', postgresql.JSON(), nullable=True),
+        sa.Column('configuration', json_type, nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ),
@@ -37,14 +46,14 @@ def upgrade():
     # Create training_interactions table
     op.create_table(
         'training_interactions',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('session_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', uuid_type, nullable=False),
+        sa.Column('session_id', uuid_type, nullable=False),
         sa.Column('interaction_order', sa.Integer(), nullable=False),
         sa.Column('user_input', sa.Text(), nullable=False),
         sa.Column('agent_response', sa.Text(), nullable=True),
         sa.Column('response_time_ms', sa.Integer(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('metadata', postgresql.JSON(), nullable=True),
+        sa.Column('metadata', json_type, nullable=True),
         sa.ForeignKeyConstraint(['session_id'], ['training_sessions.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
@@ -52,8 +61,8 @@ def upgrade():
     # Create training_corrections table
     op.create_table(
         'training_corrections',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('interaction_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', uuid_type, nullable=False),
+        sa.Column('interaction_id', uuid_type, nullable=False),
         sa.Column('correction_type', sa.Enum('response', 'behavior', 'knowledge', name='trainingcorrectiontype'), nullable=False),
         sa.Column('original_content', sa.Text(), nullable=True),
         sa.Column('corrected_content', sa.Text(), nullable=False),

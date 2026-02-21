@@ -16,13 +16,25 @@ interface User {
   updated_at: string
 }
 
+export interface SessionContext {
+  user: User
+  is_admin: boolean
+  is_impersonating: boolean
+  impersonator_user_id?: number | null
+  impersonator_admin_user_id?: number | null
+}
+
 interface AuthContextType {
   user: User | null
+  sessionContext: SessionContext | null
   loading: boolean
+  sessionContextLoading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (userData: RegisterData) => Promise<void>
   logout: () => Promise<void>
   updateUser: (userData: Partial<User>) => Promise<void>
+  refreshSessionContext: () => Promise<void>
+  setAccessToken: (token: string | null) => void
 }
 
 interface RegisterData {
@@ -34,6 +46,8 @@ interface RegisterData {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const ACCESS_TOKEN_KEY = 'chronos_access_token'
+const LEGACY_ACCESS_TOKEN_KEY = 'access_token'
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -50,10 +64,22 @@ axios.defaults.baseURL = API_BASE_URL
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 axios.defaults.withCredentials = true  // Send cookies with requests
 
+const setAuthHeader = (token: string | null) => {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  } else {
+    delete axios.defaults.headers.common['Authorization']
+  }
+}
+
 // Add auth token to requests (if not already in cookies)
 axios.interceptors.request.use(
   (config) => {
-    // Cookies are automatically sent with axios.defaults.withCredentials = true
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem(LEGACY_ACCESS_TOKEN_KEY)
+    if (token) {
+      config.headers = config.headers ?? {}
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
     return config
   },
   (error) => Promise.reject(error)
@@ -69,11 +95,20 @@ axios.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        await axios.post('/api/v1/auth/refresh', {})
+        const refreshResponse = await axios.post('/api/v1/auth/refresh', {})
+        const refreshedAccessToken = refreshResponse.data?.access_token
+        if (refreshedAccessToken) {
+          localStorage.setItem(ACCESS_TOKEN_KEY, refreshedAccessToken)
+          localStorage.setItem(LEGACY_ACCESS_TOKEN_KEY, refreshedAccessToken)
+          setAuthHeader(refreshedAccessToken)
+        }
 
         // Retry original request
         return axios(originalRequest)
       } catch (refreshError) {
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY)
+        setAuthHeader(null)
         // Refresh failed, redirect to login
         window.location.href = '/login'
         return Promise.reject(refreshError)
@@ -86,18 +121,53 @@ axios.interceptors.response.use(
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [sessionContext, setSessionContext] = useState<SessionContext | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sessionContextLoading, setSessionContextLoading] = useState(true)
 
   useEffect(() => {
+    const existingToken = localStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem(LEGACY_ACCESS_TOKEN_KEY)
+    setAuthHeader(existingToken)
     checkAuth()
   }, [])
+
+  const setAccessToken = (token: string | null) => {
+    if (token) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token)
+      localStorage.setItem(LEGACY_ACCESS_TOKEN_KEY, token)
+      setAuthHeader(token)
+      return
+    }
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY)
+    setAuthHeader(null)
+  }
+
+  const fetchSessionContext = async () => {
+    setSessionContextLoading(true)
+    try {
+      const response = await axios.get('/api/v1/auth/session-context')
+      setSessionContext(response.data)
+      if (response.data?.user) {
+        setUser(response.data.user)
+      }
+    } catch (error) {
+      setSessionContext(null)
+      throw error
+    } finally {
+      setSessionContextLoading(false)
+    }
+  }
 
   const checkAuth = async () => {
     try {
       const response = await axios.get('/api/v1/auth/me')
       setUser(response.data)
+      await fetchSessionContext()
     } catch (error) {
       console.error('Auth check failed:', error)
+      setSessionContext(null)
+      setSessionContextLoading(false)
     } finally {
       setLoading(false)
     }
@@ -105,19 +175,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const formData = new FormData()
-      formData.append('username', email)
-      formData.append('password', password)
+      const formData = new URLSearchParams()
+      formData.set('username', email)
+      formData.set('password', password)
 
-      await axios.post('/api/v1/auth/login', formData, {
+      // Persist access token for bearer-auth endpoints (cookie remains fallback)
+      const tokenResponse = await axios.post('/api/v1/auth/login', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       })
+      const accessToken = tokenResponse.data?.access_token
+      if (accessToken) {
+        setAccessToken(accessToken)
+      }
 
       // Get user info
       const userResponse = await axios.get('/api/v1/auth/me')
       setUser(userResponse.data)
+      await fetchSessionContext()
 
       toast.success('Login successful!')
     } catch (error: any) {
@@ -144,7 +220,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
+      setAccessToken(null)
       setUser(null)
+      setSessionContext(null)
+      setSessionContextLoading(false)
       toast.success('Logged out successfully')
     }
   }
@@ -163,11 +242,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
+    sessionContext,
     loading,
+    sessionContextLoading,
     login,
     register,
     logout,
     updateUser,
+    refreshSessionContext: fetchSessionContext,
+    setAccessToken,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth, Permission } from '../../contexts/AdminAuthContext';
+import { PlatformLoadingScreen } from '../loading/PlatformLoadingScreen';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -22,11 +23,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
 
   // Show loading state while checking authentication
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PlatformLoadingScreen />;
   }
 
   // Redirect to login if not an admin

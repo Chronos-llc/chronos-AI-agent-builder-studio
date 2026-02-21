@@ -25,6 +25,7 @@ export const MetaAgentMode = () => {
   const [health, setHealth] = useState<FuzzyHealthStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [serviceUnavailable, setServiceUnavailable] = useState(false)
 
   useEffect(() => {
     loadInitialData()
@@ -42,8 +43,19 @@ export const MetaAgentMode = () => {
       
       setConfiguration(configData)
       setHealth(healthData)
+      setServiceUnavailable(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load FUZZY data')
+      const message = err instanceof Error ? err.message : 'Failed to load FUZZY data'
+      const likelyUnavailable =
+        message.toLowerCase().includes('404') ||
+        message.toLowerCase().includes('not found') ||
+        message.toLowerCase().includes('failed to fetch')
+      if (likelyUnavailable) {
+        setServiceUnavailable(true)
+        setError(null)
+      } else {
+        setError(message)
+      }
       console.error('Error loading FUZZY data:', err)
     } finally {
       setLoading(false)
@@ -79,6 +91,31 @@ export const MetaAgentMode = () => {
           </button>
         </AlertDescription>
       </Alert>
+    )
+  }
+
+  if (serviceUnavailable) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            FUZZY admin endpoints are not available in this environment yet. Other admin modes remain fully usable.
+            <button
+              onClick={loadInitialData}
+              className="ml-4 underline hover:no-underline"
+            >
+              Retry
+            </button>
+          </AlertDescription>
+        </Alert>
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold">FUZZY Meta-Agent (Partial Availability)</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Configure FUZZY endpoints and enable the corresponding backend surface, then retry this panel.
+          </p>
+        </Card>
+      </div>
     )
   }
 

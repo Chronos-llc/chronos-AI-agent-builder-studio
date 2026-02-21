@@ -7,7 +7,10 @@ import {
     Settings, 
     LogOut, 
     Search, 
-    Menu 
+    Menu,
+    Repeat2,
+    Check,
+    X,
 } from 'lucide-react'
 import { Input } from '../ui/input'
 import { 
@@ -16,18 +19,34 @@ import {
     DropdownMenuItem, 
     DropdownMenuTrigger 
 } from '../ui/dropdown-menu'
+import ThemeSwitcher from '../theme/ThemeSwitcher'
 
 export const AdminHeader = ({ 
     user, 
     alerts, 
-    onSearch 
+    onSearch,
+    onProfile,
+    onSettings,
+    onSwitchProfile,
+    onMarkAlertRead,
+    onDismissAlert,
+    onClearAlerts,
+    onLogout,
+    onToggleSidebar,
 }: { 
     user: AdminUser 
     alerts?: AdminAlert[] 
     onSearch?: (query: string) => void 
+    onProfile?: () => void
+    onSettings?: () => void
+    onSwitchProfile?: () => void
+    onMarkAlertRead?: (alertId: string) => void
+    onDismissAlert?: (alertId: string) => void
+    onClearAlerts?: () => void
+    onLogout?: () => void
+    onToggleSidebar?: () => void
 }) => {
     const [searchQuery, setSearchQuery] = useState('')
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
@@ -39,13 +58,14 @@ export const AdminHeader = ({
     const unreadAlerts = alerts?.filter(alert => !alert.isRead).length || 0
 
     return (
-        <header className="bg-card border-b border-border flex items-center justify-between px-4 py-3 h-16">
+        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 py-3 text-[15px]">
             {/* Mobile menu button */}
             <div className="md:hidden">
                 <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    onClick={onToggleSidebar}
+                    aria-label="Toggle sidebar"
                 >
                     <Menu className="w-5 h-5" />
                 </Button>
@@ -58,7 +78,7 @@ export const AdminHeader = ({
                     <Input
                         type="search"
                         placeholder="Search admin functions..."
-                        className="pl-10 pr-4 w-full bg-background"
+                        className="w-full bg-background pl-10 pr-4 text-[15px]"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -67,6 +87,7 @@ export const AdminHeader = ({
 
             {/* User actions */}
             <div className="flex items-center gap-3">
+                <ThemeSwitcher compact />
                 {/* Alerts */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -81,20 +102,56 @@ export const AdminHeader = ({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80">
                         <div className="p-2">
-                            <h4 className="font-medium mb-2">Alerts</h4>
+                            <div className="mb-2 flex items-center justify-between">
+                                <h4 className="text-sm font-medium">Alerts</h4>
+                                {alerts && alerts.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={onClearAlerts}
+                                    >
+                                        Clear all
+                                    </Button>
+                                )}
+                            </div>
                             {alerts && alerts.length > 0 ? (
                                 <div className="space-y-2 max-h-64 overflow-auto">
                                     {alerts.slice(0, 5).map((alert) => (
-                                        <DropdownMenuItem 
-                                            key={alert.id} 
-                                            className={`flex items-start gap-2 ${alert.isRead ? 'opacity-60' : ''}`}
+                                        <div
+                                            key={alert.id}
+                                            className={`rounded-md border px-2 py-2 ${alert.isRead ? 'opacity-80' : ''}`}
                                         >
+                                            <div className="flex items-start gap-2">
                                             <div className={`w-2 h-2 rounded-full mt-1 ${alert.type === 'error' ? 'bg-red-500' : alert.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
                                             <div className="flex-1">
-                                                <p className="font-medium text-sm">{alert.title}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{alert.message}</p>
+                                                <p className="text-sm font-medium">{alert.title}</p>
+                                                <p className="truncate text-xs text-muted-foreground">{alert.message}</p>
                                             </div>
-                                        </DropdownMenuItem>
+                                                <div className="flex items-center gap-1">
+                                                    {!alert.isRead && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6"
+                                                            title="Mark as read"
+                                                            onClick={() => onMarkAlertRead?.(alert.id)}
+                                                        >
+                                                            <Check className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6"
+                                                        title="Dismiss alert"
+                                                        onClick={() => onDismissAlert?.(alert.id)}
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
@@ -109,19 +166,32 @@ export const AdminHeader = ({
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="flex items-center gap-2">
                             <User className="w-5 h-5" />
-                            <span className="font-medium text-sm">{user.name}</span>
+                            <span className="text-sm font-medium">{user.name}</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={onProfile}>
                             <User className="w-4 h-4 mr-2" />
                             Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={onSettings}>
                             <Settings className="w-4 h-4 mr-2" />
                             Settings
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                        <DropdownMenuItem onSelect={(event) => {
+                            event.preventDefault()
+                            onSwitchProfile?.()
+                        }}>
+                            <Repeat2 className="w-4 h-4 mr-2" />
+                            Switch profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600"
+                            onSelect={(event) => {
+                                event.preventDefault()
+                                onLogout?.()
+                            }}
+                        >
                             <LogOut className="w-4 h-4 mr-2" />
                             Logout
                         </DropdownMenuItem>

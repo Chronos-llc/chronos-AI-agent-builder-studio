@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
@@ -10,6 +10,7 @@ from app.models.personal_access_token import PersonalAccessToken as PersonalAcce
 from app.models.agent import AgentModel
 from app.models.user import User as UserModel
 from app.core.database import get_db
+from app.core.conversation_manager import append_message, get_or_create_conversation
 
 router = APIRouter()
 
@@ -22,6 +23,7 @@ class MessageRequest(BaseModel):
     type: str = Field(default="text", description="Message type (text, image, etc.)")
     text: str = Field(..., description="Message text content")
     payload: Optional[Dict[str, Any]] = Field(default=None, description="Additional message data")
+    agent_id: Optional[int] = Field(default=None, description="Optional target agent ID")
 
 
 class MessageResponse(BaseModel):
@@ -119,9 +121,42 @@ async def send_message(
     The bot will process the message and send responses to the configured webhook URL.
     """
     token, user = token_user
-    
-    # Here you would integrate with your agent execution engine
-    # For now, we'll return a mock response
+
+    # Resolve target agent for conversation tracking
+    agent_id = message.agent_id or (message.payload or {}).get("agent_id")
+    agent = None
+    if agent_id is not None:
+        result = await db.execute(
+            select(AgentModel).where(
+                AgentModel.id == int(agent_id),
+                AgentModel.owner_id == user.id
+            )
+        )
+        agent = result.scalars().first()
+    if not agent:
+        result = await db.execute(
+            select(AgentModel).where(AgentModel.owner_id == user.id).order_by(AgentModel.created_at.asc())
+        )
+        agent = result.scalars().first()
+
+    conversation = None
+    if agent:
+        conversation = await get_or_create_conversation(
+            db,
+            agent_id=agent.id,
+            user_id=user.id,
+            channel_type="messaging_api",
+            external_conversation_id=message.conversationId,
+            title=f"Messaging API {message.conversationId}"
+        )
+        await append_message(
+            db,
+            conversation=conversation,
+            role="user",
+            content=message.text,
+            metadata={"message_type": message.type, "payload": message.payload},
+            source_platform_message_id=message.messageId
+        )
     
     # Log the message (in production, you'd store this in a messages table)
     response_data = {
@@ -135,7 +170,17 @@ async def send_message(
         "chronosMessageId": f"msg_{datetime.utcnow().timestamp()}",
         "chronosConversationId": message.conversationId
     }
-    
+
+    if conversation:
+        await append_message(
+            db,
+            conversation=conversation,
+            role="agent",
+            content=response_data["payload"]["text"],
+            metadata={"status": response_data["payload"]["status"]},
+            source_platform_message_id=response_data["chronosMessageId"]
+        )
+
     return MessageResponse(**response_data)
 
 
@@ -159,7 +204,7 @@ async def get_webhook_url(
 
 @router.post("/messages/webhook/test")
 async def test_webhook(
-    webhook_url: str = Field(..., description="Webhook URL to test"),
+    webhook_url: str = Body(..., embed=True, description="Webhook URL to test"),
     token_user: tuple = Depends(verify_token)
 ):
     """Test a webhook URL by sending a test message"""

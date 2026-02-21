@@ -11,6 +11,8 @@ This module provides enhanced REST API endpoints for Playwright browser automati
 """
 
 import asyncio
+import base64
+import hashlib
 import json
 import os
 import time
@@ -32,6 +34,11 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.object_storage import (
+    ObjectStorageError,
+    build_playwright_screenshot_key,
+    get_object_storage_client,
+)
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.agent import Agent
@@ -128,6 +135,7 @@ from app.models.playwright_enhanced import (
 
 logger = get_logger(__name__)
 router = APIRouter()
+object_storage_client = get_object_storage_client()
 
 # Add CORS middleware
 router.add_middleware(
@@ -281,6 +289,27 @@ async def create_error_response(
         error=playwright_error,
         suggestions=suggestions
     )
+
+
+def _sanitize_tool_output_for_storage(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Strip binary/base64 payload fields before persisting tool output JSON."""
+
+    def _clean(value: Any) -> Any:
+        if isinstance(value, dict):
+            sanitized: Dict[str, Any] = {}
+            for raw_key, raw_value in value.items():
+                key = str(raw_key).lower()
+                if key.endswith("base64") or key in {"binary_data", "file_bytes", "image_data"}:
+                    continue
+                sanitized[raw_key] = _clean(raw_value)
+            return sanitized
+        if isinstance(value, list):
+            return [_clean(item) for item in value]
+        if isinstance(value, str) and value.startswith("data:") and ";base64," in value:
+            return "[redacted-data-uri]"
+        return value
+
+    return _clean(result)
 
 
 # Tool Registry Endpoints
@@ -679,7 +708,7 @@ async def navigate_tool(
         )
         
         # Mark execution as completed
-        execution.mark_completed(result)
+        execution.mark_completed(_sanitize_tool_output_for_storage(result))
         await db.commit()
         
         # Update session record
@@ -773,7 +802,7 @@ async def click_tool(
         )
         
         # Mark execution as completed
-        execution.mark_completed(result)
+        execution.mark_completed(_sanitize_tool_output_for_storage(result))
         await db.commit()
         
         # Update session record
@@ -867,7 +896,7 @@ async def type_tool(
         )
         
         # Mark execution as completed
-        execution.mark_completed(result)
+        execution.mark_completed(_sanitize_tool_output_for_storage(result))
         await db.commit()
         
         # Update session record
@@ -961,13 +990,53 @@ async def screenshot_tool(
         )
         
         # Mark execution as completed
-        execution.mark_completed(result)
+        execution.mark_completed(_sanitize_tool_output_for_storage(result))
         
-        # Store screenshot in execution record if it's small enough
         screenshot_base64 = result.get("screenshot_base64")
-        if screenshot_base64 and len(screenshot_base64) < 1000000:  # 1MB limit
-            execution.screenshot_base64 = screenshot_base64
-        
+        if screenshot_base64:
+            # New writes persist screenshot artifacts in object storage, not in DB payload columns.
+            encoded = screenshot_base64.split(",", 1)[-1]
+            try:
+                image_bytes = base64.b64decode(encoded, validate=False)
+                image_hash = hashlib.sha256(image_bytes).hexdigest()
+                image_format = (request.format or "png").lower()
+                object_key = build_playwright_screenshot_key(
+                    session_id=request.session_id,
+                    execution_id=execution.execution_id,
+                    sha256=image_hash,
+                    image_format=image_format,
+                )
+                stored_object = await object_storage_client.put_object_bytes(
+                    key=object_key,
+                    data=image_bytes,
+                    content_type=f"image/{image_format}",
+                    metadata={
+                        "session_id": request.session_id,
+                        "execution_id": execution.execution_id,
+                        "tool": "screenshot",
+                    },
+                )
+                execution.object_key = stored_object.key
+                execution.object_size = stored_object.size
+                execution.object_content_type = stored_object.content_type
+                execution.object_etag = stored_object.etag
+                execution.storage_provider = stored_object.provider
+                execution.storage_bucket = stored_object.bucket
+                execution.screenshot_base64 = None
+            except (ValueError, ObjectStorageError) as storage_error:
+                logger.warning(
+                    "Failed to persist screenshot object for execution %s: %s",
+                    execution.execution_id,
+                    storage_error,
+                )
+                execution.object_key = None
+                execution.object_size = None
+                execution.object_content_type = None
+                execution.object_etag = None
+                execution.storage_provider = None
+                execution.storage_bucket = None
+                execution.screenshot_base64 = None
+
         await db.commit()
         
         # Update session record
@@ -1182,8 +1251,47 @@ async def execute_single_tool_async(
         else:
             raise PlaywrightAutomationError(f"Tool '{tool_request.tool_name}' not implemented")
         
+        if tool_request.tool_name == "screenshot":
+            screenshot_base64 = result.get("screenshot_base64")
+            if screenshot_base64:
+                encoded = screenshot_base64.split(",", 1)[-1]
+                try:
+                    image_bytes = base64.b64decode(encoded, validate=False)
+                    image_hash = hashlib.sha256(image_bytes).hexdigest()
+                    image_format = str(tool_request.parameters.get("format", "png")).lower()
+                    object_key = build_playwright_screenshot_key(
+                        session_id=tool_request.session_id,
+                        execution_id=execution.execution_id,
+                        sha256=image_hash,
+                        image_format=image_format,
+                    )
+                    stored_object = await object_storage_client.put_object_bytes(
+                        key=object_key,
+                        data=image_bytes,
+                        content_type=f"image/{image_format}",
+                        metadata={
+                            "session_id": tool_request.session_id,
+                            "execution_id": execution.execution_id,
+                            "tool": "batch_screenshot",
+                        },
+                    )
+                    execution.object_key = stored_object.key
+                    execution.object_size = stored_object.size
+                    execution.object_content_type = stored_object.content_type
+                    execution.object_etag = stored_object.etag
+                    execution.storage_provider = stored_object.provider
+                    execution.storage_bucket = stored_object.bucket
+                    execution.screenshot_base64 = None
+                except (ValueError, ObjectStorageError) as storage_error:
+                    logger.warning(
+                        "Batch screenshot object persistence failed for execution %s: %s",
+                        execution.execution_id,
+                        storage_error,
+                    )
+                    execution.screenshot_base64 = None
+
         # Mark execution as completed
-        execution.mark_completed(result)
+        execution.mark_completed(_sanitize_tool_output_for_storage(result))
         await db.commit()
         
         # Update session record

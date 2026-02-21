@@ -23,6 +23,8 @@ import {
     downloadConfigurationFile,
     uploadConfigurationFile
 } from '../../../services/fuzzyService'
+import { useModelCatalog } from '../../../hooks/useModelCatalog'
+import { ModelCatalogPicker } from '../../studio/ModelCatalogPicker'
 import type {
     FuzzyConfiguration as FuzzyConfigType,
     FuzzyConfigurationUpdate
@@ -39,6 +41,11 @@ export const FuzzyConfiguration = ({ configuration, onUpdate }: FuzzyConfigurati
     const [exporting, setExporting] = useState(false)
     const [importing, setImporting] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+    const { data: modelCatalog } = useModelCatalog()
+    const availableProviders = (modelCatalog?.providers || []).filter(provider => provider.available)
+    const chatModels = modelCatalog?.models?.chat || []
+    const availableProviderIds = new Set(availableProviders.map(provider => provider.id))
+    const availableChatModels = chatModels.filter(model => availableProviderIds.has(model.provider))
 
     const handleInputChange = (field: keyof FuzzyConfigType, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -232,26 +239,17 @@ export const FuzzyConfiguration = ({ configuration, onUpdate }: FuzzyConfigurati
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="provider">Provider</Label>
-                            <Input
-                                id="provider"
-                                value={formData.provider}
-                                onChange={(e) => handleInputChange('provider', e.target.value)}
-                                className="mt-2"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="model">Model</Label>
-                            <Input
-                                id="model"
-                                value={formData.model}
-                                onChange={(e) => handleInputChange('model', e.target.value)}
-                                className="mt-2"
-                            />
-                        </div>
-                    </div>
+                    <ModelCatalogPicker
+                        capability="chat"
+                        providers={availableProviders}
+                        models={availableChatModels}
+                        value={formData.model}
+                        providerId={formData.provider}
+                        onProviderChange={(providerId) => handleInputChange('provider', providerId)}
+                        onChange={(model) => handleInputChange('model', model)}
+                        label="Provider + Model"
+                        helperText="Select the AI provider and model powering FUZZY."
+                    />
 
                     <div>
                         <Label htmlFor="temperature">

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { ProviderLogo } from '../components/brand/ProviderLogo';
+import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
 
 interface Integration {
   id: number;
@@ -21,7 +23,7 @@ interface FormField {
   required: boolean;
   placeholder?: string;
   description?: string;
-  default?: string;
+  default?: any;
 }
 
 const IntegrationInstallPage: React.FC = () => {
@@ -43,6 +45,24 @@ const IntegrationInstallPage: React.FC = () => {
     }
   }, [id]);
 
+  const buildDefaultFormData = (schema: any): Record<string, any> => {
+    if (!schema || typeof schema !== 'object') {
+      return {};
+    }
+
+    const properties = schema.properties || schema;
+    const defaults: Record<string, any> = {};
+
+    Object.entries(properties).forEach(([name, field]) => {
+      const fieldConfig: any = (typeof field === 'object' && field !== null) ? field : {};
+      if (fieldConfig.default !== undefined) {
+        defaults[name] = fieldConfig.default;
+      }
+    });
+
+    return defaults;
+  };
+
   const fetchIntegrationDetails = async (integrationId: number) => {
     try {
       setLoading(true);
@@ -60,6 +80,8 @@ const IntegrationInstallPage: React.FC = () => {
 
       const data = await response.json();
       setIntegration(data);
+      setConfigForm(buildDefaultFormData(data.config_schema));
+      setCredentialsForm(buildDefaultFormData(data.credentials_schema));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch integration details');
     } finally {
@@ -68,14 +90,19 @@ const IntegrationInstallPage: React.FC = () => {
   };
 
   const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
+    const parsedValue = type === 'checkbox'
+      ? (e.target as HTMLInputElement).checked
+      : type === 'number'
+        ? parseFloat(value)
+        : value;
     setConfigForm({
       ...configForm,
-      [name]: type === 'number' ? parseFloat(value) : value
+      [name]: parsedValue
     });
   };
 
-  const handleCredentialsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCredentialsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setCredentialsForm({
       ...credentialsForm,
@@ -121,14 +148,13 @@ const IntegrationInstallPage: React.FC = () => {
     if (!integration || !user) return;
 
     try {
-      const response = await fetch('/api/v1/integrations/config/', {
+      const response = await fetch(`/api/v1/integrations/${integration.id}/config/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          integration_id: integration.id,
           config: configForm,
           credentials: credentialsForm,
           is_active: true
@@ -140,7 +166,7 @@ const IntegrationInstallPage: React.FC = () => {
       }
 
       const data = await response.json();
-      navigate(`/integrations/${integration.id}/success?config_id=${data.id}`);
+      navigate(`/app/integrations/${integration.id}/success?config_id=${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to install integration');
     }
@@ -151,46 +177,59 @@ const IntegrationInstallPage: React.FC = () => {
       return [];
     }
 
-    return Object.entries(schema).map(([name, field]) => {
-      if (typeof field === 'object' && field !== null) {
-        return {
-          name,
-          label: field.title || name,
-          type: field.type || 'text',
-          required: field.required || false,
-          placeholder: field.description || `Enter ${name}`,
-          description: field.description,
-          default: field.default
-        };
-      }
+    const properties = schema.properties || schema;
+    const requiredFields = new Set(schema.required || []);
+
+    return Object.entries(properties).map(([name, field]) => {
+      const fieldConfig: any = (typeof field === 'object' && field !== null) ? field : {};
+      const isSensitive = fieldConfig.sensitive || fieldConfig.format === 'password';
+      const fieldType = isSensitive ? 'password' : (fieldConfig.type || 'text');
 
       return {
         name,
-        label: name,
-        type: 'text',
-        required: false,
-        placeholder: `Enter ${name}`
+        label: fieldConfig.title || name,
+        type: fieldType,
+        required: requiredFields.has(name) || fieldConfig.required || false,
+        placeholder: fieldConfig.description || `Enter ${name}`,
+        description: fieldConfig.description,
+        default: fieldConfig.default
       };
     });
   };
 
-  const renderFormField = (field: FormField) => {
+  const renderFormField = (
+    field: FormField,
+    formData: Record<string, any>,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  ) => {
     return (
       <div key={field.name} className="mb-4">
-        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={field.name} className="block text-sm font-medium text-muted-foreground mb-1">
           {field.label}
         </label>
         {field.description && (
-          <p className="text-xs text-gray-500 mb-1">{field.description}</p>
+          <p className="text-xs text-muted-foreground mb-1">{field.description}</p>
         )}
-        {field.type === 'textarea' ? (
+        {field.type === 'boolean' ? (
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id={field.name}
+              name={field.name}
+              checked={formData[field.name] ?? field.default ?? false}
+              onChange={onChange}
+              className="rounded border-border text-cyan-300 focus:ring-blue-500"
+            />
+            <span className="text-sm text-muted-foreground">Enabled</span>
+          </label>
+        ) : field.type === 'textarea' ? (
           <textarea
             id={field.name}
             name={field.name}
-            value={configForm[field.name] || field.default || ''}
-            onChange={handleConfigChange}
+            value={formData[field.name] ?? field.default ?? ''}
+            onChange={onChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={field.placeholder}
             required={field.required}
           />
@@ -199,9 +238,9 @@ const IntegrationInstallPage: React.FC = () => {
             type={field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : 'text'}
             id={field.name}
             name={field.name}
-            value={configForm[field.name] || field.default || ''}
-            onChange={field.name.startsWith('credential_') ? handleCredentialsChange : handleConfigChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={formData[field.name] ?? field.default ?? ''}
+            onChange={onChange}
+            className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={field.placeholder}
             required={field.required}
           />
@@ -213,20 +252,7 @@ const IntegrationInstallPage: React.FC = () => {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-              <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
-              <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
-              <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
-              <div className="h-6 bg-gray-200 rounded mb-6 w-1/4"></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PlatformLoadingScreen />
       </ProtectedRoute>
     );
   }
@@ -234,13 +260,13 @@ const IntegrationInstallPage: React.FC = () => {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-background p-6">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-600 mb-4">⚠️ {error}</p>
+            <div className="bg-rose-500/10 border border-red-200 rounded-lg p-6">
+              <p className="text-rose-400 mb-4">⚠️ {error}</p>
               <button
                 onClick={() => fetchIntegrationDetails(parseInt(id || '0'))}
-                className="text-sm text-red-600 hover:text-red-800"
+                className="text-sm text-rose-400 hover:text-red-800"
               >
                 Try again
               </button>
@@ -254,14 +280,14 @@ const IntegrationInstallPage: React.FC = () => {
   if (!integration) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-background p-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-center py-12">
               <div className="text-6xl text-gray-300 mb-4">🔍</div>
-              <p className="text-gray-600 mb-2">Integration not found</p>
+              <p className="text-muted-foreground mb-2">Integration not found</p>
               <button
-                onClick={() => navigate('/integrations')}
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                onClick={() => navigate('/app/integrations')}
+                className="mt-4 bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300"
               >
                 Back to Marketplace
               </button>
@@ -277,17 +303,25 @@ const IntegrationInstallPage: React.FC = () => {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Install {integration.name}</h1>
-              <p className="text-gray-600 mt-1">Follow the steps to integrate with your agents</p>
+            <div className="flex items-center gap-3">
+              <ProviderLogo
+                name={integration.name}
+                url={integration.icon}
+                size={38}
+                className="border-0 bg-transparent"
+              />
+              <div>
+              <h1 className="text-3xl font-bold text-foreground">Install {integration.name}</h1>
+              <p className="text-muted-foreground mt-1">Follow the steps to integrate with your agents</p>
+              </div>
             </div>
             <button
-              onClick={() => navigate(`/integrations/${integration.id}`)}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+              onClick={() => navigate(`/app/integrations/${integration.id}`)}
+              className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
             >
               ← Back to Details
             </button>
@@ -296,46 +330,46 @@ const IntegrationInstallPage: React.FC = () => {
           {/* Progress Steps */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-cyan-400 text-white' : 'bg-gray-200 text-muted-foreground'}`}>
                 1
               </div>
-              <span className={`text-sm font-medium ${step >= 1 ? 'text-gray-900' : 'text-gray-400'}`}>Configuration</span>
+              <span className={`text-sm font-medium ${step >= 1 ? 'text-foreground' : 'text-muted-foreground/70'}`}>Configuration</span>
             </div>
 
-            <div className="flex-1 h-0.5 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}"></div>
+            <div className={`flex-1 h-0.5 ${step >= 2 ? 'bg-cyan-400' : 'bg-gray-200'}`}></div>
 
             <div className="flex items-center gap-4">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-cyan-400 text-white' : 'bg-gray-200 text-muted-foreground'}`}>
                 2
               </div>
-              <span className={`text-sm font-medium ${step >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>Credentials</span>
+              <span className={`text-sm font-medium ${step >= 2 ? 'text-foreground' : 'text-muted-foreground/70'}`}>Credentials</span>
             </div>
 
-            <div className="flex-1 h-0.5 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}"></div>
+            <div className={`flex-1 h-0.5 ${step >= 3 ? 'bg-cyan-400' : 'bg-gray-200'}`}></div>
 
             <div className="flex items-center gap-4">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-cyan-400 text-white' : 'bg-gray-200 text-muted-foreground'}`}>
                 3
               </div>
-              <span className={`text-sm font-medium ${step >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>Test & Install</span>
+              <span className={`text-sm font-medium ${step >= 3 ? 'text-foreground' : 'text-muted-foreground/70'}`}>Test & Install</span>
             </div>
           </div>
 
           {/* Installation Form */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-card rounded-lg shadow-sm overflow-hidden">
             <div className="p-6">
               {step === 1 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Configuration Settings</h3>
-                  <p className="text-gray-600 mb-6">Configure the basic settings for this integration.</p>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Configuration Settings</h3>
+                  <p className="text-muted-foreground mb-6">Configure the basic settings for this integration.</p>
 
                   {configFields.length > 0 ? (
                     <form className="space-y-4">
-                      {configFields.map(renderFormField)}
+                      {configFields.map(field => renderFormField(field, configForm, handleConfigChange))}
                     </form>
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-gray-500">No configuration required for this integration</p>
+                      <p className="text-muted-foreground">No configuration required for this integration</p>
                     </div>
                   )}
                 </div>
@@ -343,16 +377,16 @@ const IntegrationInstallPage: React.FC = () => {
 
               {step === 2 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Credentials Setup</h3>
-                  <p className="text-gray-600 mb-6">Enter your API credentials for this integration.</p>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Credentials Setup</h3>
+                  <p className="text-muted-foreground mb-6">Enter your API credentials for this integration.</p>
 
                   {credentialFields.length > 0 ? (
                     <form className="space-y-4">
-                      {credentialFields.map(renderFormField)}
+                      {credentialFields.map(field => renderFormField(field, credentialsForm, handleCredentialsChange))}
                     </form>
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-gray-500">No credentials required for this integration</p>
+                      <p className="text-muted-foreground">No credentials required for this integration</p>
                     </div>
                   )}
                 </div>
@@ -360,37 +394,37 @@ const IntegrationInstallPage: React.FC = () => {
 
               {step === 3 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Test Connection</h3>
-                  <p className="text-gray-600 mb-6">Test your configuration before finalizing the installation.</p>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Test Connection</h3>
+                  <p className="text-muted-foreground mb-6">Test your configuration before finalizing the installation.</p>
 
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <h4 className="font-medium text-gray-700 mb-2">Configuration Summary</h4>
+                  <div className="bg-background rounded-lg p-4 mb-6">
+                    <h4 className="font-medium text-muted-foreground mb-2">Configuration Summary</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-500 mb-1">Integration Type</p>
+                        <p className="text-muted-foreground mb-1">Integration Type</p>
                         <p className="font-medium">{integration.integration_type.replace('_', ' ')}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 mb-1">Category</p>
+                        <p className="text-muted-foreground mb-1">Category</p>
                         <p className="font-medium">{integration.category.replace('_', ' ')}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 mb-1">Config Fields</p>
+                        <p className="text-muted-foreground mb-1">Config Fields</p>
                         <p className="font-medium">{configFields.length} fields configured</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 mb-1">Credential Fields</p>
+                        <p className="text-muted-foreground mb-1">Credential Fields</p>
                         <p className="font-medium">{credentialFields.length} fields configured</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-700 mb-3">Test Connection</h4>
+                    <h4 className="font-medium text-muted-foreground mb-3">Test Connection</h4>
                     <button
                       onClick={handleTestConnection}
                       disabled={isTesting}
-                      className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors ${isTesting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w-full bg-cyan-400 text-white py-2 px-4 rounded-md hover:bg-cyan-300 transition-colors ${isTesting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {isTesting ? (
                         <>
@@ -403,8 +437,8 @@ const IntegrationInstallPage: React.FC = () => {
                     </button>
 
                     {testResult && (
-                      <div className={`mt-4 p-3 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                        <p className={testResult.success ? 'text-green-600' : 'text-red-600'}>
+                      <div className={`mt-4 p-3 rounded-md ${testResult.success ? 'bg-emerald-500/10 border border-green-200' : 'bg-rose-500/10 border border-red-200'}`}>
+                        <p className={testResult.success ? 'text-emerald-300' : 'text-rose-400'}>
                           {testResult.success ? '✅ ' : '❌ '}{testResult.message}
                         </p>
                       </div>
@@ -415,11 +449,11 @@ const IntegrationInstallPage: React.FC = () => {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="border-t border-gray-200 px-6 py-4">
+            <div className="border-t border-border px-6 py-4">
               <div className="flex justify-between items-center">
                 <button
-                  onClick={() => step > 1 ? setStep(step - 1) : navigate(`/integrations/${integration.id}`)}
-                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                  onClick={() => step > 1 ? setStep(step - 1) : navigate(`/app/integrations/${integration.id}`)}
+                  className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
                 >
                   {step > 1 ? '← Previous' : 'Cancel'}
                 </button>
@@ -427,15 +461,15 @@ const IntegrationInstallPage: React.FC = () => {
                 {step < 3 ? (
                   <button
                     onClick={() => setStep(step + 1)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    className="bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300"
                   >
                     Next →
                   </button>
                 ) : (
                   <button
                     onClick={handleInstall}
-                    disabled={isTesting || (testResult && !testResult.success)}
-                    className={`bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ${isTesting || (testResult && !testResult.success) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isTesting || (!!testResult && !testResult.success)}
+                    className={`bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ${isTesting || (!!testResult && !testResult.success) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Install Integration
                   </button>

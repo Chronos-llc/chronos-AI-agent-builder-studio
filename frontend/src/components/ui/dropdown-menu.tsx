@@ -2,7 +2,46 @@ import * as React from "react"
 import { cn } from "../../lib/utils"
 
 const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
-    return <div className="relative inline-block">{children}</div>
+    const [open, setOpen] = React.useState(false)
+
+    const handleToggle = () => {
+        setOpen(!open)
+    }
+
+    const handleClose = () => {
+        setOpen(false)
+    }
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const dropdown = event.target as Node
+            if (dropdown && !document.querySelector('[role="dropdown-menu"]')?.contains(dropdown)) {
+                setOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    return (
+        <div className="relative inline-block">
+            {React.Children.map(children, child => {
+                if (React.isValidElement(child)) {
+                    if (child.type === DropdownMenuTrigger) {
+                        return React.cloneElement(child, {
+                            onClick: handleToggle
+                        })
+                    } else if (child.type === DropdownMenuContent) {
+                        return open ? React.cloneElement(child, {
+                            onMouseLeave: handleClose
+                        }) : null
+                    }
+                }
+                return child
+            })}
+        </div>
+    )
 }
 
 const DropdownMenuTrigger = React.forwardRef<

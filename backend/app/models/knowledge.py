@@ -29,6 +29,12 @@ class KnowledgeFile(BaseModel):
     original_filename = Column(String(255), nullable=False)
     stored_filename = Column(String(255), nullable=False, unique=True)
     file_path = Column(String(500), nullable=False)
+    object_key = Column(String(1024), nullable=True, index=True)
+    object_size = Column(Integer, nullable=True)
+    object_content_type = Column(String(255), nullable=True)
+    object_etag = Column(String(128), nullable=True)
+    storage_provider = Column(String(32), nullable=True)
+    storage_bucket = Column(String(128), nullable=True)
     file_type = Column(Enum(FileType), nullable=False)
     file_size = Column(Integer, nullable=False)
     mime_type = Column(String(100), nullable=True)
@@ -41,7 +47,7 @@ class KnowledgeFile(BaseModel):
     processing_error = Column(Text, nullable=True)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)  # Additional file metadata
+    additional_metadata = Column(JSON, nullable=True)  # Additional file metadata
     tags = Column(JSON, nullable=True)  # User-defined tags
     
     # Agent association

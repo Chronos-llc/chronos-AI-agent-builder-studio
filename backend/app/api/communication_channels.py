@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.communication_channels import (
     CommunicationChannelConfig,
@@ -9,7 +11,10 @@ from app.core.communication_channels import (
     CommunicationChannelError
 )
 from app.core.content_analysis import content_analyzer
-from app.core.security import get_current_user
+from app.api.auth import get_current_user
+from app.core.conversation_manager import append_message, get_or_create_conversation
+from app.core.database import get_db
+from app.models.agent import AgentModel
 from app.models.user import User as UserModel
 
 
@@ -72,7 +77,8 @@ async def list_communication_channels(
 @router.post("/communication/send/", response_model=Dict[str, Any])
 async def send_message(
     message_data: Dict[str, Any],
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Send a message through a communication channel with advanced routing"""
     try:
@@ -86,6 +92,33 @@ async def send_message(
             message.route_to = route_to
         
         result = await communication_manager.send_message(message, channel_id)
+
+        agent_id = message_data.get("agent_id")
+        if agent_id:
+            agent = (
+                await db.execute(
+                    select(AgentModel).where(
+                        and_(AgentModel.id == int(agent_id), AgentModel.owner_id == current_user.id)
+                    )
+                )
+            ).scalar_one_or_none()
+            if agent:
+                conversation = await get_or_create_conversation(
+                    db,
+                    agent_id=agent.id,
+                    user_id=current_user.id,
+                    channel_type=message_data.get("channel_type", "webchat"),
+                    external_conversation_id=message_data.get("conversation_id") or channel_id,
+                    title=f"Channel {channel_id}",
+                )
+                await append_message(
+                    db,
+                    conversation=conversation,
+                    role="user",
+                    content=str(message_data.get("content") or ""),
+                    metadata=message_data,
+                    source_platform_message_id=message_data.get("message_id"),
+                )
         return result
     except CommunicationChannelError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -97,12 +130,41 @@ async def send_message(
 async def receive_webhook(
     channel_id: str,
     request: Request,
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Receive webhook messages"""
     try:
         payload = await request.json()
         result = await communication_manager.receive_webhook(channel_id, payload)
+
+        agent_id = payload.get("agent_id")
+        if agent_id:
+            agent = (
+                await db.execute(
+                    select(AgentModel).where(
+                        and_(AgentModel.id == int(agent_id), AgentModel.owner_id == current_user.id)
+                    )
+                )
+            ).scalar_one_or_none()
+            if agent:
+                conversation = await get_or_create_conversation(
+                    db,
+                    agent_id=agent.id,
+                    user_id=current_user.id,
+                    channel_type=payload.get("channel_type", "webchat"),
+                    external_conversation_id=payload.get("conversation_id") or channel_id,
+                    title=f"Webhook {channel_id}",
+                )
+                content = payload.get("content") or payload.get("text") or payload.get("message") or ""
+                await append_message(
+                    db,
+                    conversation=conversation,
+                    role="user",
+                    content=str(content),
+                    metadata=payload,
+                    source_platform_message_id=payload.get("message_id"),
+                )
         return result
     except CommunicationChannelError as e:
         raise HTTPException(status_code=400, detail=str(e))

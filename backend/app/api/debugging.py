@@ -5,13 +5,12 @@ import uuid
 import json
 import logging
 
-from backend.app.core.security import get_current_user
-from backend.app.models.user import User
-from backend.app.models.agent import Agent
-from backend.app.models.debugging import DebugSession, LogEntry, Breakpoint, WatchExpression
-from backend.app.schemas.debugging import (
+from app.api.auth import get_current_user
+from app.models.user import User
+from app.models.agent import Agent
+from app.schemas.debugging import (
     LogEntry, LogFilter, DebugSession, DebugCommand, DebugResponse,
-    PerformanceMetrics, Breakpoint, WatchExpression, DebugEvent, 
+    PerformanceMetrics, Breakpoint, WatchExpression, DebugEvent,
     ExecutionTrace, DebugConfiguration
 )
 

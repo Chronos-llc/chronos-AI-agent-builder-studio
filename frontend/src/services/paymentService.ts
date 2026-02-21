@@ -17,8 +17,28 @@ import type {
   PaymentStats
 } from '../types/payment';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_BASE = `${API_BASE_URL}/api/payment`;
+
+const getAccessToken = () => {
+  if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+    return null;
+  }
+  return globalThis.localStorage.getItem('chronos_access_token') || globalThis.localStorage.getItem('access_token');
+};
+
+function withAuth(init: RequestInit = {}): RequestInit {
+  const token = getAccessToken();
+  const headers = new Headers(init.headers || {});
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return {
+    ...init,
+    headers,
+    credentials: 'include',
+  };
+}
 
 // Helper Functions
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -59,21 +79,21 @@ export async function getPaymentMethods(
   if (isActive !== undefined) params.is_active = isActive;
   
   const queryString = buildQueryString(params);
-  const response = await fetch(`${API_BASE}/methods${queryString}`);
+  const response = await fetch(`${API_BASE}/methods${queryString}`, withAuth());
   return handleResponse<PaymentMethodList>(response);
 }
 
 export async function getPaymentMethod(methodId: number): Promise<PaymentMethod> {
-  const response = await fetch(`${API_BASE}/methods/${methodId}`);
+  const response = await fetch(`${API_BASE}/methods/${methodId}`, withAuth());
   return handleResponse<PaymentMethod>(response);
 }
 
 export async function createPaymentMethod(method: PaymentMethodCreate): Promise<PaymentMethod> {
-  const response = await fetch(`${API_BASE}/methods`, {
+  const response = await fetch(`${API_BASE}/methods`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(method),
-  });
+  }));
   return handleResponse<PaymentMethod>(response);
 }
 
@@ -81,18 +101,18 @@ export async function updatePaymentMethod(
   methodId: number,
   method: PaymentMethodUpdate
 ): Promise<PaymentMethod> {
-  const response = await fetch(`${API_BASE}/methods/${methodId}`, {
+  const response = await fetch(`${API_BASE}/methods/${methodId}`, withAuth({
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(method),
-  });
+  }));
   return handleResponse<PaymentMethod>(response);
 }
 
 export async function deletePaymentMethod(methodId: number): Promise<void> {
-  const response = await fetch(`${API_BASE}/methods/${methodId}`, {
+  const response = await fetch(`${API_BASE}/methods/${methodId}`, withAuth({
     method: 'DELETE',
-  });
+  }));
   if (!response.ok) {
     throw new Error('Failed to delete payment method');
   }
@@ -100,18 +120,18 @@ export async function deletePaymentMethod(methodId: number): Promise<void> {
 
 // Payment Settings API
 export async function getPaymentSettings(): Promise<PaymentSettings> {
-  const response = await fetch(`${API_BASE}/settings`);
+  const response = await fetch(`${API_BASE}/settings`, withAuth());
   return handleResponse<PaymentSettings>(response);
 }
 
 export async function updatePaymentSettings(
   settings: PaymentSettingsUpdate
 ): Promise<PaymentSettings> {
-  const response = await fetch(`${API_BASE}/settings`, {
+  const response = await fetch(`${API_BASE}/settings`, withAuth({
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
-  });
+  }));
   return handleResponse<PaymentSettings>(response);
 }
 
@@ -139,23 +159,23 @@ export async function getPaymentTransactions(
   if (transactionType) params.transaction_type = transactionType;
   
   const queryString = buildQueryString(params);
-  const response = await fetch(`${API_BASE}/transactions${queryString}`);
+  const response = await fetch(`${API_BASE}/transactions${queryString}`, withAuth());
   return handleResponse<PaymentTransactionList>(response);
 }
 
 export async function createPaymentTransaction(
   transaction: PaymentTransactionCreate
 ): Promise<PaymentTransactionResponse> {
-  const response = await fetch(`${API_BASE}/transactions`, {
+  const response = await fetch(`${API_BASE}/transactions`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(transaction),
-  });
+  }));
   return handleResponse<PaymentTransactionResponse>(response);
 }
 
 // Payment Statistics API
 export async function getPaymentStats(): Promise<PaymentStats> {
-  const response = await fetch(`${API_BASE}/stats`);
+  const response = await fetch(`${API_BASE}/stats`, withAuth());
   return handleResponse<PaymentStats>(response);
 }

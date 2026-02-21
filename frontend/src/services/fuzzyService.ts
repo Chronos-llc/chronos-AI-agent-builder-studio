@@ -30,6 +30,27 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_A
 const API_BASE = `${API_BASE_URL}/api/fuzzy-tools`
 
 // ============== Helper Functions ==============
+const getAccessToken = () => {
+    if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+        return null
+    }
+    return globalThis.localStorage.getItem('chronos_access_token') || globalThis.localStorage.getItem('access_token')
+}
+
+function withAuth(init: RequestInit = {}): RequestInit {
+    const token = getAccessToken()
+    const headers = new Headers(init.headers || {})
+    if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+    }
+    return {
+        ...init,
+        headers,
+        credentials: 'include',
+    }
+}
+
+const authFetch = (input: RequestInfo | URL, init: RequestInit = {}) => fetch(input, withAuth(init))
 
 async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
@@ -56,14 +77,14 @@ function buildQueryString(params: Record<string, unknown>): string {
 // ============== Configuration API ==============
 
 export async function getFuzzyConfiguration(): Promise<FuzzyConfiguration> {
-    const response = await fetch(`${API_BASE}/configuration`)
+    const response = await authFetch(`${API_BASE}/configuration`)
     return handleResponse<FuzzyConfiguration>(response)
 }
 
 export async function updateFuzzyConfiguration(
     config: FuzzyConfigurationUpdate
 ): Promise<FuzzyConfiguration> {
-    const response = await fetch(`${API_BASE}/configuration`, {
+    const response = await authFetch(`${API_BASE}/configuration`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -72,14 +93,14 @@ export async function updateFuzzyConfiguration(
 }
 
 export async function exportFuzzyConfiguration(): Promise<FuzzyConfigurationExport> {
-    const response = await fetch(`${API_BASE}/configuration/export`)
+    const response = await authFetch(`${API_BASE}/configuration/export`)
     return handleResponse<FuzzyConfigurationExport>(response)
 }
 
 export async function importFuzzyConfiguration(
     importData: FuzzyConfigurationImport
 ): Promise<FuzzyConfiguration> {
-    const response = await fetch(`${API_BASE}/configuration/import`, {
+    const response = await authFetch(`${API_BASE}/configuration/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(importData)
@@ -90,12 +111,12 @@ export async function importFuzzyConfiguration(
 // ============== Tool Management API ==============
 
 export async function getFuzzyTools(): Promise<FuzzyTool[]> {
-    const response = await fetch(`${API_BASE}/tools`)
+    const response = await authFetch(`${API_BASE}/tools`)
     return handleResponse<FuzzyTool[]>(response)
 }
 
 export async function getFuzzyTool(toolId: string): Promise<FuzzyTool> {
-    const response = await fetch(`${API_BASE}/tools/${toolId}`)
+    const response = await authFetch(`${API_BASE}/tools/${toolId}`)
     return handleResponse<FuzzyTool>(response)
 }
 
@@ -103,7 +124,7 @@ export async function updateFuzzyToolConfig(
     toolId: string,
     config: FuzzyToolConfig
 ): Promise<FuzzyTool> {
-    const response = await fetch(`${API_BASE}/tools/${toolId}`, {
+    const response = await authFetch(`${API_BASE}/tools/${toolId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -112,14 +133,14 @@ export async function updateFuzzyToolConfig(
 }
 
 export async function enableFuzzyTool(toolId: string): Promise<FuzzyTool> {
-    const response = await fetch(`${API_BASE}/tools/${toolId}/enable`, {
+    const response = await authFetch(`${API_BASE}/tools/${toolId}/enable`, {
         method: 'POST'
     })
     return handleResponse<FuzzyTool>(response)
 }
 
 export async function disableFuzzyTool(toolId: string): Promise<FuzzyTool> {
-    const response = await fetch(`${API_BASE}/tools/${toolId}/disable`, {
+    const response = await authFetch(`${API_BASE}/tools/${toolId}/disable`, {
         method: 'POST'
     })
     return handleResponse<FuzzyTool>(response)
@@ -129,7 +150,7 @@ export async function testFuzzyTool(
     toolId: string,
     parameters: Record<string, any>
 ): Promise<FuzzyToolResponse> {
-    const response = await fetch(`${API_BASE}/tools/${toolId}/test`, {
+    const response = await authFetch(`${API_BASE}/tools/${toolId}/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parameters })
@@ -142,7 +163,7 @@ export async function testFuzzyTool(
 export async function createFuzzySession(
     data: FuzzySessionCreate
 ): Promise<FuzzySession> {
-    const response = await fetch(`${API_BASE}/sessions`, {
+    const response = await authFetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -155,17 +176,17 @@ export async function getFuzzySessions(
     offset: number = 0
 ): Promise<{ sessions: FuzzySession[]; total: number }> {
     const params = buildQueryString({ limit, offset })
-    const response = await fetch(`${API_BASE}/sessions${params}`)
+    const response = await authFetch(`${API_BASE}/sessions${params}`)
     return handleResponse<{ sessions: FuzzySession[]; total: number }>(response)
 }
 
 export async function getFuzzySession(sessionId: number): Promise<FuzzySession> {
-    const response = await fetch(`${API_BASE}/sessions/${sessionId}`)
+    const response = await authFetch(`${API_BASE}/sessions/${sessionId}`)
     return handleResponse<FuzzySession>(response)
 }
 
 export async function endFuzzySession(sessionId: number): Promise<FuzzySession> {
-    const response = await fetch(`${API_BASE}/sessions/${sessionId}/end`, {
+    const response = await authFetch(`${API_BASE}/sessions/${sessionId}/end`, {
         method: 'POST'
     })
     return handleResponse<FuzzySession>(response)
@@ -186,19 +207,19 @@ export async function getFuzzyActions(
     if (status) params.status = status
 
     const queryString = buildQueryString(params)
-    const response = await fetch(`${API_BASE}/actions${queryString}`)
+    const response = await authFetch(`${API_BASE}/actions${queryString}`)
     return handleResponse<FuzzyActionList>(response)
 }
 
 export async function getFuzzyAction(actionId: number): Promise<FuzzyAction> {
-    const response = await fetch(`${API_BASE}/actions/${actionId}`)
+    const response = await authFetch(`${API_BASE}/actions/${actionId}`)
     return handleResponse<FuzzyAction>(response)
 }
 
 export async function rollbackFuzzyAction(
     actionId: number
 ): Promise<FuzzyApiResponse> {
-    const response = await fetch(`${API_BASE}/actions/${actionId}/rollback`, {
+    const response = await authFetch(`${API_BASE}/actions/${actionId}/rollback`, {
         method: 'POST'
     })
     return handleResponse<FuzzyApiResponse>(response)
@@ -207,22 +228,22 @@ export async function rollbackFuzzyAction(
 // ============== Monitoring API ==============
 
 export async function getFuzzyStatistics(): Promise<FuzzyUsageStatistics> {
-    const response = await fetch(`${API_BASE}/monitoring/statistics`)
+    const response = await authFetch(`${API_BASE}/monitoring/statistics`)
     return handleResponse<FuzzyUsageStatistics>(response)
 }
 
 export async function getFuzzyPerformance(): Promise<FuzzyPerformanceMetrics> {
-    const response = await fetch(`${API_BASE}/monitoring/performance`)
+    const response = await authFetch(`${API_BASE}/monitoring/performance`)
     return handleResponse<FuzzyPerformanceMetrics>(response)
 }
 
 export async function getFuzzyHealth(): Promise<FuzzyHealthStatus> {
-    const response = await fetch(`${API_BASE}/monitoring/health`)
+    const response = await authFetch(`${API_BASE}/monitoring/health`)
     return handleResponse<FuzzyHealthStatus>(response)
 }
 
 export async function getFuzzyDashboard(): Promise<FuzzyDashboardData> {
-    const response = await fetch(`${API_BASE}/monitoring/dashboard`)
+    const response = await authFetch(`${API_BASE}/monitoring/dashboard`)
     return handleResponse<FuzzyDashboardData>(response)
 }
 
@@ -235,7 +256,7 @@ export async function getFuzzyActivityLogs(
     if (level) params.level = level
 
     const queryString = buildQueryString(params)
-    const response = await fetch(`${API_BASE}/monitoring/logs${queryString}`)
+    const response = await authFetch(`${API_BASE}/monitoring/logs${queryString}`)
     return handleResponse<{ logs: FuzzyActivityLog[]; total: number }>(response)
 }
 
@@ -244,7 +265,7 @@ export async function getFuzzyActivityLogs(
 export async function testFuzzyResponse(
     request: FuzzyTestRequest
 ): Promise<FuzzyTestResponse> {
-    const response = await fetch(`${API_BASE}/test`, {
+    const response = await authFetch(`${API_BASE}/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request)
@@ -256,7 +277,7 @@ export async function simulateFuzzyInteraction(
     scenario: string,
     context?: Record<string, any>
 ): Promise<FuzzyTestResponse> {
-    const response = await fetch(`${API_BASE}/test/simulate`, {
+    const response = await authFetch(`${API_BASE}/test/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario, context })
@@ -270,12 +291,12 @@ export async function getFuzzyRateLimitStatus(
     userId?: number
 ): Promise<FuzzyRateLimitStatus> {
     const params = userId ? buildQueryString({ user_id: userId }) : ''
-    const response = await fetch(`${API_BASE}/rate-limit${params}`)
+    const response = await authFetch(`${API_BASE}/rate-limit${params}`)
     return handleResponse<FuzzyRateLimitStatus>(response)
 }
 
 export async function resetFuzzyRateLimit(userId: number): Promise<FuzzyApiResponse> {
-    const response = await fetch(`${API_BASE}/rate-limit/reset`, {
+    const response = await authFetch(`${API_BASE}/rate-limit/reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId })

@@ -17,6 +17,7 @@ from app.core.database import get_db
 from app.core.meta_agent_engine import MetaAgentEngine
 from app.models.user import User
 from app.models.meta_agent import MetaAgent, MetaAgentCommand, MetaAgentSession, CommandStatus, SessionStatus
+from app.models.user_profile import UserProfile
 from app.api.auth import get_current_user
 from app.schemas.meta_agent import (
     MetaAgentCreate, MetaAgentUpdate, MetaAgentResponse,
@@ -31,6 +32,24 @@ router = APIRouter()
 
 # Initialize the meta-agent engine
 meta_agent_engine = MetaAgentEngine()
+
+
+def _profile_context(profile: UserProfile | None) -> dict:
+    if not profile:
+        return {}
+    return {
+        "persona": profile.persona.value if getattr(profile, "persona", None) else None,
+        "github_url": profile.github_url,
+        "linkedin_url": profile.linkedin_url,
+        "role_title": profile.role_title,
+        "company_name": profile.company_name,
+        "industry": profile.industry,
+        "team_size": profile.team_size,
+        "use_cases": profile.use_cases or [],
+        "tools_stack": profile.tools_stack or [],
+        "primary_goal": profile.primary_goal,
+        "onboarding_completed": profile.onboarding_completed,
+    }
 
 
 # ============== Meta-Agent CRUD Endpoints ==============
@@ -192,12 +211,15 @@ async def execute_command(
         session = result.scalar_one_or_none()
     
     if not session:
+        profile = (
+            await db.execute(select(UserProfile).where(UserProfile.user_id == current_user.id))
+        ).scalar_one_or_none()
         # Create a new session
         session = MetaAgentSession(
             user_id=current_user.id,
             meta_agent_id=1,  # Default meta-agent, could be configurable
             status=SessionStatus.ACTIVE,
-            context={"history": []}
+            context={"history": [], "user_profile": _profile_context(profile)}
         )
         db.add(session)
         await db.commit()
@@ -427,7 +449,11 @@ async def create_session(
         user_id=current_user.id,
         meta_agent_id=session_data.meta_agent_id,
         status=SessionStatus.ACTIVE,
-        context={"history": []}
+        context={"history": [], "user_profile": _profile_context(
+            (
+                await db.execute(select(UserProfile).where(UserProfile.user_id == current_user.id))
+            ).scalar_one_or_none()
+        )}
     )
     
     db.add(session)

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { ProviderLogo } from '../components/brand/ProviderLogo';
+import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
 
 interface Integration {
     id: number;
@@ -123,7 +125,7 @@ const IntegrationDetailsPage: React.FC = () => {
 
     const handleInstall = () => {
         if (id) {
-            navigate(`/integrations/${id}/install`);
+            navigate(`/app/integrations/${id}/install`);
         }
     };
 
@@ -195,20 +197,7 @@ const IntegrationDetailsPage: React.FC = () => {
     if (loading) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen bg-gray-50 p-6">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-                            <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
-                            <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
-                            <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
-                            <div className="h-6 bg-gray-200 rounded mb-6 w-1/4"></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="h-4 bg-gray-200 rounded"></div>
-                                <div className="h-4 bg-gray-200 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PlatformLoadingScreen />
             </ProtectedRoute>
         );
     }
@@ -216,13 +205,13 @@ const IntegrationDetailsPage: React.FC = () => {
     if (error) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen bg-gray-50 p-6">
+                <div className="min-h-screen bg-background p-6">
                     <div className="max-w-4xl mx-auto">
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                            <p className="text-red-600 mb-4">⚠️ {error}</p>
+                        <div className="bg-rose-500/10 border border-red-200 rounded-lg p-6">
+                            <p className="text-rose-400 mb-4">⚠️ {error}</p>
                             <button
                                 onClick={() => fetchIntegrationDetails(parseInt(id || '0'))}
-                                className="text-sm text-red-600 hover:text-red-800"
+                                className="text-sm text-rose-400 hover:text-red-800"
                             >
                                 Try again
                             </button>
@@ -236,14 +225,14 @@ const IntegrationDetailsPage: React.FC = () => {
     if (!integration) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen bg-gray-50 p-6">
+                <div className="min-h-screen bg-background p-6">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center py-12">
                             <div className="text-6xl text-gray-300 mb-4">🔍</div>
-                            <p className="text-gray-600 mb-2">Integration not found</p>
+                            <p className="text-muted-foreground mb-2">Integration not found</p>
                             <button
-                                onClick={() => navigate('/integrations')}
-                                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                                onClick={() => navigate('/app/integrations')}
+                                className="mt-4 bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300"
                             >
                                 Back to Marketplace
                             </button>
@@ -256,24 +245,24 @@ const IntegrationDetailsPage: React.FC = () => {
 
     return (
         <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50 p-6">
+            <div className="min-h-screen bg-background p-6">
                 <div className="max-w-6xl mx-auto">
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{integration.name}</h1>
-                            <p className="text-gray-600 mt-1">by Chronos Hub</p>
+                            <h1 className="text-3xl font-bold text-foreground">{integration.name}</h1>
+                            <p className="text-muted-foreground mt-1">by Chronos Hub</p>
                         </div>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => navigate('/integrations')}
-                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200"
+                                onClick={() => navigate('/app/integrations')}
+                                className="bg-gray-100 text-muted-foreground px-4 py-2 rounded-md hover:bg-gray-200"
                             >
                                 ← Back to Marketplace
                             </button>
                             <button
                                 onClick={handleInstall}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                                className="bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300"
                             >
                                 Install Integration
                             </button>
@@ -281,31 +270,36 @@ const IntegrationDetailsPage: React.FC = () => {
                     </div>
 
                     {/* Integration Header */}
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
                         <div className="p-6">
                             <div className="flex flex-col lg:flex-row gap-6">
                                 <div className="flex-shrink-0">
                                     <div className="w-20 h-20 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <span className="text-blue-600 text-4xl">{integration.icon || '🔌'}</span>
+                                        <ProviderLogo
+                                            name={integration.name}
+                                            url={integration.icon}
+                                            size={64}
+                                            className="border-0 bg-transparent"
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="flex-1">
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm">
+                                        <span className="bg-green-100 text-emerald-300 px-3 py-1 rounded-full text-sm">
                                             {integration.category.replace('_', ' ')}
                                         </span>
-                                        <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm">
+                                        <span className="bg-blue-100 text-cyan-300 px-3 py-1 rounded-full text-sm">
                                             {integration.integration_type.replace('_', ' ')}
                                         </span>
-                                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+                                        <span className="bg-gray-100 text-muted-foreground px-3 py-1 rounded-full text-sm">
                                             v{integration.version}
                                         </span>
                                     </div>
 
-                                    <p className="text-gray-600 mb-4">{integration.description}</p>
+                                    <p className="text-muted-foreground mb-4">{integration.description}</p>
 
-                                    <div className="flex flex-wrap gap-6 text-sm text-gray-600">
+                                    <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-2">
                                             {renderStars(integration.rating)}
                                             <span>{integration.rating.toFixed(1)} ({integration.review_count} reviews)</span>
@@ -322,7 +316,7 @@ const IntegrationDetailsPage: React.FC = () => {
                                 <div className="flex-shrink-0">
                                     <button
                                         onClick={handleInstall}
-                                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors w-full lg:w-auto"
+                                        className="bg-cyan-400 text-white px-6 py-3 rounded-lg hover:bg-cyan-300 transition-colors w-full lg:w-auto"
                                     >
                                         Install Now
                                     </button>
@@ -331,29 +325,29 @@ const IntegrationDetailsPage: React.FC = () => {
                         </div>
 
                         {/* Tabs */}
-                        <div className="border-t border-gray-200">
+                        <div className="border-t border-border">
                             <div className="flex">
                                 <button
                                     onClick={() => setActiveTab('details')}
                                     className={`flex-1 py-3 px-4 text-sm font-medium ${activeTab === 'details'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'}`}
+                                        ? 'border-b-2 border-blue-600 text-cyan-300'
+                                        : 'text-muted-foreground hover:text-muted-foreground'}`}
                                 >
                                     Details
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('setup')}
                                     className={`flex-1 py-3 px-4 text-sm font-medium ${activeTab === 'setup'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'}`}
+                                        ? 'border-b-2 border-blue-600 text-cyan-300'
+                                        : 'text-muted-foreground hover:text-muted-foreground'}`}
                                 >
                                     Setup Guide
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('reviews')}
                                     className={`flex-1 py-3 px-4 text-sm font-medium ${activeTab === 'reviews'
-                                        ? 'border-b-2 border-blue-600 text-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'}`}
+                                        ? 'border-b-2 border-blue-600 text-cyan-300'
+                                        : 'text-muted-foreground hover:text-muted-foreground'}`}
                                 >
                                     Reviews ({integration.review_count})
                                 </button>
@@ -362,46 +356,46 @@ const IntegrationDetailsPage: React.FC = () => {
                     </div>
 
                     {/* Tab Content */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="bg-card rounded-lg shadow-sm p-6">
                         {activeTab === 'details' && (
                             <div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Integration Details</h3>
+                                <h3 className="text-xl font-semibold text-foreground mb-4">Integration Details</h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div>
-                                        <h4 className="font-medium text-gray-700 mb-2">Type</h4>
-                                        <p className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md capitalize">
+                                        <h4 className="font-medium text-muted-foreground mb-2">Type</h4>
+                                        <p className="bg-gray-100 text-muted-foreground px-3 py-2 rounded-md capitalize">
                                             {integration.integration_type.replace('_', ' ')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h4 className="font-medium text-gray-700 mb-2">Category</h4>
-                                        <p className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md capitalize">
+                                        <h4 className="font-medium text-muted-foreground mb-2">Category</h4>
+                                        <p className="bg-gray-100 text-muted-foreground px-3 py-2 rounded-md capitalize">
                                             {integration.category.replace('_', ' ')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h4 className="font-medium text-gray-700 mb-2">Version</h4>
-                                        <p className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md">
+                                        <h4 className="font-medium text-muted-foreground mb-2">Version</h4>
+                                        <p className="bg-gray-100 text-muted-foreground px-3 py-2 rounded-md">
                                             {integration.version}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h4 className="font-medium text-gray-700 mb-2">Last Updated</h4>
-                                        <p className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md">
+                                        <h4 className="font-medium text-muted-foreground mb-2">Last Updated</h4>
+                                        <p className="bg-gray-100 text-muted-foreground px-3 py-2 rounded-md">
                                             {new Date(integration.updated_at).toLocaleDateString()}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="mb-6">
-                                    <h4 className="font-medium text-gray-700 mb-2">Supported Features</h4>
+                                    <h4 className="font-medium text-muted-foreground mb-2">Supported Features</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {integration.supported_features.map((feature, index) => (
-                                            <span key={index} className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm">
+                                            <span key={index} className="bg-blue-100 text-cyan-300 px-3 py-1 rounded-full text-sm">
                                                 {feature}
                                             </span>
                                         ))}
@@ -409,9 +403,9 @@ const IntegrationDetailsPage: React.FC = () => {
                                 </div>
 
                                 <div className="mb-6">
-                                    <h4 className="font-medium text-gray-700 mb-2">Configuration Schema</h4>
-                                    <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
-                                        <pre className="text-sm text-gray-700">
+                                    <h4 className="font-medium text-muted-foreground mb-2">Configuration Schema</h4>
+                                    <div className="bg-background p-4 rounded-md overflow-x-auto">
+                                        <pre className="text-sm text-muted-foreground">
                                             {JSON.stringify(integration.config_schema, null, 2)}
                                         </pre>
                                     </div>
@@ -419,9 +413,9 @@ const IntegrationDetailsPage: React.FC = () => {
 
                                 {integration.credentials_schema && (
                                     <div className="mb-6">
-                                        <h4 className="font-medium text-gray-700 mb-2">Credentials Schema</h4>
-                                        <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
-                                            <pre className="text-sm text-gray-700">
+                                        <h4 className="font-medium text-muted-foreground mb-2">Credentials Schema</h4>
+                                        <div className="bg-background p-4 rounded-md overflow-x-auto">
+                                            <pre className="text-sm text-muted-foreground">
                                                 {JSON.stringify(integration.credentials_schema, null, 2)}
                                             </pre>
                                         </div>
@@ -429,18 +423,18 @@ const IntegrationDetailsPage: React.FC = () => {
                                 )}
 
                                 <div>
-                                    <h4 className="font-medium text-gray-700 mb-2">Documentation</h4>
+                                    <h4 className="font-medium text-muted-foreground mb-2">Documentation</h4>
                                     {integration.documentation_url ? (
                                         <a
                                             href={integration.documentation_url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-blue-600 hover:text-blue-800 underline"
+                                            className="text-cyan-300 hover:text-blue-800 underline"
                                         >
                                             View Full Documentation
                                         </a>
                                     ) : (
-                                        <p className="text-gray-500">No documentation available</p>
+                                        <p className="text-muted-foreground">No documentation available</p>
                                     )}
                                 </div>
                             </div>
@@ -448,18 +442,18 @@ const IntegrationDetailsPage: React.FC = () => {
 
                         {activeTab === 'setup' && (
                             <div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Setup Guide</h3>
+                                <h3 className="text-xl font-semibold text-foreground mb-4">Setup Guide</h3>
 
                                 <div className="prose max-w-none">
-                                    <h4 className="text-lg font-medium text-gray-800 mb-2">Prerequisites</h4>
-                                    <ul className="list-disc pl-6 mb-4 text-gray-600">
+                                    <h4 className="text-lg font-medium text-foreground mb-2">Prerequisites</h4>
+                                    <ul className="list-disc pl-6 mb-4 text-muted-foreground">
                                         <li>Chronos AI Agent Builder Studio installed</li>
                                         <li>Valid API credentials for the service</li>
                                         <li>Basic understanding of integration configuration</li>
                                     </ul>
 
-                                    <h4 className="text-lg font-medium text-gray-800 mb-2">Installation Steps</h4>
-                                    <ol className="list-decimal pl-6 mb-4 text-gray-600">
+                                    <h4 className="text-lg font-medium text-foreground mb-2">Installation Steps</h4>
+                                    <ol className="list-decimal pl-6 mb-4 text-muted-foreground">
                                         <li>Click the "Install Now" button above</li>
                                         <li>Follow the configuration wizard</li>
                                         <li>Enter your API credentials</li>
@@ -468,11 +462,11 @@ const IntegrationDetailsPage: React.FC = () => {
                                         <li>Save and activate the integration</li>
                                     </ol>
 
-                                    <h4 className="text-lg font-medium text-gray-800 mb-2">Configuration</h4>
-                                    <p className="text-gray-600 mb-4">
+                                    <h4 className="text-lg font-medium text-foreground mb-2">Configuration</h4>
+                                    <p className="text-muted-foreground mb-4">
                                         After installation, you can configure the integration in your agent settings:
                                     </p>
-                                    <ol className="list-decimal pl-6 mb-4 text-gray-600">
+                                    <ol className="list-decimal pl-6 mb-4 text-muted-foreground">
                                         <li>Go to your agent builder</li>
                                         <li>Select the "Integrations" tab</li>
                                         <li>Find this integration in the list</li>
@@ -480,11 +474,11 @@ const IntegrationDetailsPage: React.FC = () => {
                                         <li>Save your changes</li>
                                     </ol>
 
-                                    <h4 className="text-lg font-medium text-gray-800 mb-2">Troubleshooting</h4>
-                                    <p className="text-gray-600 mb-4">
+                                    <h4 className="text-lg font-medium text-foreground mb-2">Troubleshooting</h4>
+                                    <p className="text-muted-foreground mb-4">
                                         If you encounter issues:
                                     </p>
-                                    <ul className="list-disc pl-6 mb-4 text-gray-600">
+                                    <ul className="list-disc pl-6 mb-4 text-muted-foreground">
                                         <li>Check your API credentials</li>
                                         <li>Verify network connectivity</li>
                                         <li>Review the integration logs</li>
@@ -492,7 +486,7 @@ const IntegrationDetailsPage: React.FC = () => {
                                         <li>Contact support if issues persist</li>
                                     </ul>
 
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="bg-cyan-500/10 border border-blue-200 rounded-lg p-4">
                                         <p className="text-blue-800">
                                             💡 Tip: Use the "Test Connection" button in the configuration wizard to verify your setup before saving.
                                         </p>
@@ -503,19 +497,19 @@ const IntegrationDetailsPage: React.FC = () => {
 
                         {activeTab === 'reviews' && (
                             <div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4">User Reviews</h3>
+                                <h3 className="text-xl font-semibold text-foreground mb-4">User Reviews</h3>
 
                                 {/* Write Review */}
                                 {!hasReviewed && user && (
-                                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                                        <h4 className="font-medium text-gray-700 mb-3">Write a Review</h4>
+                                    <div className="bg-background rounded-lg p-4 mb-6">
+                                        <h4 className="font-medium text-muted-foreground mb-3">Write a Review</h4>
                                         <form onSubmit={handleSubmitReview} className="space-y-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                                                <label className="block text-sm font-medium text-muted-foreground mb-1">Rating</label>
                                                 {renderEditableStars()}
                                             </div>
                                             <div>
-                                                <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
+                                                <label htmlFor="comment" className="block text-sm font-medium text-muted-foreground mb-1">
                                                     Your Review
                                                 </label>
                                                 <textarea
@@ -523,13 +517,13 @@ const IntegrationDetailsPage: React.FC = () => {
                                                     value={userReview.comment}
                                                     onChange={(e) => setUserReview({ ...userReview, comment: e.target.value })}
                                                     rows={3}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                     placeholder="Share your experience with this integration..."
                                                 />
                                             </div>
                                             <button
                                                 type="submit"
-                                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                                                className="bg-cyan-400 text-white px-4 py-2 rounded-md hover:bg-cyan-300"
                                             >
                                                 Submit Review
                                             </button>
@@ -541,31 +535,31 @@ const IntegrationDetailsPage: React.FC = () => {
                                 {reviews.length > 0 ? (
                                     <div className="space-y-6">
                                         {reviews.map((review) => (
-                                            <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                                            <div key={review.id} className="border-b border-border pb-6 last:border-b-0">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                            <span className="text-blue-600 font-medium">
+                                                            <span className="text-cyan-300 font-medium">
                                                                 {review.username.charAt(0).toUpperCase()}
                                                             </span>
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium text-gray-900">{review.username}</p>
-                                                            <p className="text-sm text-gray-500">
+                                                            <p className="font-medium text-foreground">{review.username}</p>
+                                                            <p className="text-sm text-muted-foreground">
                                                                 {new Date(review.created_at).toLocaleDateString()}
                                                             </p>
                                                         </div>
                                                     </div>
                                                     {renderStars(review.rating)}
                                                 </div>
-                                                <p className="text-gray-600 mb-3">{review.comment}</p>
+                                                <p className="text-muted-foreground mb-3">{review.comment}</p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="text-center py-8">
-                                        <p className="text-gray-500">No reviews yet</p>
-                                        <p className="text-sm text-gray-400 mt-1">Be the first to review this integration!</p>
+                                        <p className="text-muted-foreground">No reviews yet</p>
+                                        <p className="text-sm text-muted-foreground/70 mt-1">Be the first to review this integration!</p>
                                     </div>
                                 )}
                             </div>

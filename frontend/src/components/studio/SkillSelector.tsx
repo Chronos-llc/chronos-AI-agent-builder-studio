@@ -19,6 +19,8 @@ import {
 import { getSkills, getSkillCategories } from '../../services/skillsService'
 import type { Skill } from '../../types/skills'
 
+const ALL_CATEGORIES_VALUE = '__all__'
+
 export const SkillSelector = ({ onSkillsAdded }: { onSkillsAdded?: () => void }) => {
   const [skills, setSkills] = useState<Skill[]>([])
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([])
@@ -174,9 +176,9 @@ export const SkillSelector = ({ onSkillsAdded }: { onSkillsAdded?: () => void })
               Category
             </label>
             <Select 
-              value={selectedCategory || ''}
+              value={selectedCategory || ALL_CATEGORIES_VALUE}
               onValueChange={(value) => {
-                setSelectedCategory(value === '' ? null : value)
+                setSelectedCategory(value === ALL_CATEGORIES_VALUE ? null : value)
                 setCurrentPage(1)
               }}
             >
@@ -184,7 +186,7 @@ export const SkillSelector = ({ onSkillsAdded }: { onSkillsAdded?: () => void })
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value={ALL_CATEGORIES_VALUE}>All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.name} value={category.name}>
                     {category.name} ({category.count})

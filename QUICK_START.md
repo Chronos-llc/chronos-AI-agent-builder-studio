@@ -22,6 +22,20 @@ This will start:
 - PostgreSQL database on localhost:5432
 - Redis cache on localhost:6379
 
+### 1b. Start Object Storage (MinIO)
+
+Skills, knowledge uploads, screenshots, and marketplace media now use object storage.
+
+```bash
+docker-compose up -d minio minio-init
+```
+
+This will start:
+
+- MinIO API on localhost:9000
+- MinIO Console on localhost:9001
+- Bucket bootstrap via `minio-init` (`chronos-objects`)
+
 ### 2. Install Backend Dependencies
 
 ```bash
@@ -29,11 +43,17 @@ cd backend
 pip install -r requirements.txt
 ```
 
+### 2b. Seed AI Provider Integrations (Recommended)
+
+```bash
+python backend/scripts/seed_ai_provider_integrations.py
+```
+
 ### 3. Start Backend Server
 
 ```bash
-cd backend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+cd ..
+python -m uvicorn app.main:app --app-dir backend --reload-dir backend --host 0.0.0.0 --port 8000 --reload
 ```
 
 The backend API will be available at:
@@ -61,6 +81,19 @@ The frontend will be available at:
 
 - **Frontend**: <http://localhost:3000>
 
+## Object Storage Backfill (existing local records)
+
+After enabling object storage, migrate legacy file/image rows:
+
+```bash
+cd backend
+python scripts/backfill_object_storage_objects.py
+```
+
+Report output is written to:
+
+- `backend/backfill_object_storage_report.json`
+
 ## 🎉 Access Your Application
 
 Once both servers are running, you can access:
@@ -76,6 +109,19 @@ Once both servers are running, you can access:
 3. **Upload knowledge files** to test the knowledge base
 4. **Test real-time collaboration** features
 5. **Explore API endpoints** in the documentation
+
+### Skills Marketplace E2E Smoke (upload -> review -> publish -> install)
+
+```bash
+cd frontend
+npm run e2e
+```
+
+This runs Playwright against:
+
+- frontend: `http://127.0.0.1:3000`
+- backend: `http://127.0.0.1:8000`
+- MinIO: `http://127.0.0.1:9000`
 
 ## 📁 Project Structure
 
@@ -102,7 +148,7 @@ chronos-ai-agent-builder-studio/
 
 - **Real-time collaboration** via WebSocket
 - **File upload** and knowledge base management
-- **AI provider integrations** (OpenAI, Anthropic)
+- **AI provider integrations** (OpenAI, Fireworks AI, xAI, OpenRouter, and voice/STT/TTS providers)
 - **JWT authentication** with refresh tokens
 - **Comprehensive API** with documentation
 - **Testing framework** with pytest
@@ -141,7 +187,6 @@ If you see `pg_config executable not found` while installing `psycopg2` or `psyc
 2. Make sure you're using **Python 3.10-3.12 (64-bit)** so pip can download prebuilt wheels.
 3. If you must build from source, install **PostgreSQL** and add its `bin` directory (which contains `pg_config`) to your `PATH`.
 4. Re-run `pip install -r backend/requirements.txt`.
-
 ### Frontend Build Issues
 
 If frontend fails to build:

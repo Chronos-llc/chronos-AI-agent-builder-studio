@@ -7,7 +7,6 @@ Create Date: 2026-01-10 21:30:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'admin_roles_001'
@@ -17,6 +16,13 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "admin_roles" in inspector.get_table_names():
+        return
+
+    now_expr = sa.text("now()") if bind.dialect.name == "postgresql" else sa.text("CURRENT_TIMESTAMP")
+
     # Create admin_roles table
     op.create_table(
         'admin_roles',
@@ -25,8 +31,8 @@ def upgrade() -> None:
         sa.Column('display_name', sa.String(length=100), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=True, server_default='true'),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_admin_roles_id'), 'admin_roles', ['id'], unique=False)
@@ -49,8 +55,8 @@ def upgrade() -> None:
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('resource', sa.String(length=50), nullable=False),
         sa.Column('action', sa.String(length=50), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_admin_permissions_id'), 'admin_permissions', ['id'], unique=False)
@@ -74,8 +80,8 @@ def upgrade() -> None:
         sa.Column('role_id', sa.Integer(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=True, server_default='true'),
         sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         sa.ForeignKeyConstraint(['role_id'], ['admin_roles.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
@@ -96,8 +102,8 @@ def upgrade() -> None:
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('user_agent', sa.String(length=255), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=True, server_default='success'),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         sa.ForeignKeyConstraint(['admin_user_id'], ['admin_users.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
     )
@@ -151,6 +157,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
     # Drop tables in reverse order
     op.drop_index(op.f('ix_admin_audit_logs_resource_type'), table_name='admin_audit_logs')
     op.drop_index(op.f('ix_admin_audit_logs_action'), table_name='admin_audit_logs')
@@ -172,5 +179,6 @@ def downgrade() -> None:
     op.drop_table('admin_roles')
     
     # Drop enums
-    op.execute('DROP TYPE IF EXISTS permissionenum')
-    op.execute('DROP TYPE IF EXISTS adminroleenum')
+    if bind.dialect.name == "postgresql":
+        op.execute('DROP TYPE IF EXISTS permissionenum')
+        op.execute('DROP TYPE IF EXISTS adminroleenum')

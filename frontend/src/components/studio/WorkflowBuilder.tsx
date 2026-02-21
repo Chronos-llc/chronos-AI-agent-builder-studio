@@ -1,15 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   Plus, Trash2, Play, 
   ArrowUp, ArrowDown, Copy, Settings, 
-  Zap, GitBranch, Loader2
+  Zap, GitBranch, Loader2, Code, Download
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import type { WorkflowSchema, WorkflowStep } from '../../types/workflowGeneration';
+import type { WorkflowSchema, WorkflowStep, IntegrationNodeDefinition } from '../../types/workflowGeneration';
+import { workflowGenerationService } from '../../services/workflowGenerationService';
+import type { WorkflowExecution } from '../../types/workflowGeneration';
 
 interface WorkflowBuilderProps {
   initialSchema?: WorkflowSchema;
@@ -33,6 +35,23 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [executionResult, setExecutionResult] = useState<WorkflowExecution | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const [agentIdInput, setAgentIdInput] = useState('');
+  const [integrationNodes, setIntegrationNodes] = useState<IntegrationNodeDefinition[]>([]);
+  const availableIntegrationNodeTypes = Array.from(new Set(integrationNodes.map((node) => node.node_type)));
+
+  useEffect(() => {
+    const loadIntegrationNodes = async () => {
+      try {
+        const nodes = await workflowGenerationService.listIntegrationNodes();
+        setIntegrationNodes(nodes);
+      } catch {
+        setIntegrationNodes([]);
+      }
+    };
+    loadIntegrationNodes();
+  }, []);
 
   const handleSchemaChange = useCallback(
     (newSchema: WorkflowSchema) => {
@@ -126,11 +145,52 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   };
 
   const handleExecuteWorkflow = async () => {
+    const parsedAgentId = Number(agentIdInput);
+    if (!Number.isFinite(parsedAgentId) || parsedAgentId <= 0) {
+      setExecutionError('Agent ID is required to execute workflow steps.');
+      return;
+    }
     setIsExecuting(true);
-    // Simulate execution
-    setTimeout(() => {
+    setExecutionError(null);
+    try {
+      const result = await workflowGenerationService.executeSchema({
+        agent_id: parsedAgentId,
+        workflow_schema: schema,
+        input_data: {}
+      });
+      setExecutionResult(result);
+    } catch (error: any) {
+      setExecutionError(error?.response?.data?.detail || error?.message || 'Failed to execute workflow');
+      setExecutionResult(null);
+    } finally {
       setIsExecuting(false);
-    }, 2000);
+    }
+  };
+
+  const handleDownloadLogs = () => {
+    if (!executionResult?.output_data?.logs) return;
+    const payload = {
+      workflow: {
+        name: schema.name,
+        description: schema.description,
+        steps: schema.steps
+      },
+      execution: {
+        status: executionResult.status,
+        execution_time_ms: executionResult.execution_time_ms,
+        error_message: executionResult.error_message || null
+      },
+      logs: executionResult.output_data.logs,
+      exported_at: new Date().toISOString()
+    };
+    const dataBlob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    const safeName = (schema.name || 'workflow').replace(/\s+/g, '-').toLowerCase();
+    link.href = url;
+    link.download = `${safeName}-logs-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const getStepIcon = (type: string) => {
@@ -141,6 +201,12 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
         return <Zap className="w-4 h-4 text-yellow-500" />;
       case 'load':
         return <ArrowDown className="w-4 h-4 text-green-500" />;
+      case 'code_execution':
+        return <Code className="w-4 h-4 text-emerald-500" />;
+      case 'integration_api_call':
+        return <Zap className="w-4 h-4 text-purple-500" />;
+      case 'integration_mcp_call':
+        return <Settings className="w-4 h-4 text-indigo-500" />;
       default:
         return <Settings className="w-4 h-4 text-gray-500" />;
     }
@@ -156,6 +222,12 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
         return 'border-l-green-500 bg-green-50';
       case 'api_call':
         return 'border-l-purple-500 bg-purple-50';
+      case 'code_execution':
+        return 'border-l-emerald-500 bg-emerald-50';
+      case 'integration_api_call':
+        return 'border-l-purple-500 bg-purple-50';
+      case 'integration_mcp_call':
+        return 'border-l-indigo-500 bg-indigo-50';
       default:
         return 'border-l-gray-500 bg-gray-50';
     }
@@ -179,6 +251,25 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <label htmlFor="workflow-agent-id" className="text-xs text-muted-foreground">
+              Agent ID
+            </label>
+            <Input
+              id="workflow-agent-id"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={agentIdInput}
+              onChange={(e) => {
+                setAgentIdInput(e.target.value);
+                if (executionError) setExecutionError(null);
+              }}
+              className="w-24 text-sm"
+              placeholder="e.g. 12"
+              disabled={readOnly}
+            />
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -368,6 +459,63 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                 </CardContent>
               </Card>
             )}
+
+            {(executionResult || executionError) && (
+              <div className="mt-6 space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground">Execution Output</h4>
+                {executionError && (
+                  <div className="border border-red-200 bg-red-50 text-red-700 rounded-md p-3 text-sm">
+                    {executionError}
+                  </div>
+                )}
+                {executionResult && (
+                  <div className="border border-border rounded-md p-4 space-y-3 bg-card">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                      <span className="font-medium">Status: {executionResult.status}</span>
+                      <div className="flex items-center gap-2">
+                        {executionResult.execution_time_ms !== undefined && (
+                          <span className="text-muted-foreground">{Math.round(executionResult.execution_time_ms)} ms</span>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDownloadLogs}
+                          disabled={!executionResult.output_data?.logs}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Logs
+                        </Button>
+                      </div>
+                    </div>
+                    {executionResult.output_data?.logs?.steps && (
+                      <div className="space-y-2">
+                        {Object.entries(executionResult.output_data.logs.steps).map(([stepName, log]: any) => (
+                          <div key={stepName} className="rounded-md border border-muted p-3 text-xs">
+                            <div className="font-medium text-sm mb-1">{stepName}</div>
+                            <div className="text-muted-foreground">Type: {log.type}</div>
+                            {log.stdout && (
+                              <div className="mt-2">
+                                <div className="font-medium">stdout</div>
+                                <pre className="whitespace-pre-wrap">{log.stdout}</pre>
+                              </div>
+                            )}
+                            {log.stderr && (
+                              <div className="mt-2">
+                                <div className="font-medium">stderr</div>
+                                <pre className="whitespace-pre-wrap">{log.stderr}</pre>
+                              </div>
+                            )}
+                            {log.duration_ms !== undefined && (
+                              <div className="mt-2 text-muted-foreground">Duration: {log.duration_ms} ms</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -410,6 +558,17 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           <option value="transform">Transform</option>
                           <option value="load">Load</option>
                           <option value="api_call">API Call</option>
+                          <option value="code_execution">Code Execution</option>
+                          {availableIntegrationNodeTypes.map((nodeType) => (
+                            <option
+                              key={`integration-node-type-${nodeType}`}
+                              value={nodeType}
+                            >
+                              {nodeType === 'integration_mcp_call'
+                                ? 'Integration MCP Call'
+                                : 'Integration API Call'}
+                            </option>
+                          ))}
                           <option value="action">Action</option>
                           <option value="notification">Notification</option>
                           <option value="end">End</option>
@@ -427,6 +586,107 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           placeholder="Describe what this step does"
                         />
                       </div>
+                      {step.type === 'code_execution' && (
+                        <div>
+                          <label htmlFor="step-code" className="block text-sm font-medium mb-1">Python Code</label>
+                          <textarea
+                            id="step-code"
+                            value={step.config?.code || ''}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), code: e.target.value }
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[140px] font-mono text-xs"
+                            placeholder="print('Hello from the Virtual Computer')"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This code runs inside the agent&apos;s virtual computer sandbox.
+                          </p>
+                        </div>
+                      )}
+                      {(step.type === 'integration_api_call' || step.type === 'integration_mcp_call') && (
+                        <div className="space-y-2">
+                          <label htmlFor="step-integration-id" className="block text-sm font-medium mb-1">Integration</label>
+                          <select
+                            id="step-integration-id"
+                            value={String(step.config?.integration_id || '')}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: {
+                                  ...(step.config || {}),
+                                  integration_id: Number(e.target.value) || undefined,
+                                },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                          >
+                            <option value="">Select integration</option>
+                            {integrationNodes
+                              .filter((node) => node.node_type === step.type)
+                              .map((node) => (
+                                <option key={`integration-${node.integration_id}`} value={node.integration_id}>
+                                  {node.name}
+                                </option>
+                              ))}
+                          </select>
+                          <label htmlFor="step-integration-url" className="block text-sm font-medium mb-1">Request URL</label>
+                          <Input
+                            id="step-integration-url"
+                            value={step.config?.url || ''}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), url: e.target.value },
+                              })
+                            }
+                            placeholder="https://api.example.com/resource"
+                          />
+                          <label htmlFor="step-integration-method" className="block text-sm font-medium mb-1">Method</label>
+                          <select
+                            id="step-integration-method"
+                            value={step.config?.method || 'GET'}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), method: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                          >
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="PATCH">PATCH</option>
+                            <option value="DELETE">DELETE</option>
+                          </select>
+                          <label htmlFor="step-integration-server-id" className="block text-sm font-medium mb-1">MCP Server ID (optional)</label>
+                          <Input
+                            id="step-integration-server-id"
+                            value={step.config?.server_id || ''}
+                            onChange={(e) =>
+                              handleStepUpdate(step.name, {
+                                config: { ...(step.config || {}), server_id: e.target.value },
+                              })
+                            }
+                            placeholder="server_id"
+                          />
+                          <label htmlFor="step-integration-payload" className="block text-sm font-medium mb-1">Body JSON (optional)</label>
+                          <textarea
+                            id="step-integration-payload"
+                            className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[100px] font-mono text-xs"
+                            defaultValue={JSON.stringify(step.config?.body || {}, null, 2)}
+                            onBlur={(e) => {
+                              try {
+                                const parsed = e.target.value.trim() ? JSON.parse(e.target.value) : {}
+                                handleStepUpdate(step.name, {
+                                  config: { ...(step.config || {}), body: parsed },
+                                })
+                              } catch {
+                                // Keep previous valid JSON and let API validation handle malformed payload.
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
                       <div>
                         <label htmlFor="step-depends-on" className="block text-sm font-medium mb-1">Depends On</label>
                         <select

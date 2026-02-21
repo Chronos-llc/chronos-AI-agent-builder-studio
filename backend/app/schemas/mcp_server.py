@@ -18,6 +18,47 @@ class AuthType(str, Enum):
     CERTIFICATE = "certificate"
 
 
+class MCPServerConfig(BaseModel):
+    """MCP Server Configuration Schema"""
+    server_url: str = Field(..., description="MCP Server URL")
+    api_key: Optional[str] = Field(None, description="API Key for authentication")
+    timeout: int = Field(30, description="Request timeout in seconds")
+    verify_ssl: bool = Field(True, description="Verify SSL certificates")
+
+
+class MCPFileOperation(BaseModel):
+    """File operation schema for MCP servers"""
+    operation: str = Field(..., description="Operation type: read, write, list, delete")
+    path: str = Field(..., description="File path")
+    content: Optional[str] = Field(None, description="File content for write operations")
+    recursive: bool = Field(False, description="Recursive operation for list/delete")
+
+
+class MCPDatabaseQuery(BaseModel):
+    """Database query schema for MCP servers"""
+    operation: str = Field(..., description="Database operation: query, execute, fetch")
+    query: str = Field(..., description="SQL query or database command")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="Query parameters")
+    database_type: str = Field(..., description="Database type: postgres, mysql, sqlite, etc.")
+
+
+class MCPWebScrapingTask(BaseModel):
+    """Web scraping task schema for MCP servers"""
+    url: str = Field(..., description="URL to scrape")
+    selectors: Dict[str, str] = Field(..., description="CSS selectors for data extraction")
+    render_javascript: bool = Field(False, description="Render JavaScript before scraping")
+    wait_for_selector: Optional[str] = Field(None, description="Wait for specific selector")
+
+
+class MCPApiRequest(BaseModel):
+    """API request schema for MCP servers"""
+    method: str = Field(..., description="HTTP method: GET, POST, PUT, DELETE, etc.")
+    url: str = Field(..., description="API endpoint URL")
+    headers: Optional[Dict[str, str]] = Field(None, description="Request headers")
+    body: Optional[Dict[str, Any]] = Field(None, description="Request body")
+    params: Optional[Dict[str, str]] = Field(None, description="Query parameters")
+
+
 class ServerStatus(str, Enum):
     """MCP server status"""
     ACTIVE = "active"
@@ -424,6 +465,48 @@ class MCPAnalyticsRequest(BaseModel):
     end_date: Optional[datetime] = Field(None, description="End date for analytics")
     metrics: Optional[List[str]] = Field(None, description="Specific metrics to retrieve")
     group_by: Optional[str] = Field(None, description="Group results by")
+
+
+class MCPFileRequest(BaseModel):
+    """Schema for file operation request"""
+    operation: str = Field(..., description="Operation type: read, write, list, delete")
+    path: str = Field(..., description="File path")
+    content: Optional[str] = Field(None, description="File content for write operations")
+    recursive: bool = Field(False, description="Recursive operation for list/delete")
+    server_id: Optional[str] = Field(None, description="Specific server to use")
+
+
+class MCPDatabaseRequest(BaseModel):
+    """Schema for database query request"""
+    query: str = Field(..., description="SQL query or database command")
+    database_type: str = Field(..., description="Database type: postgres, mysql, sqlite, etc.")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="Query parameters")
+    server_id: Optional[str] = Field(None, description="Specific server to use")
+
+
+class MCPWebScrapingRequest(BaseModel):
+    """Schema for web scraping request"""
+    url: str = Field(..., description="URL to scrape")
+    selectors: Dict[str, str] = Field(..., description="CSS selectors for data extraction")
+    render_javascript: bool = Field(False, description="Render JavaScript before scraping")
+    server_id: Optional[str] = Field(None, description="Specific server to use")
+
+
+class MCPApiProxyRequest(BaseModel):
+    """Schema for API proxy request"""
+    method: str = Field(..., description="HTTP method: GET, POST, PUT, DELETE, etc.")
+    url: str = Field(..., description="API endpoint URL")
+    headers: Optional[Dict[str, str]] = Field(None, description="Request headers")
+    body: Optional[Dict[str, Any]] = Field(None, description="Request body")
+    params: Optional[Dict[str, str]] = Field(None, description="Query parameters")
+    server_id: Optional[str] = Field(None, description="Specific server to use")
+
+
+class MCPFileResponse(BaseModel):
+    """Schema for file operation response"""
+    success: bool
+    data: Optional[Dict[str, Any]] = Field(None, description="Response data")
+    error: Optional[str] = Field(None, description="Error message")
 
 
 class MCPAnalyticsResponse(BaseModel):

@@ -57,7 +57,7 @@ class AgentMemory(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    agent = relationship("Agent", back_populates="memories")
+    agent = relationship("AgentModel", back_populates="memories")
     user = relationship("User")
     
     # Indexes
@@ -94,7 +94,7 @@ class ConversationContext(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    agent = relationship("Agent", back_populates="conversation_contexts")
+    agent = relationship("AgentModel", back_populates="conversation_contexts")
     
     # Indexes
     __table_args__ = (

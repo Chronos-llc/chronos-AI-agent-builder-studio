@@ -6,7 +6,7 @@ const AgentBuilderPage: React.FC = () => {
     const { id } = useParams()
 
     return (
-        <div className="h-screen w-full">
+        <div className="min-h-full w-full">
             <StudioLayout />
         </div>
     )

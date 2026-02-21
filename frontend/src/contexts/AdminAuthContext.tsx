@@ -76,7 +76,9 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const fetchAdminUser = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) {
+      const fallbackToken = localStorage.getItem('chronos_access_token');
+      const authToken = token || fallbackToken;
+      if (!authToken) {
         setIsLoading(false);
         return;
       }
@@ -84,7 +86,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       // Fetch admin user info
       const userResponse = await axios.get(`${API_BASE_URL}/api/v1/admin/me`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${authToken}`,
         },
       });
 
@@ -93,7 +95,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       // Fetch admin permissions
       const permissionsResponse = await axios.get(`${API_BASE_URL}/api/v1/admin/me/permissions`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${authToken}`,
         },
       });
 
@@ -118,6 +120,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     setAdminUser(null);
     setPermissions([]);
     localStorage.removeItem('access_token');
+    localStorage.removeItem('chronos_access_token');
     localStorage.removeItem('refresh_token');
   };
 

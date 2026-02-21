@@ -15,6 +15,11 @@ class UsageType(enum.Enum):
 
 class PlanType(enum.Enum):
     FREE = "free"
+    LITE = "lite"
+    LOTUS = "lotus"
+    TEAM_DEVELOPER = "team_developer"
+    SPECIAL_SERVICE = "special_service"
+    # Legacy value retained for compatibility while data is migrated.
     PRO = "pro"
     ENTERPRISE = "enterprise"
 
@@ -32,7 +37,7 @@ class UsageRecord(BaseModel):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Metadata
-    metadata = Column(String(1000), nullable=True)  # JSON string for additional data
+    additional_metadata = Column(String(1000), nullable=True)  # JSON string for additional data
     
     # Relationships
     agent = relationship("AgentModel", back_populates="usage_records")
@@ -88,3 +93,25 @@ class UserPlan(BaseModel):
             "api_calls": (self.current_api_calls_month / self.max_api_calls_monthly) * 100,
             "storage": (self.current_storage_mb / self.max_storage_mb) * 100
         }
+
+
+def can_publish_integration(plan_type: PlanType | None) -> bool:
+    if not plan_type:
+        return False
+    return plan_type in {
+        PlanType.TEAM_DEVELOPER,
+        PlanType.SPECIAL_SERVICE,
+        PlanType.ENTERPRISE,
+        PlanType.PRO,  # backward compatibility
+    }
+
+
+def has_team_visibility_access(plan_type: PlanType | None) -> bool:
+    if not plan_type:
+        return False
+    return plan_type in {
+        PlanType.TEAM_DEVELOPER,
+        PlanType.SPECIAL_SERVICE,
+        PlanType.ENTERPRISE,
+        PlanType.PRO,  # backward compatibility
+    }

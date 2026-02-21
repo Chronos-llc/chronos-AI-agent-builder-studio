@@ -25,11 +25,13 @@ import {
   getSkillCategories,
   discoverSkills
 } from '../../../services/skillsService'
-import type { Skill, SkillList } from '../../../types/skills'
+import type { Skill } from '../../../types/skills'
 
 interface SkillsLibraryProps {
   onEditSkill?: (skillId: number) => void
 }
+
+const ALL_CATEGORIES_VALUE = '__all__'
 
 export const SkillsLibrary = ({ onEditSkill }: SkillsLibraryProps) => {
   const [skills, setSkills] = useState<Skill[]>([])
@@ -213,9 +215,9 @@ export const SkillsLibrary = ({ onEditSkill }: SkillsLibraryProps) => {
               Category
             </label>
             <Select 
-              value={selectedCategory || ''}
+              value={selectedCategory || ALL_CATEGORIES_VALUE}
               onValueChange={(value) => {
-                setSelectedCategory(value === '' ? null : value)
+                setSelectedCategory(value === ALL_CATEGORIES_VALUE ? null : value)
                 setCurrentPage(1)
               }}
             >
@@ -223,7 +225,7 @@ export const SkillsLibrary = ({ onEditSkill }: SkillsLibraryProps) => {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value={ALL_CATEGORIES_VALUE}>All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.name} value={category.name}>
                     {category.name} ({category.count})

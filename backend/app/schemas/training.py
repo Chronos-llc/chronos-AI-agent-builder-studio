@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
@@ -21,6 +21,10 @@ class CorrectionType(str, Enum):
 class TrainingSessionCreate(BaseModel):
     agent_id: str = Field(..., description='ID of the agent being trained')
     training_mode: TrainingMode = Field(default=TrainingMode.standard, description='Training mode')
+
+class TrainingSessionUpdate(BaseModel):
+    status: Optional[TrainingSessionStatus] = Field(None, description='Updated status of the training session')
+    training_mode: Optional[TrainingMode] = Field(None, description='Updated training mode')
 
 class TrainingSessionResponse(BaseModel):
     id: str
@@ -57,6 +61,11 @@ class TrainingCorrectionCreate(BaseModel):
     content: str = Field(..., description='Correction content')
     applied_by: Optional[str] = Field(None, description='User who applied the correction')
 
+class TrainingCorrectionUpdate(BaseModel):
+    correction_type: Optional[CorrectionType] = Field(None, description='Updated type of correction')
+    content: Optional[str] = Field(None, description='Updated correction content')
+    status: Optional[str] = Field(None, description='Updated status of the correction')
+
 class TrainingCorrectionResponse(BaseModel):
     id: str
     session_id: str
@@ -68,3 +77,15 @@ class TrainingCorrectionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class TrainingTestRequest(BaseModel):
+    session_id: Optional[str] = Field(None, description='ID of the training session')
+    message: str = Field(..., description='Test message to send to the agent')
+
+class TrainingTestResponse(BaseModel):
+    response: str = Field(..., description='Agent response')
+    response_time_ms: int = Field(..., description='Response time in milliseconds')
+    execution_log: List[str] = Field(..., description='Execution log')
+    interaction_id: Optional[str] = Field(None, description='ID of the training interaction')
+    session_id: Optional[str] = Field(None, description='ID of the training session')
+    agent_state: Dict[str, Any] = Field(..., description='Agent state after interaction')
