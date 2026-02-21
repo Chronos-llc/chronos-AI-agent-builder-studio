@@ -47,7 +47,7 @@ boto3==1.34.131
 e2b==0.17.0
 
 # DeepDiff for configuration comparison
-deepdiff==6.7.1
+deepdiff==8.6.1
 
 # Development
 black==23.11.0
