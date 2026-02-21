@@ -1,9 +1,17 @@
 import React, { useState } from 'react'
 import { CreateIntegrationWizard } from '../../integrations/CreateIntegrationWizard'
-import type { IntegrationSubmission } from '../../../services/integrationSubmissionService'
+import type { IntegrationSubmission, IntegrationSubmissionCreate } from '../../../services/integrationSubmissionService'
 
 export const IntegrationCreateMode: React.FC = () => {
   const [lastPublished, setLastPublished] = useState<IntegrationSubmission | null>(null)
+
+  const initialData: Partial<IntegrationSubmissionCreate> = {
+    config_schema: {},
+    credentials_schema: {},
+    supported_features: [],
+    app_screenshots: [],
+    is_workflow_node_enabled: false,
+  }
 
   return (
     <div className="space-y-4">
@@ -16,6 +24,7 @@ export const IntegrationCreateMode: React.FC = () => {
 
       <CreateIntegrationWizard
         adminPublish
+        initialData={initialData}
         onCreated={async (integration) => {
           setLastPublished(integration)
         }}

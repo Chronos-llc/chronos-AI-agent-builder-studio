@@ -7,7 +7,7 @@ export type AdminMode =
     'integrations-create' |
     'integrations-review' |
     'integrations-update' |
-    'integration-submissions' |
+    'integrations-submissions' |
     'skills-marketplace' |
     'skills-publish' |
     'skills-review' |

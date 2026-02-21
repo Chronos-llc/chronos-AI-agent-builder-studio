@@ -51,7 +51,7 @@ export const ModeSwitcher = ({
             description: 'Administer marketplace listings and categories'
         },
         {
-            mode: 'integration-submissions',
+            mode: 'integrations-submissions',
             label: 'Integrations',
             icon: <ClipboardCheck className="w-4 h-4" />,
             description: 'Review and publish integration submissions'
