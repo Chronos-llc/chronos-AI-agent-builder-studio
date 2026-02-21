@@ -19,7 +19,7 @@ const scanBadge = (status: SkillMarketplaceItem['scan_status']) => {
 export function SkillCard({ skill, onOpen }: SkillCardProps) {
   const scan = scanBadge(skill.scan_status)
   const ScanIcon = scan.icon
-  const publisher = (skill.publisher_username || 'jessenewt').replace(/^@+/, '').trim() || 'jessenewt'
+  const publisher = skill.publisher_username ? skill.publisher_username.replace(/^@+/, '').trim() || null : null
 
   return (
     <Card className="flex h-full flex-col justify-between border border-border bg-card p-4 text-card-foreground shadow-sm" data-testid={`skill-card-${skill.id}`}>
@@ -48,9 +48,11 @@ export function SkillCard({ skill, onOpen }: SkillCardProps) {
           </Badge>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          Published by <span className="font-medium text-foreground">@{publisher}</span>
-        </p>
+        {publisher && (
+          <p className="text-sm text-muted-foreground">
+            Published by <span className="font-medium text-foreground">@{publisher}</span>
+          </p>
+        )}
       </div>
 
       <Button className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onOpen(skill.id)} data-testid={`skill-card-open-${skill.id}`}>
