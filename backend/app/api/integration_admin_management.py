@@ -74,7 +74,7 @@ async def list_integration_hub(
     query: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     integration_type: Optional[str] = Query(None),
-    status: Optional[str] = Query("published"),
+    status: Optional[str] = Query("all"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),

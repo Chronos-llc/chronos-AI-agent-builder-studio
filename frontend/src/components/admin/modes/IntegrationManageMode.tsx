@@ -23,7 +23,7 @@ export const IntegrationManageMode = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('published')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -77,8 +77,8 @@ export const IntegrationManageMode = () => {
             className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
             data-testid="admin-integrations-manage-status"
           >
-            <option value="published">Published</option>
             <option value="all">All</option>
+            <option value="published">Published</option>
             <option value="draft">Draft</option>
             <option value="submitted">Submitted</option>
             <option value="under_review">Under review</option>

@@ -890,8 +890,9 @@ const CommunicationChannelsPage: React.FC = () => {
                                 <h4 className="font-medium text-muted-foreground mb-3">Add New Routing Rule</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Rule Name</label>
+                                        <label htmlFor="rule-name" className="block text-sm font-medium text-muted-foreground mb-1">Rule Name</label>
                                         <input
+                                            id="rule-name"
                                             type="text"
                                             value={newRule.name}
                                             onChange={(e) => setNewRule({...newRule, name: e.target.value})}
@@ -900,8 +901,9 @@ const CommunicationChannelsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Priority</label>
+                                        <label htmlFor="rule-priority" className="block text-sm font-medium text-muted-foreground mb-1">Priority</label>
                                         <input
+                                            id="rule-priority"
                                             type="number"
                                             value={newRule.priority}
                                             onChange={(e) => setNewRule({...newRule, priority: parseInt(e.target.value) || 1})}
@@ -911,8 +913,9 @@ const CommunicationChannelsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Target Channels</label>
+                                        <label htmlFor="target-channels" className="block text-sm font-medium text-muted-foreground mb-1">Target Channels</label>
                                         <select
+                                            id="target-channels"
                                             multiple
                                             value={newRule.target_channels}
                                             onChange={(e) => {

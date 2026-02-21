@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   PlusIcon, 
@@ -30,6 +30,7 @@ interface RecentActivity {
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalAgents: 0,
     activeAgents: 0,
@@ -43,6 +44,14 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Set progress bar width via CSS custom property to avoid inline styles
+  useEffect(() => {
+    if (progressBarRef.current) {
+      const percentage = Math.min(getUsagePercentage(), 100);
+      progressBarRef.current.style.setProperty('--usage-width', `${percentage}%`);
+    }
+  }, [stats.thisMonthUsage, stats.planLimit]);
 
   const fetchDashboardData = async () => {
     try {
@@ -200,8 +209,13 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div 
-              className={`h-2 rounded-full transition-all duration-300 ${getUsageBarColor()}`}
-              style={{ width: `${Math.min(getUsagePercentage(), 100)}%` }}
+              ref={progressBarRef}
+              className={`h-2 rounded-full transition-all duration-300 usage-progress-bar ${getUsageBarColor()}`}
+              role="progressbar"
+              aria-valuenow={getUsagePercentage()}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`${getUsagePercentage()}% of monthly plan used`}
             ></div>
           </div>
           <p className="text-sm text-muted-foreground mt-2">

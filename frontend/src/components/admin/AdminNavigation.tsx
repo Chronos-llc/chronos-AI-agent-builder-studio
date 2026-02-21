@@ -206,15 +206,18 @@ export const AdminNavigation = ({
                     size="sm"
                     data-testid={`admin-nav-${item.id}`}
                     title={collapsed ? item.title : undefined}
-                    className={`h-10 w-full ${collapsed ? 'justify-center px-2' : 'justify-start gap-2'} text-[15px] ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
-                    onClick={() => {
-                        if (shouldExpand) {
-                            toggleExpand(item.id)
-                        } else if (item.path) {
+                className={`h-10 w-full ${collapsed ? 'justify-center px-2' : 'justify-start gap-2'} text-[15px] ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
+                onClick={() => {
+                    if (shouldExpand) {
+                        toggleExpand(item.id)
+                        if (item.path) {
                             onNavigate(item.path)
                         }
-                    }}
-                >
+                    } else if (item.path) {
+                        onNavigate(item.path)
+                    }
+                }}
+            >
                     {item.icon}
                     {!collapsed && <span className="flex-1 truncate text-left">{item.title}</span>}
                     {shouldExpand && (
