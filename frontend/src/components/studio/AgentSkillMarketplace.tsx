@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { Input } from '../ui/input'
-import { Search } from 'lucide-react'
+import { ArrowLeft, Loader2, Search } from 'lucide-react'
 import { SkillMarketplaceGrid } from '../skills/SkillMarketplaceGrid'
 import { SkillDetailPanel } from '../skills/SkillDetailPanel'
 import { SkillUploadForm } from '../skills/SkillUploadForm'
@@ -30,6 +30,7 @@ export function AgentSkillMarketplace({ currentAgentId }: AgentSkillMarketplaceP
   const [versions, setVersions] = useState<SkillVersion[]>([])
   const [fileContent, setFileContent] = useState<SkillFileContentResponse | null>(null)
   const [compareResult, setCompareResult] = useState<SkillCompareResponse | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const loadMarketplace = async () => {
     try {
@@ -52,6 +53,11 @@ export function AgentSkillMarketplace({ currentAgentId }: AgentSkillMarketplaceP
 
   const openSkill = async (skillId: number) => {
     try {
+      setDetailLoading(true)
+      setDetail(null)
+      setVersions([])
+      setFileContent(null)
+      setCompareResult(null)
       const [detailPayload, versionsPayload] = await Promise.all([
         skillMarketplaceService.getSkill(skillId),
         skillMarketplaceService.listVersions(skillId),
@@ -68,7 +74,17 @@ export function AgentSkillMarketplace({ currentAgentId }: AgentSkillMarketplaceP
       }
     } catch (openError) {
       toast.error(openError instanceof Error ? openError.message : 'Unable to open skill.')
+    } finally {
+      setDetailLoading(false)
     }
+  }
+
+  const closeSkillDetail = () => {
+    setDetail(null)
+    setVersions([])
+    setFileContent(null)
+    setCompareResult(null)
+    setDetailLoading(false)
   }
 
   const onLoadVersionFile = async (versionId: number) => {
@@ -114,53 +130,73 @@ export function AgentSkillMarketplace({ currentAgentId }: AgentSkillMarketplaceP
 
   return (
     <div className="space-y-4" data-testid="user-agent-skill-marketplace">
-      <Card className="border border-white/10 bg-black/30 p-4">
-        <div className="flex flex-col gap-3 md:flex-row">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-white/50" />
-            <Input
-              data-testid="user-skills-search-input"
-              className="pl-9"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search skills..."
-            />
-          </div>
-          <Button variant="outline" onClick={() => loadMarketplace()} data-testid="user-skills-refresh-button">
-            Refresh
+      {detail || detailLoading ? (
+        <>
+          <Button variant="outline" onClick={closeSkillDetail} className="gap-2" data-testid="user-skill-detail-back">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Marketplace
           </Button>
-        </div>
-      </Card>
 
-      <SkillMarketplaceGrid skills={skills} loading={loading} error={error} onOpenSkill={openSkill} />
+          {detailLoading && (
+            <Card className="border border-border bg-card p-6">
+              <div className="flex items-center gap-3 text-base text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading skill...
+              </div>
+            </Card>
+          )}
 
-      {detail && (
-        <SkillDetailPanel
-          detail={detail}
-          versions={versions}
-          fileContent={fileContent}
-          compareResult={compareResult}
-          defaultAgentId={currentAgentId}
-          onLoadVersionFile={onLoadVersionFile}
-          onCompareVersions={onCompareVersions}
-          onInstall={onInstall}
-          onDownload={onDownload}
-        />
+          {detail && !detailLoading && (
+            <SkillDetailPanel
+              detail={detail}
+              versions={versions}
+              fileContent={fileContent}
+              compareResult={compareResult}
+              defaultAgentId={currentAgentId}
+              onLoadVersionFile={onLoadVersionFile}
+              onCompareVersions={onCompareVersions}
+              onInstall={onInstall}
+              onDownload={onDownload}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <Card className="border border-border bg-card p-4">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  data-testid="user-skills-search-input"
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search skills..."
+                />
+              </div>
+              <Button variant="outline" onClick={() => loadMarketplace()} data-testid="user-skills-refresh-button">
+                Refresh
+              </Button>
+            </div>
+          </Card>
+
+          <SkillMarketplaceGrid skills={skills} loading={loading} error={error} onOpenSkill={openSkill} />
+
+          <SkillUploadForm
+            submitLabel="Upload SKILL.md for review"
+            onSubmit={async (formData) => {
+              const response = await skillMarketplaceService.uploadSkill(formData)
+              await loadMarketplace()
+              toast.success(
+                response.published
+                  ? 'Skill published.'
+                  : 'Skill submitted. It will appear after admin review.',
+              )
+              return response
+            }}
+          />
+        </>
       )}
-
-      <SkillUploadForm
-        submitLabel="Upload SKILL.md for review"
-        onSubmit={async (formData) => {
-          const response = await skillMarketplaceService.uploadSkill(formData)
-          await loadMarketplace()
-          toast.success(
-            response.published
-              ? 'Skill published.'
-              : 'Skill submitted. It will appear after admin review.',
-          )
-          return response
-        }}
-      />
     </div>
   )
 }

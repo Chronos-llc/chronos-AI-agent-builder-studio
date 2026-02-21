@@ -18,20 +18,20 @@ export function SkillVersionsTab({
   onPickHead,
 }: SkillVersionsTabProps) {
   if (!versions.length) {
-    return <div className="text-sm text-white/70">No versions yet.</div>
+    return <div className="text-sm text-muted-foreground">No versions yet.</div>
   }
 
   return (
     <div className="space-y-3">
       {versions.map((version) => (
-        <div key={version.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-white/10 bg-[#120c09] p-3">
+        <div key={version.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/40 p-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-white">v{version.version}</span>
-              {version.is_current && <Badge className="bg-cyan-600/20 text-cyan-200 border-cyan-400/30">Current</Badge>}
-              <Badge variant="outline">{version.scan_status}</Badge>
+              <span className="font-medium text-foreground">v{version.version}</span>
+              {version.is_current && <Badge className="border-cyan-500/45 bg-cyan-500/10 text-cyan-700 dark:text-cyan-200">Current</Badge>}
+              <Badge className="border-border bg-background/80 text-foreground">{version.scan_status}</Badge>
             </div>
-            <p className="text-xs text-white/60">{new Date(version.created_at).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">{new Date(version.created_at).toLocaleString()}</p>
           </div>
 
           <div className="flex items-center gap-2">

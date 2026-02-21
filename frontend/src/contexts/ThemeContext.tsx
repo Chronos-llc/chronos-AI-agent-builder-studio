@@ -23,6 +23,9 @@ const getSystemTheme = (): ResolvedTheme => {
 const applyResolvedTheme = (resolved: ResolvedTheme) => {
   if (typeof document === 'undefined') return
   document.documentElement.classList.toggle('dark', resolved === 'dark')
+  document.body.classList.toggle('dark', resolved === 'dark')
+  document.documentElement.setAttribute('data-theme', resolved)
+  document.body.setAttribute('data-theme', resolved)
   document.documentElement.style.colorScheme = resolved
 }
 

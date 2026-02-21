@@ -3,7 +3,11 @@ import { AdminHeader } from './AdminHeader'
 import { AdminNavigation } from './AdminNavigation'
 import { AdminDashboard } from './AdminDashboard'
 import { MetaAgentMode } from './modes/MetaAgentMode'
+import { IntegrationCreateMode } from './modes/IntegrationCreateMode'
+import { IntegrationManageMode } from './modes/IntegrationManageMode'
+import { IntegrationManageDetailMode } from './modes/IntegrationManageDetailMode'
 import { IntegrationSubmissionsMode } from './modes/IntegrationSubmissionsMode'
+import { IntegrationUpdateMode } from './modes/IntegrationUpdateMode'
 import { SkillsMode } from './modes/SkillsMode'
 import { PlatformUpdatesMode } from './modes/PlatformUpdatesMode'
 import { SupportMode } from './modes/SupportMode'
@@ -16,6 +20,7 @@ import {
     Users,
     UserPlus,
     ShoppingCart,
+    ClipboardCheck,
     BrainCircuit,
     Package,
     MessageSquare} from 'lucide-react'
@@ -34,7 +39,15 @@ const ADMIN_ROUTE_MODES: AdminMode[] = [
     'meta-agents',
     'subagents',
     'marketplace',
+    'integrations-manage',
+    'integrations-create',
+    'integrations-review',
+    'integrations-update',
     'integration-submissions',
+    'skills-marketplace',
+    'skills-publish',
+    'skills-review',
+    'skills-statistics',
     'skills',
     'platform-updates',
     'support',
@@ -44,7 +57,7 @@ const ADMIN_ROUTE_MODES: AdminMode[] = [
 
 export const AdminStudioLayout = () => {
     const navigate = useNavigate()
-    const { mode: routeMode } = useParams<{ mode?: string }>()
+    const { mode: routeMode, integrationId: routeIntegrationId } = useParams<{ mode?: string; integrationId?: string }>()
     const { sessionContext, logout } = useAuth()
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         if (typeof window === 'undefined') return false
@@ -91,6 +104,14 @@ export const AdminStudioLayout = () => {
         if (!routeMode) return 'dashboard'
         return (ADMIN_ROUTE_MODES.includes(routeMode as AdminMode) ? routeMode : 'dashboard') as AdminMode
     }, [routeMode])
+    const integrationId = useMemo(() => {
+        const parsed = Number(routeIntegrationId)
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    }, [routeIntegrationId])
+    const navActiveItemId = useMemo(() => {
+        if (currentMode === 'integrations-update') return 'integrations-manage'
+        return currentMode
+    }, [currentMode])
 
     // Display-ready admin user data
     const adminUser: AdminUser = {
@@ -180,10 +201,16 @@ export const AdminStudioLayout = () => {
             onClick: () => navigate('/app/admin/marketplace')
         },
         {
+            id: 'action-int',
+            title: 'Integrations',
+            icon: <ClipboardCheck className="w-5 h-5" />,
+            onClick: () => navigate('/app/admin/integrations-manage')
+        },
+        {
             id: 'action-4',
             title: 'Skills',
             icon: <BrainCircuit className="w-5 h-5" />,
-            onClick: () => navigate('/app/admin/skills')
+            onClick: () => navigate('/app/admin/skills-marketplace')
         },
         {
             id: 'action-5',
@@ -228,6 +255,14 @@ export const AdminStudioLayout = () => {
             navigate('/app/admin/dashboard', { replace: true })
             return
         }
+        if (routeMode === 'integration-submissions') {
+            navigate('/app/admin/integrations-review', { replace: true })
+            return
+        }
+        if (routeMode === 'skills') {
+            navigate('/app/admin/skills-marketplace', { replace: true })
+            return
+        }
         if (!ADMIN_ROUTE_MODES.includes(routeMode as AdminMode)) {
             navigate('/app/admin/dashboard', { replace: true })
         }
@@ -264,6 +299,15 @@ export const AdminStudioLayout = () => {
 
         if (resolvedPath === '/app/admin') {
             resolvedPath = '/app/admin/dashboard'
+        }
+        if (resolvedPath === '/app/admin/integration-submissions') {
+            resolvedPath = '/app/admin/integrations-review'
+        }
+        if (resolvedPath === '/app/admin/integrations') {
+            resolvedPath = '/app/admin/integrations-manage'
+        }
+        if (resolvedPath === '/app/admin/skills') {
+            resolvedPath = '/app/admin/skills-marketplace'
         }
 
         navigate(resolvedPath)
@@ -311,8 +355,29 @@ export const AdminStudioLayout = () => {
                         <p>Marketplace listings and categories management.</p>
                     </div>
                 )
+            case 'integrations-manage':
+                if (integrationId) {
+                    return <IntegrationManageDetailMode integrationId={integrationId} />
+                }
+                return <IntegrationManageMode />
+            case 'integrations-create':
+                return <IntegrationCreateMode />
+            case 'integrations-update':
+                if (integrationId) {
+                    return <IntegrationUpdateMode integrationId={integrationId} />
+                }
+                return <IntegrationManageMode />
+            case 'integrations-review':
             case 'integration-submissions':
                 return <IntegrationSubmissionsMode />
+            case 'skills-marketplace':
+                return <SkillsMode initialTab="marketplace" hideTabs />
+            case 'skills-publish':
+                return <SkillsMode initialTab="publish" hideTabs />
+            case 'skills-review':
+                return <SkillsMode initialTab="review" hideTabs />
+            case 'skills-statistics':
+                return <SkillsMode initialTab="statistics" hideTabs />
             case 'skills':
                 return <SkillsMode />
             case 'platform-updates':
@@ -338,7 +403,7 @@ export const AdminStudioLayout = () => {
     }
 
     return (
-        <div className="flex h-screen bg-background overflow-hidden admin-studio-layout">
+        <div className="flex h-screen bg-background overflow-hidden admin-studio-layout text-[15px]">
             {isMobile && mobileSidebarOpen && (
                 <button
                     type="button"
@@ -366,14 +431,14 @@ export const AdminStudioLayout = () => {
                     {/* Logo/Brand */}
                     <div className={cn('border-b border-border flex items-center shrink-0', sidebarCollapsed && !isMobile ? 'justify-center p-3' : 'gap-2 p-4')}>
                         <ChronosLogo showWordmark={false} size={32} />
-                        {(!sidebarCollapsed || isMobile) && <span className="font-semibold text-lg">Chronos Admin</span>}
+                        {(!sidebarCollapsed || isMobile) && <span className="text-xl font-semibold">Chronos Admin</span>}
                     </div>
 
                     {/* Navigation - Independent scroll container */}
                     <div className="flex-1 overflow-y-auto">
                         <AdminNavigation
                             items={[]} // Using default items
-                            activeItemId={currentMode}
+                            activeItemId={navActiveItemId}
                             onNavigate={handleNavigate}
                             collapsed={sidebarCollapsed && !isMobile}
                         />
@@ -393,10 +458,10 @@ export const AdminStudioLayout = () => {
                                 <PanelLeftClose className="w-4 h-4" />
                             }
                             {(!sidebarCollapsed || isMobile) && (
-                                <span>{isMobile ? 'Close' : 'Collapse'}</span>
-                            )}
-                        </Button>
-                    </div>
+                                    <span className="text-sm">{isMobile ? 'Close' : 'Collapse'}</span>
+                                )}
+                            </Button>
+                        </div>
                 </div>
             </div>
 
@@ -423,7 +488,7 @@ export const AdminStudioLayout = () => {
                 />
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-auto p-6 mode-content">
+                <main className="mode-content flex-1 overflow-auto p-6">
                     {renderModeContent()}
                 </main>
             </div>

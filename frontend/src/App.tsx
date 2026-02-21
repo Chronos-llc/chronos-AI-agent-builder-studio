@@ -95,6 +95,15 @@ function App() {
                             />
 
                             <Route
+                                path="/app/admin/:mode/:integrationId"
+                                element={
+                                    <AdminRoute>
+                                        <AdminPage />
+                                    </AdminRoute>
+                                }
+                            />
+
+                            <Route
                                 path="/app"
                                 element={
                                     <ProtectedRoute>

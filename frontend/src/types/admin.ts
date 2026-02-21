@@ -3,7 +3,15 @@ export type AdminMode =
     'meta-agents' |
     'subagents' |
     'marketplace' |
+    'integrations-manage' |
+    'integrations-create' |
+    'integrations-review' |
+    'integrations-update' |
     'integration-submissions' |
+    'skills-marketplace' |
+    'skills-publish' |
+    'skills-review' |
+    'skills-statistics' |
     'skills' |
     'platform-updates' |
     'support' |

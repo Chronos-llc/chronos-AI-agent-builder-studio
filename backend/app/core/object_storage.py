@@ -126,20 +126,14 @@ class S3ObjectStorageClient:
     def __init__(self) -> None:
         self.provider = settings.OBJECT_STORAGE_PROVIDER
         self.bucket = settings.OBJECT_STORAGE_BUCKET
-        self.endpoint_url = settings.OBJECT_STORAGE_ENDPOINT_URL
-        self.region = settings.OBJECT_STORAGE_REGION
-        self.access_key = settings.OBJECT_STORAGE_ACCESS_KEY_ID
-        self.secret_key = settings.OBJECT_STORAGE_SECRET_ACCESS_KEY
+        self.endpoint_url = settings.OBJECT_STORAGE_ENDPOINT_URL or None
+        self.region = settings.OBJECT_STORAGE_REGION or settings.AWS_REGION or "us-east-1"
+        self.access_key = settings.OBJECT_STORAGE_ACCESS_KEY_ID or settings.AWS_ACCESS_KEY_ID
+        self.secret_key = settings.OBJECT_STORAGE_SECRET_ACCESS_KEY or settings.AWS_SECRET_ACCESS_KEY
         self.auto_create_bucket = settings.OBJECT_STORAGE_AUTO_CREATE_BUCKET
         self.signed_url_ttl = settings.OBJECT_STORAGE_SIGNED_URL_TTL_SECONDS
-        self.available = all(
-            [
-                self.provider.lower() == "s3",
-                bool(self.bucket),
-                bool(self.access_key),
-                bool(self.secret_key),
-            ]
-        )
+        partial_static_credentials = bool(self.access_key) ^ bool(self.secret_key)
+        self.available = self.provider.lower() == "s3" and bool(self.bucket) and not partial_static_credentials
         self._bucket_ready = False
         self._bucket_lock = asyncio.Lock()
 
@@ -151,15 +145,17 @@ class S3ObjectStorageClient:
             signature_version="s3v4",
             s3={"addressing_style": "path" if settings.OBJECT_STORAGE_FORCE_PATH_STYLE else "auto"},
         )
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint_url,
-            region_name=self.region,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            use_ssl=settings.OBJECT_STORAGE_USE_SSL,
-            config=config,
-        )
+        client_kwargs: dict[str, Any] = {
+            "endpoint_url": self.endpoint_url,
+            "region_name": self.region,
+            "use_ssl": settings.OBJECT_STORAGE_USE_SSL,
+            "config": config,
+        }
+        if self.access_key and self.secret_key:
+            client_kwargs["aws_access_key_id"] = self.access_key
+            client_kwargs["aws_secret_access_key"] = self.secret_key
+
+        self._client = boto3.client("s3", **client_kwargs)
 
     async def _run(self, fn, *args, **kwargs):
         return await asyncio.to_thread(fn, *args, **kwargs)

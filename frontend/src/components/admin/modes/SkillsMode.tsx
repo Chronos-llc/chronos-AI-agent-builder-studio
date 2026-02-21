@@ -5,7 +5,7 @@ import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
 import { Badge } from '../../ui/badge'
 import { Alert, AlertDescription } from '../../ui/alert'
-import { Loader2, RefreshCw, Search } from 'lucide-react'
+import { ArrowLeft, Loader2, RefreshCw, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { SkillMarketplaceGrid } from '../../skills/SkillMarketplaceGrid'
 import { SkillDetailPanel } from '../../skills/SkillDetailPanel'
@@ -23,6 +23,10 @@ import type {
 import type { SkillStatistics } from '../../../types/skills'
 
 type SkillsTab = 'marketplace' | 'review' | 'publish' | 'statistics'
+interface SkillsModeProps {
+  initialTab?: SkillsTab
+  hideTabs?: boolean
+}
 
 const REVIEW_STATUSES = ['pending_review', 'under_review', 'approved', 'rejected', 'quarantined'] as const
 
@@ -37,8 +41,8 @@ const triggerDownload = (blob: Blob, filename: string) => {
   window.URL.revokeObjectURL(url)
 }
 
-export const SkillsMode = () => {
-  const [activeTab, setActiveTab] = useState<SkillsTab>('marketplace')
+export const SkillsMode = ({ initialTab = 'marketplace', hideTabs = false }: SkillsModeProps) => {
+  const [activeTab, setActiveTab] = useState<SkillsTab>(initialTab)
   const [searchQuery, setSearchQuery] = useState('')
 
   const [marketplaceItems, setMarketplaceItems] = useState<SkillMarketplaceItem[]>([])
@@ -114,8 +118,13 @@ export const SkillsMode = () => {
   }
 
   const openSkillDetail = async (skillId: number) => {
+    setActiveTab('marketplace')
     setSelectedSkillId(skillId)
     setDetailLoading(true)
+    setSelectedDetail(null)
+    setSelectedVersions([])
+    setSelectedFileContent(null)
+    setSelectedCompare(null)
     try {
       const [detail, versions] = await Promise.all([
         skillMarketplaceService.getSkill(skillId),
@@ -136,6 +145,15 @@ export const SkillsMode = () => {
     } finally {
       setDetailLoading(false)
     }
+  }
+
+  const closeSkillDetail = () => {
+    setSelectedSkillId(null)
+    setSelectedDetail(null)
+    setSelectedVersions([])
+    setSelectedFileContent(null)
+    setSelectedCompare(null)
+    setDetailLoading(false)
   }
 
   const handleLoadVersionFile = async (versionId: number) => {
@@ -197,80 +215,102 @@ export const SkillsMode = () => {
     void Promise.all([loadSubmissions(), loadStatistics()])
   }, [])
 
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab])
+
   return (
-    <div className="space-y-6" data-testid="admin-skills-mode">
+    <div className="space-y-6 text-[15px]" data-testid="admin-skills-mode">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Skills Marketplace</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-3xl font-bold">Skills Marketplace</h1>
+        <p className="text-base text-muted-foreground">
           Publish, review, compare, download, and install SKILL.md packages.
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as SkillsTab)} data-testid="admin-skills-tabs">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="marketplace" data-testid="admin-skills-tab-marketplace">Marketplace</TabsTrigger>
-          <TabsTrigger value="review" data-testid="admin-skills-tab-review">Review Uploaded Skills</TabsTrigger>
-          <TabsTrigger value="publish" data-testid="admin-skills-tab-publish">Publish Skill</TabsTrigger>
-          <TabsTrigger value="statistics" data-testid="admin-skills-tab-statistics">Statistics</TabsTrigger>
-        </TabsList>
+        {!hideTabs && (
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="marketplace" data-testid="admin-skills-tab-marketplace">Marketplace</TabsTrigger>
+            <TabsTrigger value="review" data-testid="admin-skills-tab-review">Review Uploaded Skills</TabsTrigger>
+            <TabsTrigger value="publish" data-testid="admin-skills-tab-publish">Publish Skill</TabsTrigger>
+            <TabsTrigger value="statistics" data-testid="admin-skills-tab-statistics">Statistics</TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="marketplace" className="space-y-4">
-          <Card className="border border-white/10 bg-black/30 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-white/50" />
-                <Input
-                  className="pl-9"
-                  data-testid="admin-skills-search-input"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search marketplace skills..."
-                />
-              </div>
-              <Button variant="outline" onClick={() => loadMarketplace()} className="gap-2" data-testid="admin-skills-refresh-marketplace">
-                <RefreshCw className="h-4 w-4" />
-                Refresh
+          {selectedSkillId ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={closeSkillDetail}
+                className="gap-2"
+                data-testid="admin-skill-detail-back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Marketplace
               </Button>
-            </div>
-          </Card>
 
-          <SkillMarketplaceGrid
-            skills={marketplaceItems}
-            loading={marketplaceLoading}
-            error={marketplaceError}
-            onOpenSkill={openSkillDetail}
-            emptyLabel="No published skills available yet."
-          />
+              {detailLoading && (
+                <Card className="border border-border bg-card p-6">
+                  <div className="flex items-center gap-3 text-base text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Loading skill...
+                  </div>
+                </Card>
+              )}
 
-          {detailLoading && (
-            <Card className="border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center gap-2 text-sm text-white/70">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading skill detail...
-              </div>
-            </Card>
-          )}
+              {selectedDetail && !detailLoading && (
+                <SkillDetailPanel
+                  detail={selectedDetail}
+                  versions={selectedVersions}
+                  fileContent={selectedFileContent}
+                  compareResult={selectedCompare}
+                  allowFuzzyInstall
+                  onLoadVersionFile={handleLoadVersionFile}
+                  onCompareVersions={handleCompareVersions}
+                  onInstall={handleInstall}
+                  onDownload={handleDownload}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <Card className="border border-border bg-card p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      data-testid="admin-skills-search-input"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder="Search marketplace skills..."
+                    />
+                  </div>
+                  <Button variant="outline" onClick={() => loadMarketplace()} className="gap-2" data-testid="admin-skills-refresh-marketplace">
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh
+                  </Button>
+                </div>
+              </Card>
 
-          {selectedDetail && !detailLoading && (
-            <SkillDetailPanel
-              detail={selectedDetail}
-              versions={selectedVersions}
-              fileContent={selectedFileContent}
-              compareResult={selectedCompare}
-              allowFuzzyInstall
-              onLoadVersionFile={handleLoadVersionFile}
-              onCompareVersions={handleCompareVersions}
-              onInstall={handleInstall}
-              onDownload={handleDownload}
-            />
+              <SkillMarketplaceGrid
+                skills={marketplaceItems}
+                loading={marketplaceLoading}
+                error={marketplaceError}
+                onOpenSkill={openSkillDetail}
+                emptyLabel="No published skills available yet."
+              />
+            </>
           )}
         </TabsContent>
 
         <TabsContent value="review" className="space-y-4">
-          <Card className="border border-white/10 bg-black/30 p-4">
+          <Card className="border border-border bg-card p-4">
             <div className="flex flex-wrap gap-2 text-xs">
               {REVIEW_STATUSES.map((status) => (
-                <Badge key={status} variant="outline">
+                <Badge key={status} className="border-border bg-background/80 text-foreground">
                   {status.replace('_', ' ')}: {summaryCounts[status] || 0}
                 </Badge>
               ))}
@@ -278,8 +318,8 @@ export const SkillsMode = () => {
           </Card>
 
           {submissionLoading ? (
-            <Card className="border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center gap-2 text-sm text-white/70">
+            <Card className="border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading submission queue...
               </div>
@@ -289,18 +329,18 @@ export const SkillsMode = () => {
               <AlertDescription>{submissionError}</AlertDescription>
             </Alert>
           ) : !submissionItems.length ? (
-            <Card className="border border-white/10 bg-black/30 p-4 text-sm text-white/70">
+            <Card className="border border-border bg-card p-4 text-sm text-muted-foreground">
               No pending submissions.
             </Card>
           ) : (
             <div className="space-y-3">
               {submissionItems.map((item) => (
-                <Card key={item.id} className="border border-white/10 bg-[#1b120f] p-4" data-testid={`admin-review-row-${item.id}`}>
+                <Card key={item.id} className="border border-border bg-card p-4" data-testid={`admin-review-row-${item.id}`}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-base font-semibold text-white" data-testid={`admin-review-title-${item.id}`}>{item.display_name}</p>
-                      <p className="text-sm text-white/70">
-                        by {item.publisher_username || 'unknown'} · {item.scan_status} · {item.submission_status}
+                      <p className="text-lg font-semibold text-foreground" data-testid={`admin-review-title-${item.id}`}>{item.display_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Published by @{(item.publisher_username || 'jessenewt').replace(/^@+/, '') || 'jessenewt'} • {item.scan_status} • {item.submission_status}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -385,8 +425,8 @@ export const SkillsMode = () => {
 
         <TabsContent value="statistics" className="space-y-4">
           {statisticsLoading ? (
-            <Card className="border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center gap-2 text-sm text-white/70">
+            <Card className="border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading statistics...
               </div>
@@ -397,16 +437,16 @@ export const SkillsMode = () => {
             </Alert>
           ) : statistics ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Card className="border border-white/10 bg-black/30 p-4">
-                <p className="text-sm text-white/70">Total Skills</p>
+              <Card className="border border-border bg-card p-4">
+                <p className="text-sm text-muted-foreground">Total Skills</p>
                 <p className="mt-1 text-2xl font-bold">{statistics.total_skills}</p>
               </Card>
-              <Card className="border border-white/10 bg-black/30 p-4">
-                <p className="text-sm text-white/70">Active Skills</p>
+              <Card className="border border-border bg-card p-4">
+                <p className="text-sm text-muted-foreground">Active Skills</p>
                 <p className="mt-1 text-2xl font-bold">{statistics.active_skills}</p>
               </Card>
-              <Card className="border border-white/10 bg-black/30 p-4">
-                <p className="text-sm text-white/70">Installations</p>
+              <Card className="border border-border bg-card p-4">
+                <p className="text-sm text-muted-foreground">Installations</p>
                 <p className="mt-1 text-2xl font-bold">{statistics.total_installations}</p>
               </Card>
             </div>

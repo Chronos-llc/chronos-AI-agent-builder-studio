@@ -66,12 +66,81 @@ object_storage_client = get_object_storage_client()
 
 # Allowed base directories for skill file paths (prevents path traversal)
 ALLOWED_SKILL_PATHS = [Path("uploads/skills"), Path("backend/uploads/skills")]
+SEED_SKILL_PATHS = [Path("backend/seed_assets/skills"), Path("seed_assets/skills")]
+
+
+def _skill_local_fallback_candidates(
+    *,
+    skill_name: Optional[str],
+    version: str,
+    file_name: str,
+) -> list[Path]:
+    if not skill_name:
+        return []
+
+    normalized_name = _slugify(skill_name)
+    candidates: list[Path] = []
+    for root in ALLOWED_SKILL_PATHS:
+        candidates.append(root / normalized_name / version / file_name)
+        # Common canonical name used by seeded skills.
+        if file_name != "SKILL.md":
+            candidates.append(root / normalized_name / version / "SKILL.md")
+
+    for seed_root in SEED_SKILL_PATHS:
+        candidates.append(seed_root / f"{normalized_name}.md")
+        if seed_root.exists():
+            for seed_file in seed_root.glob("*.md"):
+                slugged = _slugify(seed_file.stem)
+                if normalized_name == slugged or normalized_name in slugged:
+                    candidates.append(seed_file)
+
+    return candidates
+
+
+def _write_skill_local_fallback(
+    *,
+    skill_name: str,
+    version: str,
+    file_name: str,
+    raw_bytes: bytes,
+) -> Path:
+    # Sanitize all path components to prevent path traversal attacks
+    safe_skill_name = _slugify(skill_name)
+    safe_version = _sanitize_path_component(version) or "1.0.0"
+    safe_file_name = _sanitize_path_component(file_name) or "SKILL.md"
+    
+    root = ALLOWED_SKILL_PATHS[0]
+    for candidate_root in ALLOWED_SKILL_PATHS:
+        if candidate_root.exists() or candidate_root.parent.exists():
+            root = candidate_root
+            break
+    target_dir = root / safe_skill_name / safe_version
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_path = target_dir / safe_file_name
+    target_path.write_bytes(raw_bytes)
+    return target_path
 
 
 def _slugify(value: str) -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9\-_\s]", "", value).strip().lower()
     cleaned = re.sub(r"[\s_]+", "-", cleaned)
     return cleaned[:96]
+
+
+def _sanitize_path_component(value: str) -> str:
+    """Remove path traversal and dangerous characters from a path component.
+    
+    This prevents directory traversal attacks by removing:
+    - Parent directory references (..)
+    - Path separators (/ and \)
+    - Other potentially dangerous characters
+    """
+    if not value:
+        return ""
+    # Remove path separators and parent directory references
+    value = value.replace("..", "").replace("/", "").replace("\\", "")
+    # Keep only safe characters: alphanumeric, hyphens, underscores, dots
+    return re.sub(r"[^a-zA-Z0-9\-_.]", "", value).strip()
 
 
 def _parse_frontmatter(markdown_content: str) -> tuple[dict[str, str], str]:
@@ -258,7 +327,11 @@ async def _resolve_visible_skill(skill: Skill, current_user: User, db: AsyncSess
     return skill
 
 
-async def _load_skill_version_bytes(version: SkillVersion) -> bytes:
+async def _load_skill_version_bytes(
+    version: SkillVersion,
+    *,
+    skill_name: Optional[str] = None,
+) -> bytes:
     if version.object_key:
         try:
             return await object_storage_client.get_object_bytes(version.object_key)
@@ -266,7 +339,7 @@ async def _load_skill_version_bytes(version: SkillVersion) -> bytes:
             # Fall back to legacy fields during transition.
             pass
 
-    if version.raw_content is not None:
+    if version.raw_content:
         return version.raw_content.encode("utf-8", errors="ignore")
 
     object_uri = parse_object_uri(version.file_path)
@@ -289,11 +362,23 @@ async def _load_skill_version_bytes(version: SkillVersion) -> bytes:
             raise HTTPException(status_code=400, detail="Invalid file path")
         return resolved_path.read_bytes()
 
+    for candidate in _skill_local_fallback_candidates(
+        skill_name=skill_name,
+        version=version.version,
+        file_name=version.file_name or "SKILL.md",
+    ):
+        if candidate.exists():
+            return candidate.read_bytes()
+
     raise HTTPException(status_code=404, detail="Skill file content is unavailable")
 
 
-async def _load_skill_version_text(version: SkillVersion) -> str:
-    payload = await _load_skill_version_bytes(version)
+async def _load_skill_version_text(
+    version: SkillVersion,
+    *,
+    skill_name: Optional[str] = None,
+) -> str:
+    payload = await _load_skill_version_bytes(version, skill_name=skill_name)
     return payload.decode("utf-8", errors="replace")
 
 
@@ -447,7 +532,7 @@ async def get_skill_version_file(
     if not version:
         raise HTTPException(status_code=404, detail="Skill version not found")
 
-    raw_content = await _load_skill_version_text(version)
+    raw_content = await _load_skill_version_text(version, skill_name=skill.name)
 
     return SkillFileContentResponse(
         skill_id=skill_id,
@@ -490,8 +575,8 @@ async def compare_skill_versions(
     if not base_version or not head_version:
         raise HTTPException(status_code=404, detail="One or both versions were not found")
 
-    base_content = await _load_skill_version_text(base_version)
-    head_content = await _load_skill_version_text(head_version)
+    base_content = await _load_skill_version_text(base_version, skill_name=skill.name)
+    head_content = await _load_skill_version_text(head_version, skill_name=skill.name)
 
     base_lines = base_content.splitlines(keepends=True)
     head_lines = head_content.splitlines(keepends=True)
@@ -532,7 +617,10 @@ async def upload_marketplace_skill(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    filename = skill_file.filename or "SKILL.md"
+    # Extract filename and sanitize it to prevent path traversal attacks
+    raw_filename = skill_file.filename or "SKILL.md"
+    # Get just the filename, removing any path components
+    filename = Path(raw_filename).name
     if not filename.lower().endswith(".md"):
         raise HTTPException(status_code=400, detail="Only SKILL.md markdown files are supported")
 
@@ -619,21 +707,25 @@ async def upload_marketplace_skill(
         filename=filename,
     )
     content_type = skill_file.content_type or "text/markdown"
-    try:
-        stored_object = await object_storage_client.put_object_bytes(
-            key=object_key,
-            data=raw_bytes,
-            content_type=content_type,
-            metadata={
-                "skill_name": skill_name,
-                "version": version_label,
-            },
-        )
-    except ObjectStorageError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Object storage unavailable for skill upload: {exc}",
-        ) from exc
+    stored_object = None
+    storage_upload_error: Optional[str] = None
+    if object_storage_client.available:
+        try:
+            stored_object = await object_storage_client.put_object_bytes(
+                key=object_key,
+                data=raw_bytes,
+                content_type=content_type,
+                metadata={
+                    "skill_name": skill_name,
+                    "version": version_label,
+                },
+            )
+        except ObjectStorageError as exc:
+            # Local development fallback: keep uploads functional when object storage
+            # is not configured/running.
+            storage_upload_error = str(exc)
+    else:
+        storage_upload_error = "Object storage is not configured."
 
     scan = await skill_security_scanner.scan_skill(filename=filename, raw_content=raw_content)
     scan_dict = scan.to_dict()
@@ -661,19 +753,49 @@ async def upload_marketplace_skill(
     for item in existing_versions:
         item.is_current = False
 
+    fallback_path = _write_skill_local_fallback(
+        skill_name=skill_name,
+        version=version_label,
+        file_name=filename,
+        raw_bytes=raw_bytes,
+    )
+
+    raw_content_fallback = ""
+    object_storage_payload = {
+        "object_key": None,
+        "object_size": None,
+        "object_content_type": None,
+        "object_etag": None,
+        "storage_provider": None,
+        "storage_bucket": None,
+    }
+    file_path_value = str(fallback_path)
+
+    if stored_object:
+        object_storage_payload = {
+            "object_key": stored_object.key,
+            "object_size": stored_object.size,
+            "object_content_type": stored_object.content_type,
+            "object_etag": stored_object.etag,
+            "storage_provider": stored_object.provider,
+            "storage_bucket": stored_object.bucket,
+        }
+    else:
+        raw_content_fallback = raw_content
+
     version_record = SkillVersion(
         skill_id=skill.id,
         version=version_label,
         file_name=filename,
-        file_path=stored_object.uri,
+        file_path=file_path_value,
         file_sha256=file_sha256,
-        raw_content="",
-        object_key=stored_object.key,
-        object_size=stored_object.size,
-        object_content_type=stored_object.content_type,
-        object_etag=stored_object.etag,
-        storage_provider=stored_object.provider,
-        storage_bucket=stored_object.bucket,
+        raw_content=raw_content_fallback,
+        object_key=object_storage_payload["object_key"],
+        object_size=object_storage_payload["object_size"],
+        object_content_type=object_storage_payload["object_content_type"],
+        object_etag=object_storage_payload["object_etag"],
+        storage_provider=object_storage_payload["storage_provider"],
+        storage_bucket=object_storage_payload["storage_bucket"],
         manifest_json={},
         is_current=True,
         scan_status=scan_status,
@@ -686,7 +808,7 @@ async def upload_marketplace_skill(
     manifest = _build_manifest(skill, version_record)
     version_record.manifest_json = manifest
 
-    skill.file_path = stored_object.uri
+    skill.file_path = file_path_value
     skill.version = version_label
     skill.scan_status = scan_status
     skill.scan_confidence = scan.confidence
@@ -706,6 +828,8 @@ async def upload_marketplace_skill(
             "submission_status": submission_status,
             "scan_status": scan_status,
             "scan_confidence": scan.confidence,
+            "storage_fallback": bool(storage_upload_error),
+            "storage_error": storage_upload_error,
         },
     )
 
@@ -763,7 +887,7 @@ async def download_skill_zip(
     if not version:
         raise HTTPException(status_code=404, detail="Skill version not found")
 
-    version_content = await _load_skill_version_text(version)
+    version_content = await _load_skill_version_text(version, skill_name=skill.name)
     manifest = version.manifest_json or _build_manifest(skill, version)
     readme = (
         f"# {skill.display_name}\n\n"
@@ -903,7 +1027,7 @@ async def scan_submission(
     await _require_admin(current_user, db)
     skill = await _load_skill_for_admin_queue(db, skill_id)
     version = await _resolve_version_for_skill(db, skill.id, version_id)
-    version_content = await _load_skill_version_text(version)
+    version_content = await _load_skill_version_text(version, skill_name=skill.name)
 
     scan = await skill_security_scanner.scan_skill(
         filename=version.file_name,
@@ -1090,7 +1214,7 @@ async def install_skill(
             raise HTTPException(status_code=400, detail="Skill is not published yet")
 
     version = await _resolve_version_for_skill(db, skill.id, payload.version_id)
-    version_content = await _load_skill_version_text(version)
+    version_content = await _load_skill_version_text(version, skill_name=skill.name)
     version_bytes = version_content.encode("utf-8", errors="ignore")
 
     if payload.target_type == "agent":
