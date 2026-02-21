@@ -1,9 +1,11 @@
 import { AdminMode } from '../../types/admin'
 import { Button } from '../ui/button'
 import { 
+    Home,
     Users, 
     UserPlus, 
     ShoppingCart, 
+    ClipboardCheck,
     BrainCircuit, 
     Package, 
     MessageSquare, 
@@ -25,6 +27,12 @@ export const ModeSwitcher = ({
         description: string 
     }[] = [
         {
+            mode: 'dashboard',
+            label: 'Dashboard',
+            icon: <Home className="w-4 h-4" />,
+            description: 'View admin-wide summary and quick actions'
+        },
+        {
             mode: 'meta-agents',
             label: 'Meta Agents',
             icon: <Users className="w-4 h-4" />,
@@ -41,6 +49,12 @@ export const ModeSwitcher = ({
             label: 'Marketplace',
             icon: <ShoppingCart className="w-4 h-4" />,
             description: 'Administer marketplace listings and categories'
+        },
+        {
+            mode: 'integration-submissions',
+            label: 'Integrations',
+            icon: <ClipboardCheck className="w-4 h-4" />,
+            description: 'Review and publish integration submissions'
         },
         {
             mode: 'skills',

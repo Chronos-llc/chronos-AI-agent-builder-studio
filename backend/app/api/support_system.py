@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc, asc
 from sqlalchemy.orm import joinedload
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime
 
 from app.core.database import get_db
 from app.models.user import User
+from app.models.admin import AdminUser
 from app.models.support_system import SupportMessage, SupportMessageReply
 from app.api.auth import get_current_user
 from app.schemas.support_system import (
@@ -20,14 +21,26 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def is_admin(user: User) -> bool:
-    """Check if user is admin"""
-    return user.is_superuser
+async def is_admin(user: User, db: AsyncSession) -> bool:
+    """Check whether user has effective admin access."""
+    if user.is_superuser:
+        return True
+    result = await db.execute(
+        select(AdminUser).where(
+            and_(
+                AdminUser.user_id == user.id,
+                AdminUser.is_active == True,
+            )
+        )
+    )
+    return result.scalar_one_or_none() is not None
 
 
-def is_owner_or_admin(user: User, message: SupportMessage) -> bool:
-    """Check if user is owner of message or admin"""
-    return user.id == message.user_id or user.is_superuser
+async def is_owner_or_admin(user: User, message: SupportMessage, db: AsyncSession) -> bool:
+    """Check if user is owner of message or has admin access."""
+    if user.id == message.user_id:
+        return True
+    return await is_admin(user, db)
 
 
 # Support Messages Endpoints
@@ -46,7 +59,8 @@ async def get_support_messages(
     db: AsyncSession = Depends(get_db)
 ):
     """Get support messages with filtering and sorting"""
-    
+    admin_access = await is_admin(current_user, db)
+
     # Base query
     query = select(SupportMessage).options(
         joinedload(SupportMessage.user),
@@ -54,7 +68,7 @@ async def get_support_messages(
     )
     
     # Apply filters based on user role
-    if not current_user.is_superuser:
+    if not admin_access:
         # Non-admins can only see their own messages
         query = query.where(SupportMessage.user_id == current_user.id)
     else:
@@ -133,7 +147,7 @@ async def get_support_message(
         )
     
     # Check ownership or admin
-    if not is_owner_or_admin(current_user, message):
+    if not await is_owner_or_admin(current_user, message, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this message"
@@ -186,7 +200,8 @@ async def update_support_message(
         )
     
     # Check ownership or admin
-    if not is_owner_or_admin(current_user, message):
+    admin_access = await is_admin(current_user, db)
+    if not await is_owner_or_admin(current_user, message, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this message"
@@ -196,7 +211,7 @@ async def update_support_message(
     update_data = message_update.dict(exclude_unset=True)
     
     # Only admins can change status and assignment
-    if not current_user.is_superuser:
+    if not admin_access:
         if "status" in update_data:
             del update_data["status"]
         if "assigned_to" in update_data:
@@ -239,7 +254,8 @@ async def create_support_reply(
         )
     
     # Check if user can reply
-    if not is_owner_or_admin(current_user, message):
+    admin_access = await is_admin(current_user, db)
+    if not await is_owner_or_admin(current_user, message, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to reply to this message"
@@ -249,7 +265,7 @@ async def create_support_reply(
     reply = SupportMessageReply(
         message_id=message_id,
         user_id=current_user.id,
-        is_admin=current_user.is_superuser,
+        is_admin=admin_access,
         reply_text=reply_data.reply_text
     )
     
@@ -284,7 +300,7 @@ async def get_support_replies(
         )
     
     # Check ownership or admin
-    if not is_owner_or_admin(current_user, message):
+    if not await is_owner_or_admin(current_user, message, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view replies for this message"
@@ -318,7 +334,8 @@ async def search_support_messages(
     )
     
     # Apply filters based on user role
-    if not current_user.is_superuser:
+    admin_access = await is_admin(current_user, db)
+    if not admin_access:
         query = query.where(SupportMessage.user_id == current_user.id)
     
     # Apply search filters
@@ -429,8 +446,8 @@ async def get_admin_support_stats(
     db: AsyncSession = Depends(get_db)
 ):
     """Get support statistics for admin dashboard"""
-    
-    if not current_user.is_superuser:
+    admin_access = await is_admin(current_user, db)
+    if not admin_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

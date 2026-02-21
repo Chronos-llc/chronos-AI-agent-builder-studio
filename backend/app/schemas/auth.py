@@ -23,7 +23,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = Field(None, min_length=3, max_length=50)
     full_name: Optional[str] = Field(None, max_length=100)
-    theme: Optional[str] = Field(None, regex="^(light|dark|system)$")
+    theme: Optional[str] = Field(None, pattern="^(light|dark|system)$")
     language: Optional[str] = Field(None, max_length=10)
 
 
@@ -39,6 +39,14 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class SessionContextResponse(BaseModel):
+    user: UserResponse
+    is_admin: bool
+    is_impersonating: bool
+    impersonator_user_id: Optional[int] = None
+    impersonator_admin_user_id: Optional[int] = None
 
 
 class Token(BaseModel):

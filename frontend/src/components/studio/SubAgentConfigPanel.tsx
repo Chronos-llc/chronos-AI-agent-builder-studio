@@ -15,6 +15,8 @@ import {
     Video as VideoIcon,
     Smile
 } from 'lucide-react';
+import { useModelCatalog } from '../../hooks/useModelCatalog';
+import { ModelCatalogPicker } from './ModelCatalogPicker';
 
 interface SubAgentConfig {
     summary_agent: {
@@ -51,12 +53,14 @@ interface SubAgentConfig {
         enabled: boolean;
         generate_image: boolean;
         edit_images: boolean;
+        model: string;
         exposed_variables: Record<string, string>;
     };
     video_agent: {
         enabled: boolean;
         generate_video: boolean;
         analyze_incoming_videos: boolean;
+        model: string;
         exposed_variables: Record<string, string>;
     };
     personality_agent: {
@@ -78,6 +82,12 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const queryClient = useQueryClient();
+    const { data: modelCatalog } = useModelCatalog();
+    const providers = modelCatalog?.providers || [];
+    const chatModels = modelCatalog?.models?.chat || [];
+    const translationModels = (modelCatalog?.models?.translation?.length ? modelCatalog?.models?.translation : chatModels) || [];
+    const imageModels = modelCatalog?.models?.image || [];
+    const videoModels = modelCatalog?.models?.video || [];
 
     // Fetch current sub-agent configuration
     const { data: subAgentConfig, isLoading: isConfigLoading } = useQuery({
@@ -324,25 +334,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </div>
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="summary-model"
-                            >
-                                Summary Generation Model
-                            </label>
-                            <select
-                                id="summary-model"
-                                value={config.summary_agent.model}
-                                onChange={(e) => updateConfig('summary_agent', { model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="claude-3">Claude 3</option>
-                                <option value="gemini-pro">Gemini Pro</option>
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="chat"
+                            providers={providers}
+                            models={chatModels}
+                            value={config.summary_agent.model}
+                            onChange={(model) => updateConfig('summary_agent', { model })}
+                            label="Summary Generation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
@@ -413,25 +412,14 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </label>
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="translator-model"
-                            >
-                                Translation Model
-                            </label>
-                            <select
-                                id="translator-model"
-                                value={config.translator_agent.model}
-                                onChange={(e) => updateConfig('translator_agent', { model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="claude-3">Claude 3</option>
-                                <option value="gemini-pro">Gemini-2.5-Pro</option>
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="translation"
+                            providers={providers}
+                            models={translationModels}
+                            value={config.translator_agent.model}
+                            onChange={(model) => updateConfig('translator_agent', { model })}
+                            label="Translation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
@@ -522,63 +510,32 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label 
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                    htmlFor="knowledge-fastest-model"
-                                >
-                                    Fastest Model
-                                </label>
-                                <select
-                                    id="knowledge-fastest-model"
-                                    value={config.knowledge_agent.fastest_model}
-                                    onChange={(e) => updateConfig('knowledge_agent', { fastest_model: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                    <option value="gpt-4">GPT-4</option>
-                                    <option value="claude-3">Claude 3</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label 
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                    htmlFor="knowledge-best-model"
-                                >
-                                    Best Model
-                                </label>
-                                <select
-                                    id="knowledge-best-model"
-                                    value={config.knowledge_agent.best_model}
-                                    onChange={(e) => updateConfig('knowledge_agent', { best_model: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="gpt-4">GPT-4</option>
-                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                    <option value="claude-3">Claude 3</option>
-                                </select>
-                            </div>
+                            <ModelCatalogPicker
+                                capability="chat"
+                                providers={providers}
+                                models={chatModels}
+                                value={config.knowledge_agent.fastest_model}
+                                onChange={(model) => updateConfig('knowledge_agent', { fastest_model: model })}
+                                label="Fastest Model"
+                            />
+                            <ModelCatalogPicker
+                                capability="chat"
+                                providers={providers}
+                                models={chatModels}
+                                value={config.knowledge_agent.best_model}
+                                onChange={(model) => updateConfig('knowledge_agent', { best_model: model })}
+                                label="Best Model"
+                            />
                         </div>
 
-                        <div>
-                            <label 
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                                htmlFor="knowledge-question-extractor-model"
-                            >
-                                Question Extractor Model
-                            </label>
-                            <select
-                                id="knowledge-question-extractor-model"
-                                value={config.knowledge_agent.question_extractor_model}
-                                onChange={(e) => updateConfig('knowledge_agent', { question_extractor_model: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="claude-3">Claude 3</option>
-                            </select>
-                        </div>
+                        <ModelCatalogPicker
+                            capability="chat"
+                            providers={providers}
+                            models={chatModels}
+                            value={config.knowledge_agent.question_extractor_model}
+                            onChange={(model) => updateConfig('knowledge_agent', { question_extractor_model: model })}
+                            label="Question Extractor Model"
+                        />
 
                         <div>
                             <label 
@@ -730,6 +687,15 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                             </label>
                         </div>
 
+                        <ModelCatalogPicker
+                            capability="image"
+                            providers={providers}
+                            models={imageModels}
+                            value={config.image_generation_agent.model}
+                            onChange={(model) => updateConfig('image_generation_agent', { model })}
+                            label="Image Generation Model"
+                        />
+
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>
                             <div className="space-y-2 text-sm">
@@ -798,6 +764,15 @@ const SubAgentConfigPanel: React.FC<{ agentId: number }> = ({ agentId }) => {
                                 </div>
                             </label>
                         </div>
+
+                        <ModelCatalogPicker
+                            capability="video"
+                            providers={providers}
+                            models={videoModels}
+                            value={config.video_agent.model}
+                            onChange={(model) => updateConfig('video_agent', { model })}
+                            label="Video Generation Model"
+                        />
 
                         <div className="border border-gray-200 rounded-lg p-4">
                             <h3 className="font-medium mb-4">Exposed Variables</h3>

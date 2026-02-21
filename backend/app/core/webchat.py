@@ -974,20 +974,20 @@ class WebChatManager:
         """Generate React component embed code"""
         theme_json = json.dumps(config.theme)
         
-        embed_code = f'''
+        embed_code = '''
         // Chronos AI WebChat React Component
-        import React, {{ useState, useEffect, useRef }} from 'react';
-        
-        const ChronosWebChat = () => {{
+        import React, { useState, useEffect, useRef } from 'react';
+
+        const ChronosWebChat = () => {
             const [messages, setMessages] = useState([]);
             const [inputValue, setInputValue] = useState('');
             const [isConnected, setIsConnected] = useState(false);
             const messagesEndRef = useRef(null);
             
-            const sessionId = '{session.session_id}';
-            const theme = {theme_json};
+            const sessionId = '%s';
+            const theme = %s;
             
-            useEffect(() => {{
+            useEffect(() => {
                 // Load initial messages
                 fetch('/api/v1/webchat/messages/' + sessionId)
                     .then(response => response.json())
@@ -995,45 +995,49 @@ class WebChatManager:
                 
                 // Scroll to bottom
                 scrollToBottom();
-            }}, []);
+            }, []);
             
-            useEffect(() => {{
+            useEffect(() => {
                 scrollToBottom();
-            }}, [messages]);
+            }, [messages]);
             
-            const scrollToBottom = () => {{
-                messagesEndRef.current?.scrollIntoView({{ behavior: 'smooth' }});
-            }};
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            };
             
-            const sendMessage = () => {{
+            const sendMessage = () => {
                 if (!inputValue.trim()) return;
                 
-                const newMessage = {{
+                const newMessage = {
                     message_id: 'msg-' + Date.now(),
                     content: inputValue,
                     sender: 'user',
                     timestamp: new Date().toISOString()
-                }};
+                };
                 
                 // Optimistic UI update
                 setMessages([...messages, newMessage]);
                 setInputValue('');
                 
                 // Send to server
-                fetch('/api/v1/webchat/messages/' + sessionId, {{
+                fetch('/api/v1/webchat/messages/' + sessionId, {
                     method: 'POST',
-                    headers: {{
+                    headers: {
                         'Content-Type': 'application/json'
-                    }},
+                    },
                     body: JSON.stringify(newMessage)
-                }});
-            }};
+                });
+            };
             
-            const handleKeyPress = (e) => {{
-                if (e.key === 'Enter') {{
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
                     sendMessage();
-                }}
-            }};
+                }
+            };
+            
+            const handleInputChange = (e) => {
+                setInputValue(e.target.value);
+            };
             
             return (
                 <div style={{
@@ -1094,7 +1098,7 @@ class WebChatManager:
                         <input
                             type="text"
                             value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
+                            onChange={handleInputChange}
                             onKeyPress={handleKeyPress}
                             placeholder="Type your message..."
                             style={{
@@ -1123,13 +1127,12 @@ class WebChatManager:
                     </div>
                 </div>
             );
-        }};
+        };
         
         export default ChronosWebChat;
-        '''
+        ''' % (session.session_id, theme_json)
         
         return embed_code
-
     def _generate_theme_css(self, theme: Dict[str, Any]) -> str:
         """Generate CSS for theme"""
         return f'''

@@ -13,6 +13,11 @@ class UsageType(str, Enum):
 
 class PlanType(str, Enum):
     FREE = "free"
+    LITE = "lite"
+    LOTUS = "lotus"
+    TEAM_DEVELOPER = "team_developer"
+    SPECIAL_SERVICE = "special_service"
+    # Legacy value retained for compatibility while data is migrated.
     PRO = "pro"
     ENTERPRISE = "enterprise"
 

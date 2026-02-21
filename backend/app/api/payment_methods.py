@@ -8,6 +8,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.models.user import User
+from app.models.admin import AdminUser
 from app.models.payment_methods import PaymentMethod, PaymentSettings, PaymentTransaction
 from app.api.auth import get_current_user
 from app.schemas.payment_methods import (
@@ -19,9 +20,19 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def is_admin(user: User) -> bool:
-    """Check if user is admin"""
-    return user.is_superuser
+async def is_admin(user: User, db: AsyncSession) -> bool:
+    """Check whether user has effective admin access."""
+    if user.is_superuser:
+        return True
+    result = await db.execute(
+        select(AdminUser).where(
+            and_(
+                AdminUser.user_id == user.id,
+                AdminUser.is_active == True,
+            )
+        )
+    )
+    return result.scalar_one_or_none() is not None
 
 
 # Payment Methods Endpoints
@@ -38,7 +49,8 @@ async def get_payment_methods(
 ):
     """Get payment methods"""
     
-    if not current_user.is_superuser:
+    admin_access = await is_admin(current_user, db)
+    if not admin_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -90,7 +102,7 @@ async def get_payment_method(
 ):
     """Get specific payment method"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -116,7 +128,7 @@ async def create_payment_method(
 ):
     """Create new payment method (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -149,7 +161,7 @@ async def update_payment_method(
 ):
     """Update payment method (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -183,7 +195,7 @@ async def delete_payment_method(
 ):
     """Delete payment method (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -212,7 +224,7 @@ async def get_payment_settings(
 ):
     """Get payment settings"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -244,7 +256,7 @@ async def update_payment_settings(
 ):
     """Update payment settings (admin only)"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -288,7 +300,8 @@ async def get_payment_transactions(
 ):
     """Get payment transactions"""
     
-    if not current_user.is_superuser:
+    admin_access = await is_admin(current_user, db)
+    if not admin_access:
         # Non-admins can only see their own transactions
         user_id = current_user.id
     
@@ -344,7 +357,8 @@ async def create_payment_transaction(
 ):
     """Create new payment transaction"""
     
-    if not current_user.is_superuser and transaction_data.user_id != current_user.id:
+    admin_access = await is_admin(current_user, db)
+    if not admin_access and transaction_data.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Can only create transactions for yourself"
@@ -392,7 +406,7 @@ async def get_payment_stats(
 ):
     """Get payment statistics"""
     
-    if not current_user.is_superuser:
+    if not await is_admin(current_user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

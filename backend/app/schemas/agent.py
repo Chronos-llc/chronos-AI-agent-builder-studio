@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -24,6 +24,7 @@ class AgentBase(BaseModel):
     agent_type: AgentType = AgentType.TEXT
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
+    agentic_thinking_enabled: bool = False
     tags: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -39,6 +40,7 @@ class AgentUpdate(BaseModel):
     agent_type: Optional[AgentType] = None
     system_prompt: Optional[str] = None
     user_prompt_template: Optional[str] = None
+    agentic_thinking_enabled: Optional[bool] = None
     model_config: Optional[Dict[str, Any]] = None
     tags: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
@@ -138,6 +140,7 @@ class TranslatorAgentConfig(BaseModel):
 
 
 class KnowledgeAgentConfig(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     enabled: bool = Field(default=True, description="Enable Knowledge Agent")
     answer_manually: bool = Field(default=False, description="Allow manual answers")
     additional_context: bool = Field(default=True, description="Use additional context")
@@ -170,6 +173,7 @@ class ImageGenerationAgentConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable Image Generation Agent")
     generate_image: bool = Field(default=True, description="Generate images")
     edit_images: bool = Field(default=False, description="Edit existing images")
+    model: str = Field(default="auto", description="Model for image generation")
     exposed_variables: Dict[str, str] = Field(
         default={
             "Turn.ImageGenerationAgent.content": "{{Turn.ImageGenerationAgent.content}}"
@@ -182,6 +186,7 @@ class VideoAgentConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable Video Agent")
     generate_video: bool = Field(default=False, description="Generate videos")
     analyze_incoming_videos: bool = Field(default=True, description="Analyze incoming videos")
+    model: str = Field(default="auto", description="Model for video generation")
     exposed_variables: Dict[str, str] = Field(
         default={
             "turn.VideoAgent.content": "{{turn.VideoAgent.content}}"

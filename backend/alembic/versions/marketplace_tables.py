@@ -16,6 +16,15 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "marketplace_listings" in inspector.get_table_names():
+        return
+
+    is_postgres = bind.dialect.name == "postgresql"
+    json_type = postgresql.JSONB() if is_postgres else sa.JSON()
+    now_expr = sa.text("NOW()") if is_postgres else sa.text("CURRENT_TIMESTAMP")
+
     # Create marketplace_listings table
     op.create_table(
         'marketplace_listings',
@@ -25,7 +34,7 @@ def upgrade():
         sa.Column('title', sa.String(length=200), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('category', sa.String(length=50), nullable=True),
-        sa.Column('tags', postgresql.JSONB(), nullable=True),
+        sa.Column('tags', json_type, nullable=True),
         
         # Visibility & Moderation
         sa.Column('visibility', sa.String(length=20), server_default='PUBLIC', nullable=False),
@@ -35,8 +44,8 @@ def upgrade():
         # Metadata
         sa.Column('author_id', sa.Integer(), nullable=False),
         sa.Column('version', sa.String(length=20), nullable=True),
-        sa.Column('schema_data', postgresql.JSONB(), nullable=True),
-        sa.Column('preview_images', postgresql.JSONB(), nullable=True),
+        sa.Column('schema_data', json_type, nullable=True),
+        sa.Column('preview_images', json_type, nullable=True),
         sa.Column('demo_video_url', sa.String(length=500), nullable=True),
         
         # Statistics
@@ -47,8 +56,8 @@ def upgrade():
         
         # Timestamps
         sa.Column('published_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['author_id'], ['users.id'], ondelete='CASCADE'),
@@ -62,7 +71,7 @@ def upgrade():
         sa.Column('listing_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('agent_id', sa.Integer(), nullable=False),
-        sa.Column('installed_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('installed_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.ForeignKeyConstraint(['listing_id'], ['marketplace_listings.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -79,8 +88,8 @@ def upgrade():
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('rating', sa.Integer(), nullable=False),
         sa.Column('review_text', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
         sa.ForeignKeyConstraint(['listing_id'], ['marketplace_listings.id'], ondelete='CASCADE'),

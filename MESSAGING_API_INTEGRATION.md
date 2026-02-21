@@ -72,8 +72,8 @@ python scripts/seed_messaging_api_integration.py
 
 ```bash
 # Start backend
-cd backend
-uvicorn app.main:app --reload
+cd ..
+python -m uvicorn app.main:app --app-dir backend --reload-dir backend --reload
 
 # Start frontend
 cd frontend

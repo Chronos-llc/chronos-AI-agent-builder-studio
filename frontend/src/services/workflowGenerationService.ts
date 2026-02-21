@@ -17,6 +17,7 @@ import type {
   GeneratedWorkflowListResponse,
   WorkflowExecution,
   WorkflowExecutionRequest,
+  WorkflowSchemaExecutionRequest,
   WorkflowPattern,
   WorkflowPatternListResponse,
   WorkflowGenerationRequest,
@@ -24,10 +25,11 @@ import type {
   WorkflowSchema,
   WorkflowOptimizationRequest,
   WorkflowOptimizationResponse,
+  IntegrationNodeDefinition,
 } from '../types/workflowGeneration';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const API_BASE = `${API_BASE_URL}/api/workflow-generation`;
+const API_BASE = `${API_BASE_URL}/api/v1/workflow-generation`;
 
 export const workflowGenerationService = {
   /**
@@ -140,6 +142,14 @@ export const workflowGenerationService = {
   },
 
   /**
+   * Execute an ad-hoc workflow schema
+   */
+  async executeSchema(request: WorkflowSchemaExecutionRequest): Promise<WorkflowExecution> {
+    const response = await axios.post<WorkflowExecution>(`${API_BASE}/execute-schema`, request);
+    return response.data;
+  },
+
+  /**
    * List all workflow patterns
    */
   async listPatterns(): Promise<WorkflowPatternListResponse> {
@@ -192,6 +202,11 @@ export const workflowGenerationService = {
       `${API_BASE}/generated/${workflowId}/executions`
     );
     return response.data;
+  },
+
+  async listIntegrationNodes(): Promise<IntegrationNodeDefinition[]> {
+    const response = await axios.get<{ nodes: IntegrationNodeDefinition[] }>(`${API_BASE}/integration-nodes`);
+    return response.data.nodes || [];
   },
 };
 

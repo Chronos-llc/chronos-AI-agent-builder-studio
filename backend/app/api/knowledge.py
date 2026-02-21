@@ -1,4 +1,3 @@
-import os
 import hashlib
 import mimetypes
 from typing import List, Optional
@@ -6,11 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
-import aiofiles
-import aiofiles.os
-
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.object_storage import (
+    ObjectStorageError,
+    build_knowledge_object_key,
+    get_object_storage_client,
+    make_object_uri,
+    parse_object_uri,
+)
 from app.models.user import User
 from app.models.agent import AgentModel
 from app.models.knowledge import KnowledgeFile, KnowledgeChunk, KnowledgeFileStatus, FileType, KnowledgeSearch
@@ -22,6 +25,7 @@ from app.schemas.knowledge import (
 from app.api.auth import get_current_user
 
 router = APIRouter()
+object_storage_client = get_object_storage_client()
 
 
 # Utility functions
@@ -45,20 +49,11 @@ def get_file_type(filename: str) -> FileType:
         return FileType.TEXT  # Default fallback
 
 
-async def ensure_upload_directory(agent_id: int) -> str:
-    """Ensure upload directory exists for agent"""
-    upload_dir = f"uploads/agents/{agent_id}"
-    await aiofiles.os.makedirs(upload_dir, exist_ok=True)
-    return upload_dir
-
-
-async def process_file_content(file_path: str, file_type: FileType) -> tuple[str, Optional[str]]:
+async def process_file_content(file_bytes: bytes, file_type: FileType) -> tuple[str, Optional[str]]:
     """Extract text content from uploaded file"""
     try:
         if file_type == FileType.TEXT:
-            async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
-                content = await f.read()
-            return content, None
+            return file_bytes.decode('utf-8', errors='replace'), None
             
         elif file_type == FileType.PDF:
             # TODO: Implement PDF text extraction (using PyPDF2 or similar)
@@ -73,16 +68,12 @@ async def process_file_content(file_path: str, file_type: FileType) -> tuple[str
             return "", "Video processing not yet implemented"
             
         elif file_type == FileType.CODE:
-            async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
-                content = await f.read()
-            return content, None
+            return file_bytes.decode('utf-8', errors='replace'), None
             
         else:
             # For other file types, try to read as text
             try:
-                async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
-                    content = await f.read()
-                return content, None
+                return file_bytes.decode('utf-8', errors='replace'), None
             except:
                 return "", "Unsupported file type for content extraction"
                 
@@ -189,11 +180,9 @@ async def upload_knowledge_file(
             detail="No file provided"
         )
     
-    # Check file size (limit to 10MB for now)
-    file.file.seek(0, 2)  # Seek to end
-    file_size = file.file.tell()
-    file.file.seek(0)  # Reset to beginning
-    
+    content = await file.read()
+    file_size = len(content)
+
     if file_size > settings.UPLOAD_MAX_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -203,48 +192,69 @@ async def upload_knowledge_file(
     # Determine file type
     file_type = get_file_type(file.filename)
     
-    # Create upload directory
-    upload_dir = await ensure_upload_directory(agent_id)
-    
     # Generate unique filename
-    timestamp = int(os.path.getctime(file.file.filename)) if file.file.filename else 0
+    timestamp = int(__import__('time').time())
     file_hash = hashlib.md5(f"{file.filename}{timestamp}".encode()).hexdigest()[:8]
     stored_filename = f"{file_hash}_{file.filename}"
-    file_path = os.path.join(upload_dir, stored_filename)
-    
+
     try:
-        # Save file
-        async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            await f.write(content)
-        
         # Create knowledge file record
         knowledge_file = KnowledgeFile(
             original_filename=file.filename,
             stored_filename=stored_filename,
-            file_path=file_path,
+            file_path="pending",
             file_type=file_type,
             file_size=file_size,
             mime_type=file.content_type,
             processing_status=KnowledgeFileStatus.PROCESSING,
             agent_id=agent_id
         )
-        
+
         db.add(knowledge_file)
-        await db.commit()
-        await db.refresh(knowledge_file)
-        
+        await db.flush()
+
+        object_key = build_knowledge_object_key(
+            agent_id=agent_id,
+            knowledge_file_id=knowledge_file.id,
+            sha256=hashlib.sha256(content).hexdigest(),
+            filename=file.filename,
+        )
+        content_type = file.content_type or mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
+        try:
+            stored_object = await object_storage_client.put_object_bytes(
+                key=object_key,
+                data=content,
+                content_type=content_type,
+                metadata={
+                    "agent_id": str(agent_id),
+                    "knowledge_file_id": str(knowledge_file.id),
+                },
+            )
+        except ObjectStorageError as exc:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Object storage unavailable: {exc}",
+            ) from exc
+
+        knowledge_file.file_path = make_object_uri(stored_object.bucket, stored_object.key)
+        knowledge_file.object_key = stored_object.key
+        knowledge_file.object_size = stored_object.size
+        knowledge_file.object_content_type = stored_object.content_type
+        knowledge_file.object_etag = stored_object.etag
+        knowledge_file.storage_provider = stored_object.provider
+        knowledge_file.storage_bucket = stored_object.bucket
+
         # Process file content asynchronously (in a real app, use background tasks)
-        content_text, error = await process_file_content(file_path, file_type)
-        
+        content_text, error = await process_file_content(content, file_type)
+
         if error:
             knowledge_file.processing_status = KnowledgeFileStatus.FAILED
             knowledge_file.processing_error = error
-            await db.commit()
         else:
             knowledge_file.content_text = content_text
             knowledge_file.processing_status = KnowledgeFileStatus.READY
-            
+
             # Create chunks
             chunks = chunk_text_content(content_text)
             for i, chunk in enumerate(chunks):
@@ -256,9 +266,10 @@ async def upload_knowledge_file(
                     knowledge_file_id=knowledge_file.id
                 )
                 db.add(knowledge_chunk)
-            
-            await db.commit()
-        
+
+        await db.commit()
+        await db.refresh(knowledge_file)
+
         return FileUploadResponse(
             success=True,
             file_id=knowledge_file.id,
@@ -266,14 +277,11 @@ async def upload_knowledge_file(
             message="File uploaded successfully",
             processing_status=knowledge_file.processing_status
         )
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
-        # Clean up file if database operation fails
-        try:
-            await aiofiles.os.remove(file_path)
-        except:
-            pass
-        
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload file: {str(e)}"
@@ -307,11 +315,32 @@ async def delete_knowledge_file(
             detail="Knowledge file not found"
         )
     
-    # Delete physical file
-    try:
-        await aiofiles.os.remove(knowledge_file.file_path)
-    except:
-        pass  # File might not exist
+    # Delete object-backed file first, then fall back to legacy local files.
+    object_deleted = False
+    if knowledge_file.object_key:
+        try:
+            await object_storage_client.delete_object(knowledge_file.object_key)
+            object_deleted = True
+        except ObjectStorageError:
+            object_deleted = False
+    elif parse_object_uri(knowledge_file.file_path):
+        _, key = parse_object_uri(knowledge_file.file_path) or ("", "")
+        if key:
+            try:
+                await object_storage_client.delete_object(key)
+                object_deleted = True
+            except ObjectStorageError:
+                object_deleted = False
+
+    if not object_deleted and knowledge_file.file_path:
+        from pathlib import Path
+
+        legacy_path = Path(knowledge_file.file_path)
+        if legacy_path.exists():
+            try:
+                legacy_path.unlink()
+            except OSError:
+                pass
     
     # Delete database record (cascade will delete chunks)
     await db.delete(knowledge_file)

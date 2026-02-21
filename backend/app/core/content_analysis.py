@@ -1,6 +1,6 @@
 import re
 import json
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 import logging
 
@@ -310,3 +310,8 @@ class ContentAnalyzer:
 
 # Global content analyzer instance
 content_analyzer = ContentAnalyzer()
+
+
+def analyze_content(content: str, sender_info: Optional[Dict] = None) -> Dict[str, Any]:
+    """Convenience wrapper for content analysis."""
+    return content_analyzer.analyze_content(content, sender_info)

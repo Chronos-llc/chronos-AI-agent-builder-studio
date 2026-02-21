@@ -1,5 +1,8 @@
 #!/bin/bash
 
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR"
+
 echo "========================================================"
 echo "   Chronos AI Agent Builder Studio - Server Startup"
 echo "========================================================"
@@ -39,7 +42,7 @@ echo "🗄️  Database:    localhost:5432"
 echo "🔴 Redis:        localhost:6379"
 echo
 echo "To start the servers manually:"
-echo "1. Backend:  cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+echo "1. Backend:  python -m uvicorn app.main:app --app-dir backend --reload-dir backend --host 0.0.0.0 --port 8000 --reload"
 echo "2. Frontend: cd frontend && npm run dev"
 echo
 read -p "Press Enter to continue..."

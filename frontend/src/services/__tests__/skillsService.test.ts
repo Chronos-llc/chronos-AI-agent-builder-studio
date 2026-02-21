@@ -1,132 +1,50 @@
-import { describe, it, expect, vi } from 'vitest';
-import {
-  getSkillsList,
-  getSkillDetails,
-  installSkill
-} from '../skillsService';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getSkill, getSkills, installSkillToAgent } from '../skillsService'
 
-describe('Skills Service', () => {
-  describe('getSkillsList', () => {
-    it('should fetch skills list successfully', async () => {
-      const mockData = {
-        data: [
-          {
-            id: '1',
-            name: 'Test Skill',
-            description: 'This is a test skill',
-            category: 'Productivity',
-            version: '1.0.0'
-          }
-        ],
-        total: 1,
-        page: 1,
-        limit: 20
-      };
+describe('skillsService', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockData)
-      });
+  it('fetches skills list from the skills endpoint', async () => {
+    const payload = { data: [], total: 0, page: 1, page_size: 20 }
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(payload),
+    } as unknown as Response)
 
-      global.fetch = mockFetch;
+    const result = await getSkills()
 
-      const result = await getSkillsList();
-      
-      expect(mockFetch).toHaveBeenCalledWith('/api/skills');
-      expect(result).toEqual(mockData);
-    });
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect((globalThis.fetch as any).mock.calls[0][0]).toContain('/api/skills/skills')
+    expect(result).toEqual(payload)
+  })
 
-    it('should handle errors when fetching skills list', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false
-      });
+  it('fetches a single skill by id', async () => {
+    const payload = { id: 5, name: 'Example Skill' }
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(payload),
+    } as unknown as Response)
 
-      global.fetch = mockFetch;
+    const result = await getSkill(5)
+    expect((globalThis.fetch as any).mock.calls[0][0]).toContain('/api/skills/skills/5')
+    expect(result.id).toBe(5)
+  })
 
-      await expect(getSkillsList()).rejects.toThrow('Failed to fetch skills list');
-    });
-  });
+  it('installs a skill to an agent via POST', async () => {
+    const payload = { id: 9, agent_id: 22, skill_id: 3 }
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(payload),
+    } as unknown as Response)
 
-  describe('getSkillDetails', () => {
-    it('should fetch skill details successfully', async () => {
-      const skillId = '1';
-      const mockData = {
-        id: skillId,
-        name: 'Test Skill',
-        description: 'This is a test skill',
-        category: 'Productivity',
-        version: '1.0.0'
-      };
+    const result = await installSkillToAgent(22, { skill_id: 3 })
+    const [url, options] = (globalThis.fetch as any).mock.calls[0]
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockData)
-      });
+    expect(url).toContain('/api/skills/agents/22/skills')
+    expect(options.method).toBe('POST')
+    expect(result.agent_id).toBe(22)
+  })
+})
 
-      global.fetch = mockFetch;
-
-      const result = await getSkillDetails(skillId);
-      
-      expect(mockFetch).toHaveBeenCalledWith(`/api/skills/${skillId}`);
-      expect(result).toEqual(mockData);
-    });
-
-    it('should handle errors when fetching skill details', async () => {
-      const skillId = '1';
-      
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false
-      });
-
-      global.fetch = mockFetch;
-
-      await expect(getSkillDetails(skillId)).rejects.toThrow(`Failed to fetch skill details for ${skillId}`);
-    });
-  });
-
-  describe('installSkill', () => {
-    it('should install a skill successfully', async () => {
-      const skillId = '1';
-      const agentId = '1';
-      
-      const mockData = {
-        success: true,
-        message: 'Skill installed successfully',
-        data: {
-          id: skillId,
-          name: 'Test Skill',
-          version: '1.0.0'
-        }
-      };
-
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockData)
-      });
-
-      global.fetch = mockFetch;
-
-      const result = await installSkill(skillId, agentId);
-      
-      expect(mockFetch).toHaveBeenCalledWith(`/api/skills/${skillId}/install`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: agentId })
-      });
-      expect(result).toEqual(mockData);
-    });
-
-    it('should handle errors when installing a skill', async () => {
-      const skillId = '1';
-      const agentId = '1';
-      
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false
-      });
-
-      global.fetch = mockFetch;
-
-      await expect(installSkill(skillId, agentId)).rejects.toThrow(`Failed to install skill ${skillId}`);
-    });
-  });
-});

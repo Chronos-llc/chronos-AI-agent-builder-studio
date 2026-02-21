@@ -29,7 +29,7 @@ class AgentTable(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    agent = relationship("Agent", back_populates="tables")
+    agent = relationship("AgentModel", back_populates="tables")
     user = relationship("User")
     records = relationship("AgentTableRecord", back_populates="table", cascade="all, delete-orphan")
     

@@ -327,8 +327,8 @@ health_check_interval = 30
    # Start PostgreSQL
    sudo systemctl start postgresql
    
-   # Start Playwright Server
-   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   # Start Playwright Server (from repo root)
+   python -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000
    ```
 
 ## Monitoring and Maintenance

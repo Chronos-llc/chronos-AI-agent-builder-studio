@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 from app.core.enhanced_mcp_manager import enhanced_mcp_manager
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.api.auth import get_current_user
 from app.models.user import User as UserModel
 from app.models.mcp_server import (
     MCPServer, MCPOperationLog, MCPServerMetric, 
@@ -572,6 +572,53 @@ async def add_server_to_group(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to add server to group: {str(e)}")
+
+
+@router.get("/enhanced-mcp/groups/{group_name}/members/", response_model=MCPServerGroupInfo)
+async def list_group_members(
+    group_name: str,
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get group info and current members"""
+    try:
+        group = db.query(MCPServerGroup).filter(MCPServerGroup.name == group_name).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Server group not found")
+
+        member_rows = (
+            db.query(MCPServerGroupMember, MCPServer)
+            .join(MCPServer, MCPServer.id == MCPServerGroupMember.server_id)
+            .filter(MCPServerGroupMember.group_id == group.id)
+            .all()
+        )
+
+        members = []
+        active_members = 0
+        for member, server in member_rows:
+            if member.is_active:
+                active_members += 1
+            members.append({
+                "id": member.id,
+                "server_id": server.server_id,
+                "server_db_id": server.id,
+                "name": server.name,
+                "is_active": member.is_active,
+                "priority": member.priority,
+                "weight": member.weight,
+                "server_active": server.is_active
+            })
+
+        return MCPServerGroupInfo(
+            group=MCPServerGroupResponse.from_orm(group),
+            members=members,
+            total_members=len(members),
+            active_members=active_members
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list group members: {str(e)}")
 
 
 # =============================================================================

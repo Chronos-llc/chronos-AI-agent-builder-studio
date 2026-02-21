@@ -16,6 +16,15 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "platform_updates" in inspector.get_table_names():
+        return
+
+    is_postgres = bind.dialect.name == "postgresql"
+    json_type = postgresql.JSONB() if is_postgres else sa.JSON()
+    now_expr = sa.text("NOW()") if is_postgres else sa.text("CURRENT_TIMESTAMP")
+
     # Create platform_updates table
     op.create_table(
         'platform_updates',
@@ -27,7 +36,7 @@ def upgrade():
         
         # Media
         sa.Column('media_type', sa.String(length=20), nullable=True),
-        sa.Column('media_urls', postgresql.JSONB(), nullable=True),
+        sa.Column('media_urls', json_type, nullable=True),
         sa.Column('thumbnail_url', sa.String(length=500), nullable=True),
         
         # Visibility
@@ -40,8 +49,8 @@ def upgrade():
         # Timestamps
         sa.Column('published_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('expires_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.PrimaryKeyConstraint('id')
     )
@@ -52,7 +61,7 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('update_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('viewed_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('viewed_at', sa.DateTime(timezone=True), server_default=now_expr, nullable=False),
         
         sa.ForeignKeyConstraint(['update_id'], ['platform_updates.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),

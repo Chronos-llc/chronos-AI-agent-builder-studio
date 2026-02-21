@@ -6,8 +6,12 @@ automation tasks, and artifacts within the Chronos AI infrastructure.
 """
 
 import asyncio
+import base64
+import hashlib
 import json
+import mimetypes
 import os
+from pathlib import Path
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
@@ -17,6 +21,13 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.object_storage import (
+    ObjectStorageError,
+    build_storage_key,
+    get_object_storage_client,
+    make_object_uri,
+    parse_object_uri,
+)
 from app.models.user import User
 from app.models.agent import AgentModel
 from app.models.playwright import (
@@ -44,6 +55,7 @@ from app.core.playwright_enhanced import (
 )
 
 router = APIRouter()
+object_storage_client = get_object_storage_client()
 
 
 # Utility functions
@@ -628,16 +640,118 @@ async def create_artifact(
     await verify_agent_ownership(agent_id, current_user.id, db)
     
     try:
+        raw_bytes: bytes | None = None
+        object_key: str | None = None
+        storage_bucket: str | None = None
+        storage_provider: str | None = None
+        object_size: int | None = None
+        object_content_type: str | None = None
+        object_etag: str | None = None
+
+        artifact_file_path = getattr(artifact_data, "file_path", None)
+        artifact_content = getattr(artifact_data, "content", None)
+        artifact_mime_type = getattr(artifact_data, "mime_type", None)
+        artifact_session_id = getattr(artifact_data, "session_id", None)
+        artifact_task_id = getattr(artifact_data, "task_id", None)
+        artifact_metadata = getattr(artifact_data, "metadata", None)
+        artifact_file_size = getattr(artifact_data, "file_size", None)
+
+        existing_object_uri = parse_object_uri(artifact_file_path)
+        if existing_object_uri:
+            storage_bucket, object_key = existing_object_uri
+            if not object_storage_client.available:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Object storage is required for artifact references",
+                )
+            if not await object_storage_client.object_exists(object_key):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Referenced object does not exist",
+                )
+            storage_provider = "s3"
+            object_content_type = artifact_mime_type
+            file_path = artifact_file_path
+        else:
+            if artifact_content:
+                raw_bytes = artifact_content.encode("utf-8", errors="ignore")
+            elif artifact_file_path:
+                legacy_path = Path(artifact_file_path)
+                if legacy_path.exists() and legacy_path.is_file():
+                    raw_bytes = legacy_path.read_bytes()
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Artifact file_path must be an existing file or object URI",
+                    )
+
+            if not raw_bytes:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Artifact content or a valid file_path is required",
+                )
+
+            if not object_storage_client.available:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Object storage is required for artifact uploads",
+                )
+
+            content_type = (
+                artifact_mime_type
+                or mimetypes.guess_type(artifact_data.artifact_name)[0]
+                or "application/octet-stream"
+            )
+            sha256 = hashlib.sha256(raw_bytes).hexdigest()
+            object_key = build_storage_key(
+                "playwright",
+                "artifacts",
+                str(agent_id),
+                str(artifact_session_id or "session"),
+                filename=artifact_data.artifact_name,
+                sha256=sha256,
+            )
+            try:
+                stored = await object_storage_client.put_object_bytes(
+                    key=object_key,
+                    data=raw_bytes,
+                    content_type=content_type,
+                    metadata={
+                        "agent_id": str(agent_id),
+                        "artifact_type": str(artifact_data.artifact_type),
+                    },
+                )
+            except ObjectStorageError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Object storage unavailable: {exc}",
+                ) from exc
+
+            storage_bucket = stored.bucket
+            storage_provider = stored.provider
+            object_size = stored.size
+            object_content_type = stored.content_type
+            object_etag = stored.etag
+            file_path = make_object_uri(stored.bucket, stored.key)
+
         artifact = PlaywrightArtifact(
             agent_id=agent_id,
             artifact_name=artifact_data.artifact_name,
             artifact_type=artifact_data.artifact_type,
-            file_path=artifact_data.file_path,
-            file_size=artifact_data.file_size,
-            mime_type=artifact_data.mime_type,
-            session_id=artifact_data.session_id,
-            task_id=artifact_data.task_id,
-            metadata=artifact_data.metadata
+            file_path=file_path,
+            file_size=artifact_file_size or object_size,
+            mime_type=artifact_mime_type or object_content_type or "application/octet-stream",
+            session_id=artifact_session_id,
+            task_id=artifact_task_id,
+            metadata=artifact_metadata,
+            object_key=object_key,
+            object_size=object_size,
+            object_content_type=object_content_type,
+            object_etag=object_etag,
+            storage_provider=storage_provider,
+            storage_bucket=storage_bucket,
+            checksum=hashlib.sha256(raw_bytes).hexdigest() if raw_bytes else None,
+            storage_type="s3" if object_key else "local",
         )
         
         db.add(artifact)
@@ -691,19 +805,42 @@ async def download_artifact(
     """Download artifact file"""
     
     artifact = await get_artifact(artifact_id, current_user, db)
-    
-    if not os.path.exists(artifact.file_path):
+    artifact_name = getattr(artifact, "artifact_name", None) or getattr(artifact, "file_name", "artifact")
+    artifact_size = getattr(artifact, "file_size", None) or getattr(artifact, "file_size_bytes", None)
+    artifact_mime_type = getattr(artifact, "mime_type", None)
+
+    object_key = artifact.object_key
+    if not object_key and artifact.file_path:
+        parsed_uri = parse_object_uri(artifact.file_path)
+        if parsed_uri:
+            _, object_key = parsed_uri
+
+    if object_key:
+        try:
+            download_url = await object_storage_client.generate_signed_url(object_key)
+        except ObjectStorageError:
+            download_url = make_object_uri(
+                artifact.storage_bucket or object_storage_client.bucket or "chronos-objects",
+                object_key,
+            )
+        return {
+            "file_path": download_url,
+            "file_name": artifact_name,
+            "mime_type": artifact_mime_type,
+            "file_size": artifact_size,
+        }
+
+    if not artifact.file_path or not os.path.exists(artifact.file_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Artifact file not found"
+            detail="Artifact file not found",
         )
-    
-    # Return file information for download
+
     return {
         "file_path": artifact.file_path,
-        "file_name": artifact.artifact_name,
-        "mime_type": artifact.mime_type,
-        "file_size": artifact.file_size
+        "file_name": artifact_name,
+        "mime_type": artifact_mime_type,
+        "file_size": artifact_size,
     }
 
 
@@ -718,8 +855,22 @@ async def delete_artifact(
     artifact = await get_artifact(artifact_id, current_user, db)
     
     try:
-        # Delete physical file
-        if os.path.exists(artifact.file_path):
+        object_deleted = False
+        object_key = artifact.object_key
+        if not object_key and artifact.file_path:
+            parsed_uri = parse_object_uri(artifact.file_path)
+            if parsed_uri:
+                _, object_key = parsed_uri
+
+        if object_key:
+            try:
+                await object_storage_client.delete_object(object_key)
+                object_deleted = True
+            except ObjectStorageError:
+                object_deleted = False
+
+        # Legacy fallback
+        if not object_deleted and artifact.file_path and os.path.exists(artifact.file_path):
             os.remove(artifact.file_path)
         
         # Delete database record

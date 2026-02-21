@@ -163,6 +163,12 @@ class PlaywrightArtifact(Base):
     artifact_type = Column(String(50), nullable=False)  # screenshot, pdf, video, har
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(1000), nullable=False)
+    object_key = Column(String(1024), nullable=True, index=True)
+    object_size = Column(Integer, nullable=True)
+    object_content_type = Column(String(255), nullable=True)
+    object_etag = Column(String(128), nullable=True)
+    storage_provider = Column(String(32), nullable=True)
+    storage_bucket = Column(String(128), nullable=True)
     file_size_bytes = Column(Integer, nullable=True)
     mime_type = Column(String(100), nullable=False)
     

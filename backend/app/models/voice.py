@@ -3,12 +3,14 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum
 from .base import Base
+from .agent_phone_number import PhoneNumberProvider
 
 
 class VoiceProvider(str, Enum):
     """Supported voice service providers"""
     OPENAI = "OPENAI"  # OpenAI Whisper (STT) and TTS
     ELEVENLABS = "ELEVENLABS"  # ElevenLabs TTS
+    CARTESIA = "CARTESIA"  # Cartesia STT/TTS
     GOOGLE = "GOOGLE"  # Google Cloud Speech-to-Text and Text-to-Speech
     AZURE = "AZURE"  # Azure Cognitive Services
     AWS = "AWS"  # Amazon Polly and Transcribe
@@ -72,15 +74,20 @@ class VoiceConfiguration(Base):
     # Interruption handling
     allow_interruption = Column(Boolean, default=True)
     interruption_threshold = Column(Float, default=0.5)  # Confidence threshold
+
+    # Telephony settings
+    phone_provider_preference = Column(SQLEnum(PhoneNumberProvider), nullable=True)
+    selected_phone_number_id = Column(Integer, ForeignKey("agent_phone_numbers.id", ondelete="SET NULL"), nullable=True)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    agent = relationship("Agent", back_populates="voice_configuration")
+    agent = relationship("AgentModel", back_populates="voice_configuration")
     user = relationship("User")
     sessions = relationship("VoiceSession", back_populates="configuration", cascade="all, delete-orphan")
+    selected_phone_number = relationship("AgentPhoneNumber", foreign_keys=[selected_phone_number_id])
     
     # Indexes
     __table_args__ = (
@@ -132,7 +139,7 @@ class VoiceSession(Base):
     
     # Relationships
     configuration = relationship("VoiceConfiguration", back_populates="sessions")
-    agent = relationship("Agent", back_populates="voice_sessions")
+    agent = relationship("AgentModel", back_populates="voice_sessions")
     interactions = relationship("VoiceInteraction", back_populates="session", cascade="all, delete-orphan")
     
     # Indexes
@@ -171,7 +178,7 @@ class VoiceInteraction(Base):
     retry_count = Column(Integer, default=0)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    additional_metadata = Column(JSON, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

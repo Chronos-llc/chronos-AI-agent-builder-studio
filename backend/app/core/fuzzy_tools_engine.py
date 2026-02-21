@@ -212,7 +212,7 @@ class FuzzyToolsEngine:
                 name=request.name,
                 description=request.description,
                 system_prompt=request.system_prompt,
-                model_config=request.model_config or {},
+                model_config=request.model_config_data or {},
                 tags=request.tags or [],
                 status=AgentStatus.DRAFT,
                 owner_id=self.user_id,
@@ -312,8 +312,8 @@ class FuzzyToolsEngine:
                 agent.description = request.description
             if request.system_prompt is not None:
                 agent.system_prompt = request.system_prompt
-            if request.model_config is not None:
-                agent.model_config = request.model_config
+            if request.model_config_data is not None:
+                agent.model_config = request.model_config_data
             if request.tags is not None:
                 agent.tags = request.tags
             

@@ -28,7 +28,6 @@ This project uses a modern monorepo architecture with:
 - Docker and Docker Compose
 - Node.js 18+ (for local development)
 - Python 3.10-3.12 (64-bit recommended for local development; required for prebuilt database driver wheels like `psycopg2-binary`)
-- Python 3.10-3.12 (64-bit recommended for local development)
 
 ### MCP Server Integrations
 
@@ -38,6 +37,16 @@ The Chronos Hub Marketplace now includes two powerful MCP server integrations:
 2. **Memory MCP Server** - Persistent memory and conversation history
 
 These integrations are automatically initialized when you start the backend.
+
+### AI Provider Integrations
+
+Seed the AI providers into the Integrations hub:
+
+```bash
+python backend/scripts/seed_ai_provider_integrations.py
+```
+
+Then add your default API keys to `.env` (for example `OPENAI_API_KEY`, `FIREWORKS_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, and any STT/TTS keys). Install providers from the Integrations page to make their models available in the Studio model pickers.
 
 ### Using Docker (Recommended)
 
@@ -95,10 +104,11 @@ pip install -r requirements.txt
 alembic upgrade head
 ```
 
-1. Start the server:
+1. Start the server (from repo root):
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd ..
+python -m uvicorn app.main:app --app-dir backend --reload-dir backend --host 0.0.0.0 --port 8000 --reload
 ```
 
 #### Frontend Setup
@@ -120,6 +130,8 @@ npm install
 ```bash
 npm run dev
 ```
+
+> Dev-mode note: Vite serves source modules for fast HMR. In browser DevTools/Network you will see module paths (for example `/src/...`) while running `npm run dev`. This is expected for development and is not a production deployment mode.
 
 ## Project Structure
 
@@ -231,6 +243,16 @@ For production deployment, ensure you:
 3. Configure proper CORS origins
 4. Set up SSL certificates
 5. Use a production-ready database setup
+
+### Deferred Frontend Hardening Checklist (for production pass)
+
+The current workspace is intentionally running frontend in development mode. When you switch to production rollout, apply this checklist:
+
+1. Build and serve static assets only (`npm run build` + static server such as Nginx)
+2. Disable source maps in production builds
+3. Block access to `*.map` and `/src/*` paths at the web server
+4. Add strict security headers (CSP, X-Content-Type-Options, Referrer-Policy, frame protections)
+5. Remove any development-only host/port and hot-reload settings from deployment manifests
 
 ## Contributing
 

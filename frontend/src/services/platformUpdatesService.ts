@@ -14,8 +14,28 @@ import type {
   TargetAudience
 } from '../types/platformUpdates';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_BASE = `${API_BASE_URL}/api/updates`;
+
+const getAccessToken = () => {
+  if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+    return null;
+  }
+  return globalThis.localStorage.getItem('chronos_access_token') || globalThis.localStorage.getItem('access_token');
+};
+
+function withAuth(init: RequestInit = {}): RequestInit {
+  const token = getAccessToken();
+  const headers = new Headers(init.headers || {});
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return {
+    ...init,
+    headers,
+    credentials: 'include',
+  };
+}
 
 // Helper Functions
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -62,21 +82,21 @@ export async function getPlatformUpdates(
   if (searchQuery) params.search_query = searchQuery;
   
   const queryString = buildQueryString(params);
-  const response = await fetch(`${API_BASE}${queryString}`);
+  const response = await fetch(`${API_BASE}${queryString}`, withAuth());
   return handleResponse<PlatformUpdateList>(response);
 }
 
 export async function getPlatformUpdate(updateId: number): Promise<PlatformUpdate> {
-  const response = await fetch(`${API_BASE}/${updateId}`);
+  const response = await fetch(`${API_BASE}/${updateId}`, withAuth());
   return handleResponse<PlatformUpdate>(response);
 }
 
 export async function createPlatformUpdate(update: PlatformUpdateCreate): Promise<PlatformUpdate> {
-  const response = await fetch(API_BASE, {
+  const response = await fetch(API_BASE, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update),
-  });
+  }));
   return handleResponse<PlatformUpdate>(response);
 }
 
@@ -84,38 +104,38 @@ export async function updatePlatformUpdate(
   updateId: number,
   update: PlatformUpdateUpdate
 ): Promise<PlatformUpdate> {
-  const response = await fetch(`${API_BASE}/${updateId}`, {
+  const response = await fetch(`${API_BASE}/${updateId}`, withAuth({
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(update),
-  });
+  }));
   return handleResponse<PlatformUpdate>(response);
 }
 
 export async function deletePlatformUpdate(updateId: number): Promise<void> {
-  const response = await fetch(`${API_BASE}/${updateId}`, {
+  const response = await fetch(`${API_BASE}/${updateId}`, withAuth({
     method: 'DELETE',
-  });
+  }));
   if (!response.ok) {
     throw new Error('Failed to delete platform update');
   }
 }
 
 export async function getUpdateViews(updateId: number): Promise<UserUpdateViewList> {
-  const response = await fetch(`${API_BASE}/${updateId}/views`);
+  const response = await fetch(`${API_BASE}/${updateId}/views`, withAuth());
   return handleResponse<UserUpdateViewList>(response);
 }
 
 export async function getUnviewedUpdates(): Promise<PlatformUpdateList> {
-  const response = await fetch('/api/my-updates/unviewed');
+  const response = await fetch(`${API_BASE_URL}/api/my-updates/unviewed`, withAuth());
   return handleResponse<PlatformUpdateList>(response);
 }
 
 export async function markUpdateViewed(updateId: number): Promise<void> {
-  const response = await fetch(`${API_BASE}/${updateId}/mark-viewed`, {
+  const response = await fetch(`${API_BASE}/${updateId}/mark-viewed`, withAuth({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-  });
+  }));
   if (!response.ok) {
     throw new Error('Failed to mark update as viewed');
   }

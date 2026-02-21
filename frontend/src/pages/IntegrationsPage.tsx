@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { ProviderLogo } from '../components/brand/ProviderLogo';
 
 interface Integration {
     id: number;
@@ -27,6 +28,10 @@ interface IntegrationCategory {
     count: number;
 }
 
+interface UserPlanInfo {
+    plan_type: string;
+}
+
 const IntegrationsPage: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -39,6 +44,7 @@ const IntegrationsPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [userPlan, setUserPlan] = useState<UserPlanInfo | null>(null);
 
     const integrationTypes = [
         { name: 'API', icon: '🔌' },
@@ -54,7 +60,24 @@ const IntegrationsPage: React.FC = () => {
     useEffect(() => {
         fetchIntegrations();
         fetchCategories();
+        fetchUserPlan();
     }, [currentPage, searchQuery, selectedCategory, selectedType]);
+
+    const fetchUserPlan = async () => {
+        try {
+            const response = await fetch('/api/v1/usage/plan', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            if (!response.ok) return;
+            setUserPlan(await response.json());
+        } catch (err) {
+            console.error('Failed to fetch user plan:', err);
+        }
+    };
+
+    const canCreateIntegration = ['team_developer', 'special_service', 'enterprise', 'pro'].includes((userPlan?.plan_type || '').toLowerCase());
 
     const fetchIntegrations = async () => {
         try {
@@ -109,11 +132,11 @@ const IntegrationsPage: React.FC = () => {
     };
 
     const handleInstallIntegration = (integrationId: number) => {
-        navigate(`/integrations/${integrationId}/install`);
+        navigate(`/app/integrations/${integrationId}/install`);
     };
 
     const handleViewDetails = (integrationId: number) => {
-        navigate(`/integrations/${integrationId}`);
+        navigate(`/app/integrations/${integrationId}`);
     };
 
     const handleCategorySelect = (category: string | null) => {
@@ -145,19 +168,45 @@ const IntegrationsPage: React.FC = () => {
                 {[...Array(emptyStars)].map((_, i) => (
                     <span key={`empty-${i}`} className="text-gray-300">★</span>
                 ))}
-                <span className="ml-1 text-sm text-gray-600">({rating.toFixed(1)})</span>
+                <span className="ml-1 text-sm text-muted-foreground">({rating.toFixed(1)})</span>
             </div>
         );
     };
 
     return (
         <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50 p-6">
+            <div className="space-y-6">
                 <div className="max-w-7xl mx-auto">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-8">Chronos Hub Marketplace</h1>
+                    <div className="mb-8">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Integration hub</p>
+                                <h1 className="mt-2 text-3xl font-bold text-white">Chronos Hub Marketplace</h1>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (canCreateIntegration) {
+                                        navigate('/app/integrations/create');
+                                    }
+                                }}
+                                className={`rounded-full px-5 py-2 text-sm font-semibold ${
+                                    canCreateIntegration
+                                        ? 'bg-cyan-300 text-[#081018] hover:bg-cyan-200'
+                                        : 'bg-white/10 text-white/70 hover:bg-white/15'
+                                }`}
+                            >
+                                Create New Integration
+                            </button>
+                        </div>
+                        {!canCreateIntegration && (
+                            <p className="mt-3 text-sm text-amber-200">
+                                Publishing integrations is available on Team/Developer plan and above.
+                            </p>
+                        )}
+                    </div>
 
                     {/* Search and Filters */}
-                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                    <div className="chronos-surface p-4 mb-6">
                         <div className="flex flex-col lg:flex-row gap-4">
                             <form onSubmit={handleSearch} className="flex-1">
                                 <div className="relative">
@@ -166,11 +215,11 @@ const IntegrationsPage: React.FC = () => {
                                         placeholder="Search integrations..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-border rounded-lg bg-black/25 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                     <button
                                         type="submit"
-                                        className="absolute right-2 top-2 bg-blue-600 text-white p-1 rounded-md hover:bg-blue-700"
+                                        className="absolute right-2 top-2 bg-cyan-400 text-white p-1 rounded-md hover:bg-cyan-300"
                                     >
                                         🔍
                                     </button>
@@ -183,13 +232,13 @@ const IntegrationsPage: React.FC = () => {
                                         key={category.name}
                                         onClick={() => handleCategorySelect(category.name)}
                                         className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm whitespace-nowrap ${selectedCategory === category.name
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            ? 'bg-cyan-400 text-white'
+                                            : 'bg-black/20 text-muted-foreground hover:bg-black/30'
                                             }`}
                                     >
                                         <span>{category.icon}</span>
                                         <span>{category.name}</span>
-                                        <span className="bg-gray-500 text-white text-xs rounded-full px-1 ml-1">{category.count}</span>
+                                        <span className="bg-black/40 text-white text-xs rounded-full px-1 ml-1">{category.count}</span>
                                     </button>
                                 ))}
                             </div>
@@ -202,8 +251,8 @@ const IntegrationsPage: React.FC = () => {
                                     key={type.name}
                                     onClick={() => handleTypeSelect(type.name)}
                                     className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm whitespace-nowrap ${selectedType === type.name
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        ? 'bg-cyan-400 text-white'
+                                        : 'bg-black/20 text-muted-foreground hover:bg-black/30'
                                         }`}
                                 >
                                     <span>{type.icon}</span>
@@ -223,7 +272,7 @@ const IntegrationsPage: React.FC = () => {
                                     setSearchQuery('');
                                     setCurrentPage(1);
                                 }}
-                                className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
                             >
                                 🔄 Clear all filters
                             </button>
@@ -234,7 +283,7 @@ const IntegrationsPage: React.FC = () => {
                     {loading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {[...Array(8)].map((_, i) => (
-                                <div key={i} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                                <div key={i} className="bg-card rounded-lg shadow-sm p-4 animate-pulse">
                                     <div className="h-4 bg-gray-200 rounded mb-2"></div>
                                     <div className="h-3 bg-gray-200 rounded mb-2 w-3/4"></div>
                                     <div className="h-6 bg-gray-200 rounded mt-4"></div>
@@ -245,11 +294,11 @@ const IntegrationsPage: React.FC = () => {
                         <>
                             {/* Error State */}
                             {error && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                                    <p className="text-red-600">⚠️ {error}</p>
+                                <div className="bg-rose-500/10 border border-red-200 rounded-lg p-4 mb-6">
+                                    <p className="text-rose-400">⚠️ {error}</p>
                                     <button
                                         onClick={fetchIntegrations}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                        className="mt-2 text-sm text-rose-400 hover:text-red-800"
                                     >
                                         Try again
                                     </button>
@@ -260,35 +309,40 @@ const IntegrationsPage: React.FC = () => {
                             {integrations.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {integrations.map((integration) => (
-                                        <div key={integration.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                        <div key={integration.id} className="chronos-surface overflow-hidden hover:shadow-glow transition-shadow">
                                             <div className="p-4">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                                                            <span className="text-blue-600 text-lg">{integration.icon || '🔌'}</span>
+                                                        <div className="w-8 h-8 rounded-md flex items-center justify-center">
+                                                            <ProviderLogo
+                                                                name={integration.name}
+                                                                url={integration.icon}
+                                                                size={24}
+                                                                className="border-0 bg-transparent"
+                                                            />
                                                         </div>
                                                         <div>
-                                                            <h3 className="font-semibold text-gray-900">{integration.name}</h3>
-                                                            <p className="text-sm text-gray-500 capitalize">{integration.category.replace('_', ' ')}</p>
+                                                            <h3 className="font-semibold text-foreground">{integration.name}</h3>
+                                                            <p className="text-sm text-muted-foreground capitalize">{integration.category.replace('_', ' ')}</p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                                    <span className="text-xs bg-gray-100 text-muted-foreground px-2 py-1 rounded-full">
                                                         v{integration.version}
                                                     </span>
                                                 </div>
 
-                                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                                                     {integration.description}
                                                 </p>
 
                                                 <div className="flex justify-between items-center mb-3">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                                                        <span className="text-xs bg-green-100 text-emerald-300 px-2 py-1 rounded-full">
                                                             {integration.integration_type.replace('_', ' ')}
                                                         </span>
                                                         {renderStars(integration.rating)}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
+                                                    <div className="text-xs text-muted-foreground">
                                                         📥 {integration.download_count}
                                                     </div>
                                                 </div>
@@ -296,13 +350,13 @@ const IntegrationsPage: React.FC = () => {
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleViewDetails(integration.id)}
-                                                        className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                                                        className="flex-1 bg-black/25 text-muted-foreground py-2 px-3 rounded-md text-sm hover:bg-black/35 transition-colors"
                                                     >
                                                         View Details
                                                     </button>
                                                     <button
                                                         onClick={() => handleInstallIntegration(integration.id)}
-                                                        className="bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                                                        className="bg-cyan-400 text-white py-2 px-3 rounded-md text-sm hover:bg-cyan-300 transition-colors"
                                                     >
                                                         Install
                                                     </button>
@@ -314,8 +368,8 @@ const IntegrationsPage: React.FC = () => {
                             ) : (
                                 <div className="text-center py-12">
                                     <div className="text-6xl text-gray-300 mb-4">🔍</div>
-                                    <p className="text-gray-600 mb-2">No integrations found</p>
-                                    <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+                                    <p className="text-muted-foreground mb-2">No integrations found</p>
+                                    <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
                                 </div>
                             )}
                         </>
@@ -328,14 +382,14 @@ const IntegrationsPage: React.FC = () => {
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
                                 className={`px-3 py-1 rounded-md text-sm ${currentPage === 1
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                    ? 'bg-gray-200 text-muted-foreground/70 cursor-not-allowed'
+                                    : 'bg-card text-muted-foreground hover:bg-gray-100'
                                     }`}
                             >
                                 ← Previous
                             </button>
 
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-muted-foreground">
                                 Page {currentPage} of {totalPages}
                             </span>
 
@@ -343,8 +397,8 @@ const IntegrationsPage: React.FC = () => {
                                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
                                 className={`px-3 py-1 rounded-md text-sm ${currentPage === totalPages
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                    ? 'bg-gray-200 text-muted-foreground/70 cursor-not-allowed'
+                                    : 'bg-card text-muted-foreground hover:bg-gray-100'
                                     }`}
                             >
                                 Next →

@@ -173,7 +173,7 @@ class MCPServerMetric(Base):
     
     # Additional Context
     tags = Column(JSON, nullable=True)  # Additional metric tags
-    metadata = Column(JSON, nullable=True)  # Additional metadata
+    additional_metadata = Column(JSON, nullable=True)  # Additional metadata
     
     # Relationships
     server = relationship("MCPServer", back_populates="metrics")

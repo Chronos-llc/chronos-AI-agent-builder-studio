@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -25,6 +25,21 @@ class IntegrationCategory(str, Enum):
     UTILITIES = "utilities"
 
 
+class IntegrationStatus(str, Enum):
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
+    UNDER_REVIEW = "under_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PUBLISHED = "published"
+
+
+class IntegrationVisibility(str, Enum):
+    PRIVATE = "private"
+    TEAM = "team"
+    PUBLIC = "public"
+
+
 class IntegrationBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
@@ -34,12 +49,25 @@ class IntegrationBase(BaseModel):
     documentation_url: Optional[str] = None
     version: str = "1.0.0"
     is_public: bool = True
+    visibility: IntegrationVisibility = IntegrationVisibility.PRIVATE
+    app_icon_url: Optional[str] = None
+    app_screenshots: List[str] = []
+    developer_name: Optional[str] = None
+    website_url: Optional[str] = None
+    support_url_or_email: Optional[str] = None
+    privacy_policy_url: Optional[str] = None
+    terms_url: Optional[str] = None
+    demo_url: Optional[str] = None
+    subtitle: Optional[str] = None
 
 
 class IntegrationCreate(IntegrationBase):
     config_schema: Dict[str, Any] = {}
     credentials_schema: Optional[Dict[str, Any]] = None
     supported_features: List[str] = []
+    status: IntegrationStatus = IntegrationStatus.DRAFT
+    submission_notes: Optional[str] = None
+    is_workflow_node_enabled: bool = False
 
 
 class IntegrationUpdate(BaseModel):
@@ -51,9 +79,23 @@ class IntegrationUpdate(BaseModel):
     documentation_url: Optional[str] = None
     version: Optional[str] = None
     is_public: Optional[bool] = None
+    visibility: Optional[IntegrationVisibility] = None
     config_schema: Optional[Dict[str, Any]] = None
     credentials_schema: Optional[Dict[str, Any]] = None
     supported_features: Optional[List[str]] = None
+    status: Optional[IntegrationStatus] = None
+    submission_notes: Optional[str] = None
+    moderation_notes: Optional[str] = None
+    app_icon_url: Optional[str] = None
+    app_screenshots: Optional[List[str]] = None
+    developer_name: Optional[str] = None
+    website_url: Optional[str] = None
+    support_url_or_email: Optional[str] = None
+    privacy_policy_url: Optional[str] = None
+    terms_url: Optional[str] = None
+    demo_url: Optional[str] = None
+    is_workflow_node_enabled: Optional[bool] = None
+    subtitle: Optional[str] = None
 
 
 class IntegrationResponse(IntegrationBase):
@@ -64,6 +106,15 @@ class IntegrationResponse(IntegrationBase):
     download_count: int
     rating: float
     review_count: int
+    status: IntegrationStatus
+    submission_notes: Optional[str] = None
+    moderation_notes: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    published_at: Optional[datetime] = None
+    reviewed_by: Optional[int] = None
+    is_workflow_node_enabled: bool = False
+    subtitle: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -152,6 +203,7 @@ class WebChatConfig(BaseModel):
 
 
 class AIModelProviderConfig(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     provider_type: str = Field(..., description="openai, anthropic, ollama, custom")
     api_key: Optional[str] = None
     base_url: Optional[str] = None
@@ -173,3 +225,76 @@ class CommunicationChannelConfig(BaseModel):
     webhook_url: Optional[str] = None
     access_token: Optional[str] = None
     bot_token: Optional[str] = None
+
+
+class IntegrationSubmissionCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    subtitle: Optional[str] = Field(None, max_length=120)
+    description: str = Field(..., min_length=10)
+    integration_type: IntegrationType
+    category: IntegrationCategory
+    visibility: IntegrationVisibility = IntegrationVisibility.PRIVATE
+    app_icon_url: Optional[str] = None
+    app_screenshots: List[str] = []
+    developer_name: Optional[str] = None
+    website_url: Optional[str] = None
+    support_url_or_email: Optional[str] = None
+    privacy_policy_url: Optional[str] = None
+    terms_url: Optional[str] = None
+    demo_url: Optional[str] = None
+    submission_notes: Optional[str] = None
+    config_schema: Dict[str, Any] = {}
+    credentials_schema: Optional[Dict[str, Any]] = None
+    supported_features: List[str] = []
+    documentation_url: Optional[str] = None
+    version: str = "1.0.0"
+    is_workflow_node_enabled: bool = False
+
+
+class IntegrationSubmissionUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    subtitle: Optional[str] = Field(None, max_length=120)
+    description: Optional[str] = None
+    integration_type: Optional[IntegrationType] = None
+    category: Optional[IntegrationCategory] = None
+    visibility: Optional[IntegrationVisibility] = None
+    app_icon_url: Optional[str] = None
+    app_screenshots: Optional[List[str]] = None
+    developer_name: Optional[str] = None
+    website_url: Optional[str] = None
+    support_url_or_email: Optional[str] = None
+    privacy_policy_url: Optional[str] = None
+    terms_url: Optional[str] = None
+    demo_url: Optional[str] = None
+    submission_notes: Optional[str] = None
+    config_schema: Optional[Dict[str, Any]] = None
+    credentials_schema: Optional[Dict[str, Any]] = None
+    supported_features: Optional[List[str]] = None
+    documentation_url: Optional[str] = None
+    version: Optional[str] = None
+    is_workflow_node_enabled: Optional[bool] = None
+
+
+class IntegrationModerationAction(str, Enum):
+    APPROVE = "approve"
+    REJECT = "reject"
+    REQUEST_CHANGES = "request_changes"
+
+
+class IntegrationModerationRequest(BaseModel):
+    action: IntegrationModerationAction
+    moderation_notes: Optional[str] = None
+    visibility: Optional[IntegrationVisibility] = None
+    is_workflow_node_enabled: Optional[bool] = None
+
+
+class IntegrationSubmissionEventResponse(BaseModel):
+    id: int
+    integration_id: int
+    action: str
+    actor_user_id: Optional[int] = None
+    payload: Dict[str, Any]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

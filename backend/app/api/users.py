@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.models.user import User
@@ -63,12 +64,24 @@ async def delete_current_user_account(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete current user account"""
-    
-    # In a real application, you might want to soft delete or archive instead
-    await db.delete(current_user)
+
+    now = datetime.utcnow()
+    current_user.is_active = False
+    current_user.deleted_at = now
+    current_user.deletion_requested_at = now
+    current_user.purge_after = now + timedelta(days=30)
+
+    for token in current_user.personal_access_tokens:
+        token.is_active = False
+        token.is_revoked = True
+
     await db.commit()
-    
-    return {"message": "Account deleted successfully"}
+
+    return {
+        "message": "Account deletion scheduled",
+        "deleted_at": now.isoformat(),
+        "purge_after": current_user.purge_after.isoformat() if current_user.purge_after else None,
+    }
 
 
 @router.get("/me/stats")

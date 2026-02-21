@@ -114,7 +114,25 @@ export interface WorkflowExecutionCreate {
 
 export interface WorkflowExecutionRequest {
   workflow_id: number;
+  agent_id: number;
   input_data?: Record<string, any>;
+}
+
+export interface WorkflowSchemaExecutionRequest {
+  agent_id: number;
+  workflow_schema: WorkflowSchema;
+  input_data?: Record<string, any>;
+}
+
+export interface IntegrationNodeDefinition {
+  node_type: 'integration_mcp_call' | 'integration_api_call';
+  integration_id: number;
+  name: string;
+  description?: string;
+  category: string;
+  icon?: string;
+  config_schema: Record<string, any>;
+  credentials_schema: Record<string, any>;
 }
 
 // Workflow Pattern
