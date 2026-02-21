@@ -148,11 +148,11 @@
     }
 
     .landing-heading {
-        @apply text-3xl font-semibold text-white md:text-4xl;
+        @apply text-5xl font-semibold text-white md:text-6xl;
     }
 
     .landing-lead {
-        @apply mt-4 max-w-3xl text-white/70;
+        @apply mt-4 max-w-3xl text-xl leading-relaxed text-white/70 md:text-2xl;
     }
 
     .landing-card {
@@ -185,6 +185,89 @@
 
     .transition-delay-custom {
         transition-delay: var(--transition-delay, 0ms);
+    }
+
+    /* Landing-only typography upscaling (+2 steps minimum). */
+    .landing-page .text-xs {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    .landing-page .text-sm {
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+    }
+
+    .landing-page .text-base {
+        font-size: 1.25rem;
+        line-height: 1.875rem;
+    }
+
+    .landing-page .text-lg {
+        font-size: 1.5rem;
+        line-height: 2.125rem;
+    }
+
+    .landing-page .text-xl {
+        font-size: 1.875rem;
+        line-height: 2.5rem;
+    }
+
+    .landing-page .text-2xl {
+        font-size: 2.25rem;
+        line-height: 2.75rem;
+    }
+
+    .landing-page .text-3xl {
+        font-size: 3rem;
+        line-height: 1.2;
+    }
+
+    .landing-page .text-4xl {
+        font-size: 3.75rem;
+        line-height: 1.15;
+    }
+
+    .landing-page .text-5xl {
+        font-size: 4.5rem;
+        line-height: 1.1;
+    }
+
+    .landing-page .text-7xl {
+        font-size: 8rem;
+        line-height: 1;
+    }
+
+    .landing-page .text-\[11px\] {
+        font-size: 15px;
+        line-height: 1.375rem;
+    }
+
+    .landing-page .text-\[2rem\] {
+        font-size: 3rem;
+        line-height: 1.2;
+    }
+
+    @media (min-width: 768px) {
+        .landing-page .md\:text-2xl {
+            font-size: 2.25rem;
+            line-height: 2.75rem;
+        }
+
+        .landing-page .md\:text-4xl {
+            font-size: 3.75rem;
+            line-height: 1.15;
+        }
+
+        .landing-page .md\:text-5xl {
+            font-size: 4.5rem;
+            line-height: 1.1;
+        }
+
+        .landing-page .md\:text-7xl {
+            font-size: 8rem;
+            line-height: 1;
+        }
     }
 }
 
