@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, support_system, payment_methods, platform_updates, skills, skills_marketplace
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, integration_admin_management, support_system, payment_methods, platform_updates, skills, skills_marketplace
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -119,6 +119,7 @@ app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])
 app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
 app.include_router(integration_moderation.router, prefix="/api/v1", tags=["integration-moderation"])
+app.include_router(integration_admin_management.router, prefix="/api/v1", tags=["integration-admin-management"])
 app.include_router(mcp.router, prefix="/api/v1/mcp", tags=["mcp"])  # Original MCP endpoints
 app.include_router(enhanced_mcp.router, prefix="/api/v1", tags=["enhanced-mcp"])  # Enhanced MCP endpoints
 app.include_router(ai_providers.router, prefix="/api/v1/ai", tags=["ai"])

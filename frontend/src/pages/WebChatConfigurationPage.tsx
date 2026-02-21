@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
 
 interface WebChatConfig {
     embed_type: string;
@@ -377,19 +378,7 @@ export default MyWebChat;`;
     if (loading && !config) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen bg-background p-6">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="bg-card rounded-lg shadow-sm p-6 animate-pulse">
-                            <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
-                            <div className="h-4 bg-gray-200 rounded mb-2 w-full"></div>
-                            <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="h-4 bg-gray-200 rounded"></div>
-                                <div className="h-4 bg-gray-200 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <PlatformLoadingScreen />
             </ProtectedRoute>
         );
     }

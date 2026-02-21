@@ -87,6 +87,11 @@ export interface IntegrationNodeDefinition {
 }
 
 export const integrationSubmissionService = {
+  async createIntegrationDirect(payload: IntegrationSubmissionCreate): Promise<IntegrationSubmission> {
+    const response = await axios.post<IntegrationSubmission>(`${API_BASE}/`, payload)
+    return response.data
+  },
+
   async createSubmission(payload: IntegrationSubmissionCreate): Promise<IntegrationSubmission> {
     const response = await axios.post<IntegrationSubmission>(`${API_BASE}/submissions`, payload)
     return response.data

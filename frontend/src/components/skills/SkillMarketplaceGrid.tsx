@@ -20,8 +20,8 @@ export function SkillMarketplaceGrid({
 }: SkillMarketplaceGridProps) {
   if (loading) {
     return (
-      <Card className="flex min-h-[220px] items-center justify-center border border-white/10 bg-black/30" data-testid="skills-grid-loading">
-        <div className="flex items-center gap-2 text-white/80">
+      <Card className="flex min-h-[220px] items-center justify-center border border-border bg-card" data-testid="skills-grid-loading">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading skills...
         </div>
@@ -31,7 +31,7 @@ export function SkillMarketplaceGrid({
 
   if (error) {
     return (
-      <Card className="border border-red-500/50 bg-red-950/40 p-4 text-sm text-red-100" data-testid="skills-grid-error">
+      <Card className="border border-red-500/45 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-200" data-testid="skills-grid-error">
         {error}
       </Card>
     )
@@ -39,7 +39,7 @@ export function SkillMarketplaceGrid({
 
   if (!skills.length) {
     return (
-      <Card className="border border-white/10 bg-black/30 p-6 text-center text-white/70" data-testid="skills-grid-empty">
+      <Card className="border border-border bg-card p-6 text-center text-muted-foreground" data-testid="skills-grid-empty">
         {emptyLabel}
       </Card>
     )

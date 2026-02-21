@@ -222,9 +222,14 @@ async def seed_skills_marketplace() -> None:
                     )
                     uploaded_object = None
 
+            target_dir = UPLOAD_ROOT / parsed.name / parsed.version
+            target_dir.mkdir(parents=True, exist_ok=True)
+            output_path = target_dir / "SKILL.md"
+            output_path.write_text(parsed.raw_content, encoding="utf-8")
+            file_path_value = str(output_path)
+            # Keep transition compatibility for file_path, but never persist raw file payloads in DB.
+            raw_content_value = ""
             if uploaded_object:
-                file_path_value = uploaded_object.uri
-                raw_content_value = ""
                 object_payload = {
                     "object_key": uploaded_object.key,
                     "object_size": uploaded_object.size,
@@ -234,13 +239,6 @@ async def seed_skills_marketplace() -> None:
                     "storage_bucket": uploaded_object.bucket,
                 }
             else:
-                target_dir = UPLOAD_ROOT / parsed.name / parsed.version
-                target_dir.mkdir(parents=True, exist_ok=True)
-                output_path = target_dir / "SKILL.md"
-                output_path.write_text(parsed.raw_content, encoding="utf-8")
-                file_path_value = str(output_path)
-                # Keep transition compatibility for file_path, but never persist raw file payloads in DB.
-                raw_content_value = ""
                 object_payload = {
                     "object_key": None,
                     "object_size": None,

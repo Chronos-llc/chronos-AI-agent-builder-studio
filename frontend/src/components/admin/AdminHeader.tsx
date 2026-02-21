@@ -58,7 +58,7 @@ export const AdminHeader = ({
     const unreadAlerts = alerts?.filter(alert => !alert.isRead).length || 0
 
     return (
-        <header className="bg-card border-b border-border flex items-center justify-between px-4 py-3 h-16">
+        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 py-3 text-[15px]">
             {/* Mobile menu button */}
             <div className="md:hidden">
                 <Button 
@@ -78,7 +78,7 @@ export const AdminHeader = ({
                     <Input
                         type="search"
                         placeholder="Search admin functions..."
-                        className="pl-10 pr-4 w-full bg-background"
+                        className="w-full bg-background pl-10 pr-4 text-[15px]"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -87,6 +87,7 @@ export const AdminHeader = ({
 
             {/* User actions */}
             <div className="flex items-center gap-3">
+                <ThemeSwitcher compact />
                 {/* Alerts */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -102,7 +103,7 @@ export const AdminHeader = ({
                     <DropdownMenuContent align="end" className="w-80">
                         <div className="p-2">
                             <div className="mb-2 flex items-center justify-between">
-                                <h4 className="font-medium">Alerts</h4>
+                                <h4 className="text-sm font-medium">Alerts</h4>
                                 {alerts && alerts.length > 0 && (
                                     <Button
                                         variant="ghost"
@@ -119,13 +120,13 @@ export const AdminHeader = ({
                                     {alerts.slice(0, 5).map((alert) => (
                                         <div
                                             key={alert.id}
-                                            className={`rounded-md border px-2 py-2 ${alert.isRead ? 'opacity-70' : ''}`}
+                                            className={`rounded-md border px-2 py-2 ${alert.isRead ? 'opacity-80' : ''}`}
                                         >
                                             <div className="flex items-start gap-2">
                                             <div className={`w-2 h-2 rounded-full mt-1 ${alert.type === 'error' ? 'bg-red-500' : alert.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
                                             <div className="flex-1">
-                                                <p className="font-medium text-sm">{alert.title}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{alert.message}</p>
+                                                <p className="text-sm font-medium">{alert.title}</p>
+                                                <p className="truncate text-xs text-muted-foreground">{alert.message}</p>
                                             </div>
                                                 <div className="flex items-center gap-1">
                                                     {!alert.isRead && (
@@ -165,7 +166,7 @@ export const AdminHeader = ({
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="flex items-center gap-2">
                             <User className="w-5 h-5" />
-                            <span className="font-medium text-sm">{user.name}</span>
+                            <span className="text-sm font-medium">{user.name}</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
@@ -177,10 +178,6 @@ export const AdminHeader = ({
                             <Settings className="w-4 h-4 mr-2" />
                             Settings
                         </DropdownMenuItem>
-                        <div className="px-2 py-2">
-                            <p className="mb-1 text-xs font-medium text-muted-foreground">Theme</p>
-                            <ThemeSwitcher compact className="w-full justify-center" />
-                        </div>
                         <DropdownMenuItem onSelect={(event) => {
                             event.preventDefault()
                             onSwitchProfile?.()

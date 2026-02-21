@@ -1,8 +1,13 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { integrationSubmissionService, type IntegrationSubmission, type IntegrationSubmissionCreate } from '../../services/integrationSubmissionService'
+import { adminIntegrationService } from '../../services/adminIntegrationService'
 
 interface CreateIntegrationWizardProps {
   onCreated?: (submission: IntegrationSubmission) => void | Promise<void>
+  adminPublish?: boolean
+  mode?: 'create' | 'update'
+  initialData?: Partial<IntegrationSubmissionCreate>
+  integrationId?: number
 }
 
 const categories = [
@@ -15,34 +20,65 @@ const categories = [
   'utilities',
 ]
 
-export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = ({ onCreated }) => {
+const defaultForm: IntegrationSubmissionCreate = {
+  name: '',
+  subtitle: '',
+  description: '',
+  category: 'automation',
+  integration_type: 'mcp_server',
+  visibility: 'private',
+  submission_notes: '',
+  app_icon_url: '',
+  app_screenshots: [],
+  developer_name: '',
+  website_url: '',
+  support_url_or_email: '',
+  privacy_policy_url: '',
+  terms_url: '',
+  demo_url: '',
+  documentation_url: '',
+  config_schema: {},
+  credentials_schema: {},
+  supported_features: [],
+  is_workflow_node_enabled: false,
+}
+
+export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = ({
+  onCreated,
+  adminPublish = false,
+  mode = 'create',
+  initialData,
+  integrationId,
+}) => {
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draftId, setDraftId] = useState<number | null>(null)
+  const [jsonConfigText, setJsonConfigText] = useState('{}')
+  const [jsonCredentialsText, setJsonCredentialsText] = useState('{}')
 
-  const [form, setForm] = useState<IntegrationSubmissionCreate>({
-    name: '',
-    subtitle: '',
-    description: '',
-    category: 'automation',
-    integration_type: 'mcp_server',
-    visibility: 'private',
-    submission_notes: '',
-    app_icon_url: '',
-    app_screenshots: [],
-    developer_name: '',
-    website_url: '',
-    support_url_or_email: '',
-    privacy_policy_url: '',
-    terms_url: '',
-    demo_url: '',
-    documentation_url: '',
-    config_schema: {},
-    credentials_schema: {},
-    supported_features: [],
-    is_workflow_node_enabled: false,
-  })
+  const [form, setForm] = useState<IntegrationSubmissionCreate>(defaultForm)
+
+  useEffect(() => {
+    if (!initialData) return
+    const merged: IntegrationSubmissionCreate = {
+      ...defaultForm,
+      ...initialData,
+      app_screenshots: Array.isArray(initialData.app_screenshots) ? initialData.app_screenshots : [],
+      supported_features: Array.isArray(initialData.supported_features) ? initialData.supported_features : [],
+      config_schema: initialData.config_schema || {},
+      credentials_schema: initialData.credentials_schema || {},
+    }
+    setForm(merged)
+  }, [initialData])
+
+  useEffect(() => {
+    setJsonConfigText(JSON.stringify(form.config_schema || {}, null, 2))
+  }, [form.config_schema])
+
+  useEffect(() => {
+    setJsonCredentialsText(JSON.stringify(form.credentials_schema || {}, null, 2))
+  }, [form.credentials_schema])
 
   const isLastStep = step === 6
   const canContinue = useMemo(() => {
@@ -92,8 +128,46 @@ export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = (
   const handleContinue = async () => {
     if (!canContinue || saving) return
     if (step < 6) {
-      await saveDraft()
+      if (mode === 'create' && !adminPublish) {
+        await saveDraft()
+      }
       setStep(prev => prev + 1)
+      return
+    }
+
+    if (mode === 'update') {
+      if (!integrationId) {
+        setError('Missing integration id for update')
+        return
+      }
+      setSaving(true)
+      setError(null)
+      try {
+        const updated = await adminIntegrationService.updateHubIntegration(integrationId, form)
+        await onCreated?.((updated.integration || updated) as IntegrationSubmission)
+        setStep(7)
+      } catch (err: any) {
+        setError(err?.response?.data?.detail?.message || err?.response?.data?.detail || err?.message || 'Failed to update integration')
+      } finally {
+        setSaving(false)
+      }
+      return
+    }
+
+    if (adminPublish) {
+      setSaving(true)
+      setError(null)
+      try {
+        const createdPayload = await adminIntegrationService.createHubIntegration(form)
+        const created = (createdPayload.integration || createdPayload) as IntegrationSubmission
+        setDraftId(created.id)
+        await onCreated?.(created)
+        setStep(7)
+      } catch (err: any) {
+        setError(err?.response?.data?.detail?.message || err?.response?.data?.detail || err?.message || 'Failed to publish integration')
+      } finally {
+        setSaving(false)
+      }
       return
     }
 
@@ -108,7 +182,9 @@ export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = (
   return (
     <div className="chronos-surface p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">Create New Integration</h2>
+        <h2 className="text-xl font-semibold text-white">
+          {mode === 'update' ? 'Update Integration' : 'Create New Integration'}
+        </h2>
         <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/75">Step {Math.min(step, 6)} of 6</span>
       </div>
 
@@ -136,14 +212,16 @@ export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = (
           </select>
           <textarea
             className="min-h-[180px] w-full rounded-md border border-white/15 bg-black/30 px-3 py-2 font-mono text-sm text-white"
-            defaultValue={JSON.stringify(form.config_schema, null, 2)}
-            onBlur={e => parseJsonField(e.target.value, 'config_schema')}
+            value={jsonConfigText}
+            onChange={e => setJsonConfigText(e.target.value)}
+            onBlur={() => parseJsonField(jsonConfigText, 'config_schema')}
             placeholder='{"command":"npx","args":["-y","my-mcp-server"]}'
           />
           <textarea
             className="min-h-[140px] w-full rounded-md border border-white/15 bg-black/30 px-3 py-2 font-mono text-sm text-white"
-            defaultValue={JSON.stringify(form.credentials_schema, null, 2)}
-            onBlur={e => parseJsonField(e.target.value, 'credentials_schema')}
+            value={jsonCredentialsText}
+            onChange={e => setJsonCredentialsText(e.target.value)}
+            onBlur={() => parseJsonField(jsonCredentialsText, 'credentials_schema')}
             placeholder='{"api_key":{"required":true,"sensitive":true}}'
           />
         </div>
@@ -201,13 +279,23 @@ export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = (
             <p><span className="text-white/60">Visibility:</span> {form.visibility}</p>
             <p><span className="text-white/60">Workflow node:</span> {form.is_workflow_node_enabled ? 'Enabled' : 'Disabled'}</p>
           </div>
-          <p className="text-white/60">After submission, admins review and publish globally after approval.</p>
+          <p className="text-white/60">
+            {mode === 'update'
+              ? 'Review your updates before saving changes to the integrations hub.'
+              : adminPublish
+              ? 'As admin, this flow publishes directly to the integrations hub.'
+              : 'After submission, admins review and publish globally after approval.'}
+          </p>
         </div>
       )}
 
       {step === 7 && (
         <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-4 text-emerald-200">
-          Submission sent. You can track status in My Submissions below.
+          {mode === 'update'
+            ? 'Integration updated successfully.'
+            : adminPublish
+            ? 'Integration published to hub successfully.'
+            : 'Submission sent. You can track status in My Submissions below.'}
         </div>
       )}
 
@@ -227,7 +315,13 @@ export const CreateIntegrationWizard: React.FC<CreateIntegrationWizardProps> = (
             disabled={!canContinue || saving}
             className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-[#081018] disabled:opacity-40"
           >
-            {isLastStep ? 'Submit for review' : 'Continue'}
+            {isLastStep
+              ? mode === 'update'
+                ? 'Save changes'
+                : adminPublish
+                  ? 'Publish integration'
+                  : 'Submit for review'
+              : 'Continue'}
           </button>
         )}
       </div>

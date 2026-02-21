@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { PlatformLoadingScreen } from '@/components/loading/PlatformLoadingScreen'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -52,11 +53,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }, [apiBaseUrl, user])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading-spinner"></div>
-      </div>
-    )
+    return <PlatformLoadingScreen />
   }
 
   if (!user) {
@@ -64,11 +61,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (onboardingLoading || sessionContextLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="loading-spinner"></div>
-      </div>
-    )
+    return <PlatformLoadingScreen />
   }
 
   const onOnboardingPage = location.pathname.startsWith('/app/onboarding')

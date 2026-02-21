@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { conversationService, type Conversation, type ConversationAction, type ConversationDialogue, type ConversationMessage } from '../services/conversationService'
 import { Progress } from '../components/ui/progress'
+import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen'
 
 type SuiteTab = 'chat' | 'actions' | 'history' | 'settings' | 'fuzzy'
 
@@ -114,11 +115,7 @@ const AgentSuitePage = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="loading-spinner"></div>
-      </div>
-    )
+    return <PlatformLoadingScreen mode="overlay" />
   }
 
   return (

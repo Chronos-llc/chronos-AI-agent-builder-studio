@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     )
     OBJECT_STORAGE_PROVIDER: str = Field(default="s3", env="OBJECT_STORAGE_PROVIDER")
     OBJECT_STORAGE_ENDPOINT_URL: Optional[str] = Field(
-        default="http://127.0.0.1:9000",
+        default=None,
         env="OBJECT_STORAGE_ENDPOINT_URL",
     )
     OBJECT_STORAGE_REGION: str = Field(default="us-east-1", env="OBJECT_STORAGE_REGION")
@@ -112,15 +112,15 @@ class Settings(BaseSettings):
         default=None,
         env="OBJECT_STORAGE_SECRET_ACCESS_KEY",
     )
-    OBJECT_STORAGE_USE_SSL: bool = Field(default=False, env="OBJECT_STORAGE_USE_SSL")
-    OBJECT_STORAGE_FORCE_PATH_STYLE: bool = Field(default=True, env="OBJECT_STORAGE_FORCE_PATH_STYLE")
+    OBJECT_STORAGE_USE_SSL: bool = Field(default=True, env="OBJECT_STORAGE_USE_SSL")
+    OBJECT_STORAGE_FORCE_PATH_STYLE: bool = Field(default=False, env="OBJECT_STORAGE_FORCE_PATH_STYLE")
     OBJECT_STORAGE_SIGNED_URL_TTL_SECONDS: int = Field(
         default=3600,
         env="OBJECT_STORAGE_SIGNED_URL_TTL_SECONDS",
     )
     OBJECT_STORAGE_BASE_PREFIX: str = Field(default="chronos", env="OBJECT_STORAGE_BASE_PREFIX")
     OBJECT_STORAGE_AUTO_CREATE_BUCKET: bool = Field(
-        default=True,
+        default=False,
         env="OBJECT_STORAGE_AUTO_CREATE_BUCKET",
     )
 

@@ -50,11 +50,12 @@ export function SkillDetailPanel({
   }, [versions])
 
   const skill = detail.skill
+  const publisher = (skill.publisher_username || 'jessenewt').replace(/^@+/, '').trim() || 'jessenewt'
   const scanTone = useMemo(() => {
-    if (skill.scan_status === 'benign') return 'bg-emerald-600/20 text-emerald-200 border-emerald-400/30'
-    if (skill.scan_status === 'suspicious') return 'bg-amber-600/20 text-amber-200 border-amber-400/30'
-    if (skill.scan_status === 'malicious') return 'bg-rose-600/20 text-rose-200 border-rose-400/30'
-    return 'bg-slate-600/20 text-slate-200 border-slate-400/30'
+    if (skill.scan_status === 'benign') return 'border-emerald-500/45 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
+    if (skill.scan_status === 'suspicious') return 'border-amber-500/45 bg-amber-500/10 text-amber-700 dark:text-amber-200'
+    if (skill.scan_status === 'malicious') return 'border-rose-500/45 bg-rose-500/10 text-rose-700 dark:text-rose-200'
+    return 'border-slate-500/45 bg-slate-500/10 text-slate-700 dark:text-slate-200'
   }, [skill.scan_status])
 
   const activeFile = fileContent?.raw_content || ''
@@ -69,32 +70,35 @@ export function SkillDetailPanel({
   }
 
   return (
-    <Card className="space-y-4 border border-white/10 bg-gradient-to-b from-[#2b1a15] to-[#130d0a] p-4 text-white" data-testid={`skill-detail-${skill.id}`}>
+    <Card className="space-y-4 border border-border bg-card p-4 text-card-foreground" data-testid={`skill-detail-${skill.id}`}>
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold">{skill.display_name}</h2>
-        <p className="text-white/75">{skill.description || 'No description provided.'}</p>
+        <p className="text-muted-foreground">{skill.description || 'No description provided.'}</p>
+        <p className="text-sm text-muted-foreground">
+          Published by <span className="font-medium text-foreground">@{publisher}</span>
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Badge className={scanTone}>{skill.scan_status}</Badge>
-        <Badge variant="outline">{skill.submission_status}</Badge>
-        {skill.version && <Badge variant="outline">latest v{skill.version}</Badge>}
-        <Badge variant="outline">{skill.install_count} installs</Badge>
-        <Badge variant="outline">{skill.download_count} downloads</Badge>
+        <Badge className="border-border bg-background/70 text-foreground">{skill.submission_status}</Badge>
+        {skill.version && <Badge className="border-border bg-background/70 text-foreground">latest v{skill.version}</Badge>}
+        <Badge className="border-border bg-background/70 text-foreground">{skill.install_count} installs</Badge>
+        <Badge className="border-border bg-background/70 text-foreground">{skill.download_count} downloads</Badge>
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-sm">
-        <div className="font-semibold uppercase tracking-wide text-white/70">Security Scan</div>
-        <p className="mt-2 text-white/80">{skill.scan_summary || 'Scan summary unavailable.'}</p>
-        <p className="text-xs text-white/60">Confidence: {skill.scan_confidence}%</p>
+      <div className="rounded-lg border border-border bg-muted/45 p-3 text-sm">
+        <div className="font-semibold uppercase tracking-wide text-muted-foreground">Security Scan</div>
+        <p className="mt-2 text-foreground">{skill.scan_summary || 'Scan summary unavailable.'}</p>
+        <p className="text-xs text-muted-foreground">Confidence: {skill.scan_confidence}%</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button className="bg-[#dd5b42] text-white hover:bg-[#ef6b51]" onClick={handleDownload} disabled={downloadBusy} data-testid="skill-detail-download-button">
+        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleDownload} disabled={downloadBusy} data-testid="skill-detail-download-button">
           {downloadBusy ? 'Preparing zip...' : 'Download zip'}
         </Button>
-        <Button variant="outline" onClick={() => setInstallDialogOpen(true)} data-testid="skill-detail-install-button">
-          Install skill
+        <Button className="border border-primary/55 bg-primary/15 text-primary hover:bg-primary/25" onClick={() => setInstallDialogOpen(true)} data-testid="skill-detail-install-button">
+          Install Skill
         </Button>
       </div>
 
