@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../ui/badge'
 import { Button } from '../../ui/button'
@@ -25,7 +25,7 @@ export const IntegrationManageMode = () => {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('published')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -41,11 +41,14 @@ export const IntegrationManageMode = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [query, statusFilter])
 
   useEffect(() => {
-    void load()
-  }, [statusFilter])
+    const timer = window.setTimeout(() => {
+      void load()
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [load])
 
   return (
     <div className="space-y-4" data-testid="admin-integrations-manage-mode">
@@ -71,7 +74,7 @@ export const IntegrationManageMode = () => {
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
             data-testid="admin-integrations-manage-status"
           >
             <option value="published">Published</option>
