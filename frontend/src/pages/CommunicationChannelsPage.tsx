@@ -890,7 +890,7 @@ const CommunicationChannelsPage: React.FC = () => {
                                 <h4 className="font-medium text-muted-foreground mb-3">Add New Routing Rule</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label htmlFor="rule-name" className="block text-sm font-medium text-muted-foreground mb-1">Rule Name</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Rule Name</label>
                                         <input
                                             id="rule-name"
                                             type="text"
@@ -901,7 +901,7 @@ const CommunicationChannelsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="rule-priority" className="block text-sm font-medium text-muted-foreground mb-1">Priority</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                                         <input
                                             id="rule-priority"
                                             type="number"
@@ -913,7 +913,7 @@ const CommunicationChannelsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="target-channels" className="block text-sm font-medium text-muted-foreground mb-1">Target Channels</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Target Channels</label>
                                         <select
                                             id="target-channels"
                                             multiple

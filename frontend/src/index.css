@@ -191,7 +191,6 @@
     .usage-progress-bar {
         width: var(--usage-width, 0%);
     }
-
     /* Landing-only typography upscaling (+2 steps minimum). */
     .landing-page .text-xs {
         font-size: 1rem;

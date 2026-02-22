@@ -1,111 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  PlusIcon, 
-  UsersIcon, 
-  ChartBarIcon, 
-  Cog6ToothIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
-import { useAuth } from '../contexts/AuthContext';
-import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
-
-interface DashboardStats {
-  totalAgents: number;
-  activeAgents: number;
-  totalMessages: number;
-  thisMonthUsage: number;
-  planLimit: number;
-}
-
-interface RecentActivity {
-  id: string;
-  type: 'agent_created' | 'agent_updated' | 'message_sent' | 'integration_connected';
-  title: string;
-  description: string;
-  timestamp: string;
-  agentName?: string;
-}
+import React from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
-  const progressBarRef = useRef<HTMLDivElement>(null);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalAgents: 0,
-    activeAgents: 0,
-    totalMessages: 0,
-    thisMonthUsage: 0,
-    planLimit: 1000
-  });
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  // Set progress bar width via CSS custom property to avoid inline styles
-  useEffect(() => {
-    if (progressBarRef.current) {
-      const percentage = Math.min(getUsagePercentage(), 100);
-      progressBarRef.current.style.setProperty('--usage-width', `${percentage}%`);
-    }
-  }, [stats.thisMonthUsage, stats.planLimit]);
-
-  const fetchDashboardData = async () => {
-    try {
-      // Fetch dashboard statistics
-      const statsResponse = await fetch('/api/dashboard/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData);
-      }
-
-      // Fetch recent activity
-      const activityResponse = await fetch('/api/dashboard/activity', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-
-      if (activityResponse.ok) {
-        const activityData = await activityResponse.json();
-        setRecentActivity(activityData);
-      }
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getUsagePercentage = () => {
-    return Math.round((stats.thisMonthUsage / stats.planLimit) * 100);
-  };
-
-  const getUsageColor = () => {
-    const percentage = getUsagePercentage();
-    if (percentage >= 90) return 'text-rose-400';
-    if (percentage >= 75) return 'text-amber-400';
-    return 'text-emerald-400';
-  };
-
-  const getUsageBarColor = () => {
-    const percentage = getUsagePercentage();
-    if (percentage >= 90) return 'bg-rose-500';
-    if (percentage >= 75) return 'bg-amber-400';
-    return 'bg-emerald-500';
-  };
-
-  if (loading) {
-    return <PlatformLoadingScreen mode="overlay" />;
-  }
+    const { user, logout } = useAuth()
 
   return (
     <div className="space-y-6">
@@ -199,76 +96,39 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Usage Progress Bar */}
-        <div className="chronos-surface p-6 mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-medium text-foreground">Monthly Usage</h3>
-            <span className={`text-sm font-medium ${getUsageColor()}`}>
-              {getUsagePercentage()}% used
-            </span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div 
-              ref={progressBarRef}
-              className={`h-2 rounded-full transition-all duration-300 usage-progress-bar ${getUsageBarColor()}`}
-              role="progressbar"
-              aria-valuenow={getUsagePercentage()}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`${getUsagePercentage()}% of monthly plan used`}
-            ></div>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {stats.planLimit - stats.thisMonthUsage} messages remaining this month
-          </p>
-        </div>
+                    <div className="mt-8">
+                        <div className="card p-6">
+                            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <button className="btn btn-primary p-4 text-left">
+                                    <div>
+                                        <h3 className="font-medium">Create Agent</h3>
+                                        <p className="text-sm opacity-75">Build a new AI agent</p>
+                                    </div>
+                                </button>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Agents */}
-          <div className="chronos-surface">
-            <div className="p-6 border-b border-border">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-foreground">Recent Agents</h3>
-                <Link 
-                  to="/app/agents" 
-                  className="text-cyan-300 hover:text-cyan-200 text-sm font-medium"
-                >
-                  View all
-                </Link>
-              </div>
-            </div>
-            <div className="p-6">
-              <Link
-                to="/app/agents/new"
-                className="flex items-center justify-center w-full px-4 py-3 border border-dashed border-border rounded-lg text-muted-foreground hover:border-cyan-300 hover:text-cyan-300 transition-colors"
-              >
-                <PlusIcon className="h-6 w-6 mr-2" />
-                Create New Agent
-              </Link>
-            </div>
-          </div>
+                                <button className="btn btn-secondary p-4 text-left">
+                                    <div>
+                                        <h3 className="font-medium">View Agents</h3>
+                                        <p className="text-sm opacity-75">Manage existing agents</p>
+                                    </div>
+                                </button>
 
-          {/* Recent Activity */}
-          <div className="chronos-surface">
-            <div className="p-6 border-b border-border">
-              <h3 className="text-lg font-medium text-foreground">Recent Activity</h3>
-            </div>
-            <div className="p-6">
-              {recentActivity.length > 0 ? (
-                <div className="space-y-4">
-                  {recentActivity.slice(0, 5).map((activity) => (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="h-2 w-2 bg-cyan-400 rounded-full mt-2"></div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground">{activity.title}</p>
-                        <p className="text-sm text-muted-foreground">{activity.description}</p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">
-                          {new Date(activity.timestamp).toLocaleDateString()}
-                        </p>
-                      </div>
+                                <button className="btn btn-outline p-4 text-left">
+                                    <div>
+                                        <h3 className="font-medium">Integrations</h3>
+                                        <p className="text-sm opacity-75">Connect external services</p>
+                                    </div>
+                                </button>
+
+                                <button className="btn btn-outline p-4 text-left">
+                                    <div>
+                                        <h3 className="font-medium">Settings</h3>
+                                        <p className="text-sm opacity-75">Configure preferences</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                   ))}
                 </div>

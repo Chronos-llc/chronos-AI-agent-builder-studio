@@ -624,7 +624,7 @@ async def get_session_context(
     active_admin = await _get_active_admin_profile_for_user(db, current_user.id)
     return SessionContextResponse(
         user=current_user,
-        is_admin=bool(active_admin) and not is_impersonating,
+        is_admin=(bool(active_admin) or bool(current_user.is_superuser)) and not is_impersonating,
         is_impersonating=is_impersonating,
         impersonator_user_id=int(impersonator_user_id) if impersonator_user_id is not None else None,
         impersonator_admin_user_id=int(impersonator_admin_user_id) if impersonator_admin_user_id is not None else None,
