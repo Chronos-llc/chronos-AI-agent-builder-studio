@@ -1,23 +1,35 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func, desc, asc
+from sqlalchemy import select, and_, or_, func, desc, asc, update
 from sqlalchemy.orm import joinedload
 from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime
+from decimal import Decimal
 
 from app.core.database import get_db
 from app.models.user import User
 from app.models.admin import AdminUser
 from app.models.payment_methods import PaymentMethod, PaymentSettings, PaymentTransaction
+from app.models.usage import UserBalanceAccount, UserBalanceTransaction
 from app.api.auth import get_current_user
 from app.schemas.payment_methods import (
     PaymentMethodCreate, PaymentMethodUpdate, PaymentMethodResponse, PaymentMethodList,
-    PaymentSettingsUpdate, PaymentSettingsResponse, PaymentTransactionBase, PaymentTransactionResponse, PaymentTransactionList
+    PaymentSettingsUpdate, PaymentSettingsResponse, PaymentTransactionBase, PaymentTransactionResponse, PaymentTransactionList,
+    UserBalanceAdjustRequest, UserBalanceAccountResponse, UserBalanceSummaryResponse, UserBalanceTransactionResponse,
+    UserBalanceUserListItem, UserBalanceUsersResponse
 )
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# ISO 4217 currency codes commonly used
+VALID_CURRENCIES = {
+    "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "MXN",
+    "BRL", "KRW", "SGD", "HKD", "NOK", "SEK", "DKK", "NZD", "ZAR", "RUB",
+    "TRY", "PLN", "THB", "IDR", "MYR", "PHP", "CZK", "ILS", "CLP", "PKR",
+    "EGP", "TWD", "AED", "SAR", "VND", "NGN", "BDT", "QAR", "KWD", "COP",
+}
 
 
 async def is_admin(user: User, db: AsyncSession) -> bool:
@@ -388,7 +400,7 @@ async def create_payment_transaction(
         payment_method_id=transaction_data.payment_method_id,
         transaction_type=transaction_data.transaction_type,
         status=transaction_data.status,
-        metadata=transaction_data.metadata,
+        additional_metadata=transaction_data.metadata,
         external_transaction_id=transaction_data.metadata.get("external_id") if transaction_data.metadata else None
     )
     
@@ -431,3 +443,186 @@ async def get_payment_stats(
         "inactive_methods": inactive_count,
         "by_provider": provider_stats
     }
+
+
+@router.get("/balances/users", response_model=UserBalanceUsersResponse)
+async def list_user_balances(
+    query: Optional[str] = Query(None, description="Search by email or username"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await is_admin(current_user, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    users_query = select(User)
+    if query:
+        pattern = f"%{query}%"
+        users_query = users_query.where(or_(User.email.ilike(pattern), User.username.ilike(pattern)))
+
+    total = int((await db.execute(select(func.count()).select_from(users_query.subquery()))).scalar_one() or 0)
+    users = (
+        await db.execute(
+            users_query.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+        )
+    ).scalars().all()
+
+    rows: list[UserBalanceUserListItem] = []
+    for user in users:
+        balances = (
+            await db.execute(select(UserBalanceAccount).where(UserBalanceAccount.user_id == user.id))
+        ).scalars().all()
+        rows.append(
+            UserBalanceUserListItem(
+                user_id=user.id,
+                username=user.username,
+                email=user.email,
+                balances={balance.currency: float(balance.balance or 0) for balance in balances},
+            )
+        )
+
+    return UserBalanceUsersResponse(items=rows, total=total)
+
+
+@router.get("/balances/users/{user_id}", response_model=UserBalanceSummaryResponse)
+async def get_user_balance_summary(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await is_admin(current_user, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    target_user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    balances = (
+        await db.execute(select(UserBalanceAccount).where(UserBalanceAccount.user_id == user_id))
+    ).scalars().all()
+    transactions = (
+        await db.execute(
+            select(UserBalanceTransaction)
+            .where(UserBalanceTransaction.user_id == user_id)
+            .order_by(UserBalanceTransaction.created_at.desc())
+            .limit(100)
+        )
+    ).scalars().all()
+
+    return UserBalanceSummaryResponse(
+        user_id=user_id,
+        balances=[
+            UserBalanceAccountResponse(
+                id=balance.id,
+                user_id=balance.user_id,
+                currency=balance.currency,
+                balance=float(balance.balance or 0),
+                updated_at=balance.updated_at,
+            )
+            for balance in balances
+        ],
+        transactions=[
+            UserBalanceTransactionResponse(
+                id=tx.id,
+                user_id=tx.user_id,
+                currency=tx.currency,
+                amount_delta=float(tx.amount_delta or 0),
+                reason=tx.reason,
+                admin_user_id=tx.admin_user_id,
+                additional_metadata=tx.additional_metadata,
+                created_at=tx.created_at,
+            )
+            for tx in transactions
+        ],
+    )
+
+
+@router.post("/balances/users/{user_id}/adjust", response_model=UserBalanceSummaryResponse)
+async def adjust_user_balance(
+    user_id: int,
+    payload: UserBalanceAdjustRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not await is_admin(current_user, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    target_user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    currency = payload.currency.upper()
+    if currency not in VALID_CURRENCIES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid currency code '{currency}'. Supported codes: {', '.join(sorted(VALID_CURRENCIES)[:10])}..."
+        )
+
+    # Use FOR UPDATE lock to prevent race conditions in concurrent balance adjustments
+    account = (
+        await db.execute(
+            select(UserBalanceAccount)
+            .where(
+                and_(UserBalanceAccount.user_id == user_id, UserBalanceAccount.currency == currency)
+            )
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if not account:
+        account = UserBalanceAccount(user_id=user_id, currency=currency, balance=Decimal("0"))
+        db.add(account)
+        await db.flush()
+
+    delta = Decimal(str(payload.amount_delta))
+    account.balance = (account.balance or Decimal("0")) + delta
+
+    tx = UserBalanceTransaction(
+        user_id=user_id,
+        currency=currency,
+        amount_delta=delta,
+        reason=payload.reason,
+        admin_user_id=current_user.id,
+        additional_metadata=payload.metadata,
+    )
+    db.add(tx)
+    await db.commit()
+
+    balances = (
+        await db.execute(select(UserBalanceAccount).where(UserBalanceAccount.user_id == user_id))
+    ).scalars().all()
+    transactions = (
+        await db.execute(
+            select(UserBalanceTransaction)
+            .where(UserBalanceTransaction.user_id == user_id)
+            .order_by(UserBalanceTransaction.created_at.desc())
+            .limit(100)
+        )
+    ).scalars().all()
+
+    return UserBalanceSummaryResponse(
+        user_id=user_id,
+        balances=[
+            UserBalanceAccountResponse(
+                id=balance.id,
+                user_id=balance.user_id,
+                currency=balance.currency,
+                balance=float(balance.balance or 0),
+                updated_at=balance.updated_at,
+            )
+            for balance in balances
+        ],
+        transactions=[
+            UserBalanceTransactionResponse(
+                id=item.id,
+                user_id=item.user_id,
+                currency=item.currency,
+                amount_delta=float(item.amount_delta or 0),
+                reason=item.reason,
+                admin_user_id=item.admin_user_id,
+                additional_metadata=item.additional_metadata,
+                created_at=item.created_at,
+            )
+            for item in transactions
+        ],
+    )

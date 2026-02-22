@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, HttpUrl
-from sqlalchemy import desc, func, select
+from sqlalchemy import and_, case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import get_current_user
@@ -22,7 +22,9 @@ from app.schemas.integration import (
     IntegrationConfigCreate,
     IntegrationConfigResponse,
     IntegrationConfigUpdate,
+    IntegrationCategory,
     IntegrationCreate,
+    IntegrationType,
     IntegrationModerationAction,
     IntegrationResponse,
     IntegrationReviewCreate,
@@ -31,6 +33,8 @@ from app.schemas.integration import (
     IntegrationSubmissionEventResponse,
     IntegrationSubmissionUpdate,
     IntegrationUpdate,
+    InstalledIntegrationResponse,
+    InstalledIntegrationsResponse,
     IntegrationUsageStats,
     IntegrationMarketplaceSearch,
 )
@@ -270,6 +274,86 @@ async def upload_submission_image(
         payload={"image_url": integration.app_icon_url},
     )
     return {"image_url": integration.app_icon_url}
+
+
+@router.get("/mine/installed", response_model=InstalledIntegrationsResponse)
+async def list_my_installed_integrations(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    rows = (
+        await db.execute(
+            select(
+                IntegrationModel.id.label("integration_id"),
+                IntegrationModel.name,
+                IntegrationModel.description,
+                IntegrationModel.integration_type,
+                IntegrationModel.category,
+                IntegrationModel.icon,
+                IntegrationModel.app_icon_url,
+                IntegrationModel.version,
+                IntegrationModel.status,
+                IntegrationModel.visibility,
+                IntegrationModel.download_count,
+                IntegrationModel.rating,
+                IntegrationModel.review_count,
+                func.count(IntegrationConfigModel.id).label("installed_count"),
+                func.sum(case((IntegrationConfigModel.is_active.is_(True), 1), else_=0)).label("active_installed_count"),
+                func.max(IntegrationConfigModel.updated_at).label("last_installed_at"),
+            )
+            .join(IntegrationConfigModel, IntegrationConfigModel.integration_id == IntegrationModel.id)
+            .where(IntegrationConfigModel.user_id == current_user.id)
+            .group_by(IntegrationModel.id)
+            .order_by(desc(func.max(IntegrationConfigModel.updated_at)))
+        )
+    ).all()
+
+    items = [
+        InstalledIntegrationResponse(
+            integration_id=int(row.integration_id),
+            name=row.name,
+            description=row.description,
+            integration_type=row.integration_type,
+            category=row.category,
+            icon=row.icon,
+            app_icon_url=row.app_icon_url,
+            version=row.version,
+            status=row.status,
+            visibility=row.visibility,
+            download_count=int(row.download_count or 0),
+            rating=float(row.rating or 0.0),
+            review_count=int(row.review_count or 0),
+            installed_count=int(row.installed_count or 0),
+            active_installed_count=int(row.active_installed_count or 0),
+            last_installed_at=row.last_installed_at,
+        )
+        for row in rows
+    ]
+    return InstalledIntegrationsResponse(items=items, total=len(items))
+
+
+@router.get("/hub", response_model=List[IntegrationResponse])
+async def list_hub_integrations(
+    query: Optional[str] = Query(None),
+    category: Optional[IntegrationCategory] = Query(None),
+    integration_type: Optional[IntegrationType] = Query(None),
+    min_rating: Optional[float] = Query(None),
+    sort_by: str = Query("popularity"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    search_params = IntegrationMarketplaceSearch(
+        query=query,
+        categories=[category] if category else None,
+        types=[integration_type] if integration_type else None,
+        min_rating=min_rating,
+        sort_by=sort_by,
+        page=page,
+        page_size=page_size,
+    )
+    return await search_integrations(search_params, db, current_user)
 
 
 @router.post("/", response_model=IntegrationResponse, status_code=status.HTTP_201_CREATED)

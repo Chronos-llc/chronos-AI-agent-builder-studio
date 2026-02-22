@@ -7,7 +7,18 @@ from .personal_access_token import PersonalAccessToken
 from .user_profile import UserProfile, UserPersona, FuzzyOnboardingState
 from .agent import AgentModel, AgentVersion, Action, AgentStatus
 from .settings import UserSettings
-from .usage import UsageRecord, UserPlan, UsageType, PlanType
+from .usage import (
+    UsageRecord,
+    UserPlan,
+    UsageType,
+    PlanType,
+    ResourceType,
+    WorkspaceMember,
+    UserAddonAllocation,
+    AISpendEvent,
+    UserBalanceAccount,
+    UserBalanceTransaction,
+)
 from .template import (
     AgentTemplate, AgentTemplateCategory, WorkflowTemplate, WorkflowStep,
     WorkflowExecution, WorkflowStepExecution, WorkflowVersion,
@@ -72,6 +83,12 @@ __all__ = [
     "UserPlan", 
     "UsageType",
     "PlanType",
+    "ResourceType",
+    "WorkspaceMember",
+    "UserAddonAllocation",
+    "AISpendEvent",
+    "UserBalanceAccount",
+    "UserBalanceTransaction",
     "AgentTemplate",
     "AgentTemplateCategory",
     "WorkflowTemplate",

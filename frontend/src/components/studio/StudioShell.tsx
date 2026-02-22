@@ -9,6 +9,7 @@ import {
   Plus,
   Sparkles,
   Radio,
+  Gauge,
   UserCircle2,
   LogOut,
   Repeat2,
@@ -25,6 +26,7 @@ import {
 } from '../ui/dropdown-menu'
 import ImpersonationBanner from './ImpersonationBanner'
 import ThemeSwitcher from '../theme/ThemeSwitcher'
+import UsageSidebarWidget from './UsageSidebarWidget'
 
 const API_BASE_URL_RAW = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const API_BASE_URL = API_BASE_URL_RAW.replace(/\/$/, '')
@@ -35,6 +37,7 @@ const navItems = [
   { label: 'Agents', to: '/app/agents', icon: Bot },
   { label: 'Integrations', to: '/app/integrations', icon: Puzzle },
   { label: 'Channels', to: '/app/channels', icon: Radio },
+  { label: 'Usage', to: '/app/usage', icon: Gauge },
   { label: 'Settings', to: '/app/settings', icon: Settings },
 ]
 
@@ -90,7 +93,7 @@ export const StudioShell: React.FC = () => {
       <div className="relative flex min-h-screen">
         <aside
           className={cn(
-            'hidden flex-col border-r border-border bg-card/90 transition-all duration-300 md:flex',
+            'hidden h-screen flex-col overflow-y-auto border-r border-border bg-card/90 transition-all duration-300 md:sticky md:top-0 md:flex',
             isCollapsed ? 'w-20 p-3' : 'w-72 p-5'
           )}
         >
@@ -126,6 +129,8 @@ export const StudioShell: React.FC = () => {
               )
             })}
           </nav>
+
+          <UsageSidebarWidget collapsed={isCollapsed} />
 
           <div
             className={cn(
@@ -163,6 +168,8 @@ export const StudioShell: React.FC = () => {
                       ? 'Agent Workspace'
                       : location.pathname.startsWith('/app/integrations')
                         ? 'Integration Hub'
+                        : location.pathname.startsWith('/app/usage')
+                          ? 'Usage Center'
                         : 'Control Center'}
                   </h1>
                 </div>

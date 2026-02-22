@@ -14,7 +14,10 @@ import type {
   PaymentTransactionCreate,
   PaymentTransactionResponse,
   PaymentTransactionList,
-  PaymentStats
+  PaymentStats,
+  UserBalanceAdjustPayload,
+  UserBalanceSummary,
+  UserBalanceUsersResponse
 } from '../types/payment';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -178,4 +181,24 @@ export async function createPaymentTransaction(
 export async function getPaymentStats(): Promise<PaymentStats> {
   const response = await fetch(`${API_BASE}/stats`, withAuth());
   return handleResponse<PaymentStats>(response);
+}
+
+export async function getBalanceUsers(query?: string): Promise<UserBalanceUsersResponse> {
+  const qs = query ? `?query=${encodeURIComponent(query)}` : ''
+  const response = await fetch(`${API_BASE}/balances/users${qs}`, withAuth())
+  return handleResponse<UserBalanceUsersResponse>(response)
+}
+
+export async function getUserBalanceSummary(userId: number): Promise<UserBalanceSummary> {
+  const response = await fetch(`${API_BASE}/balances/users/${userId}`, withAuth())
+  return handleResponse<UserBalanceSummary>(response)
+}
+
+export async function adjustUserBalance(userId: number, payload: UserBalanceAdjustPayload): Promise<UserBalanceSummary> {
+  const response = await fetch(`${API_BASE}/balances/users/${userId}/adjust`, withAuth({
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }))
+  return handleResponse<UserBalanceSummary>(response)
 }

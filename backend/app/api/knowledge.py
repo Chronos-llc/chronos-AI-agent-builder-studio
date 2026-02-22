@@ -14,9 +14,11 @@ from app.core.object_storage import (
     make_object_uri,
     parse_object_uri,
 )
+from app.core.usage_metering_engine import build_user_usage_snapshot
 from app.models.user import User
 from app.models.agent import AgentModel
 from app.models.knowledge import KnowledgeFile, KnowledgeChunk, KnowledgeFileStatus, FileType, KnowledgeSearch
+from app.models.usage import ResourceType
 from app.schemas.knowledge import (
     KnowledgeFileResponse, KnowledgeFileCreate, KnowledgeFileUpdate,
     KnowledgeChunkResponse, KnowledgeSearchResponse, KnowledgeSearchCreate,
@@ -188,6 +190,24 @@ async def upload_knowledge_file(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File too large. Maximum size is {settings.UPLOAD_MAX_SIZE} bytes"
         )
+
+    usage_snapshot = await build_user_usage_snapshot(db, current_user.id)
+    file_storage_resource = next(
+        (item for item in usage_snapshot.resources if item.resource_type == ResourceType.FILE_STORAGE),
+        None,
+    )
+    if (
+        file_storage_resource
+        and file_storage_resource.total_limit is not None
+        and (file_storage_resource.current + file_size) > file_storage_resource.total_limit
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=(
+                "File storage limit reached. "
+                f"Current {int(file_storage_resource.current)} bytes of {int(file_storage_resource.total_limit)} bytes."
+            ),
+        )
     
     # Determine file type
     file_type = get_file_type(file.filename)
@@ -252,6 +272,25 @@ async def upload_knowledge_file(
             knowledge_file.processing_status = KnowledgeFileStatus.FAILED
             knowledge_file.processing_error = error
         else:
+            vector_resource = next(
+                (item for item in usage_snapshot.resources if item.resource_type == ResourceType.VECTOR_DB_STORAGE),
+                None,
+            )
+            projected_vector_delta = len(content_text.encode("utf-8")) if content_text else 0
+            if (
+                vector_resource
+                and vector_resource.total_limit is not None
+                and (vector_resource.current + projected_vector_delta) > vector_resource.total_limit
+            ):
+                await db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=(
+                        "Vector DB storage limit reached. "
+                        f"Current {int(vector_resource.current)} bytes of {int(vector_resource.total_limit)} bytes."
+                    ),
+                )
+
             knowledge_file.content_text = content_text
             knowledge_file.processing_status = KnowledgeFileStatus.READY
 

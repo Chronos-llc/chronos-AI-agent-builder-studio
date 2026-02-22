@@ -22,6 +22,7 @@ import IntegrationCreatePage from './pages/IntegrationCreatePage'
 import CommunicationChannelsPage from './pages/CommunicationChannelsPage'
 import ChannelConfigurationPage from './pages/ChannelConfigurationPage'
 import WebChatConfigurationPage from './pages/WebChatConfigurationPage'
+import UsagePage from './pages/UsagePage'
 import ProfileOnboardingPage from './pages/ProfileOnboardingPage'
 import FuzzyOnboardingPage from './pages/FuzzyOnboardingPage'
 import AgentSuitePage from './pages/AgentSuitePage'
@@ -127,6 +128,7 @@ function App() {
                                 <Route path="channels" element={<CommunicationChannelsPage />} />
                                 <Route path="channels/:id" element={<ChannelConfigurationPage />} />
                                 <Route path="webchat/:id" element={<WebChatConfigurationPage />} />
+                                <Route path="usage" element={<UsagePage />} />
                             </Route>
 
                             <Route path="/dashboard" element={<Navigate to="/app" replace />} />

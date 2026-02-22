@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
+import { useAuth } from '../contexts/AuthContext';
 
 interface WebChatConfig {
     embed_type: string;
@@ -56,6 +57,7 @@ const WebChatConfigurationPage: React.FC = () => {
     const { session_id } = useParams<{ session_id: string }>();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const sessionId = session_id;
     const [config, setConfig] = useState<WebChatConfig>({
         embed_type: 'bubble',
         theme: {
@@ -574,12 +576,17 @@ export default MyWebChat;`;
                                                         value={toSafeColorValue(config.theme.text_color, '#FFFFFF')}
                                                         onChange={(e) => handleConfigChange('theme', 'text_color', e.target.value)}
                                                         className="w-10 h-10 rounded border border-gray-300"
+                                                        aria-label="Text color picker"
+                                                        title="Text color picker"
                                                     />
                                                     <input
                                                         type="text"
                                                         value={config.theme.text_color}
                                                         onChange={(e) => handleConfigChange('theme', 'text_color', e.target.value)}
                                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                                                        aria-label="Text color hex value"
+                                                        placeholder="#RRGGBB"
+                                                        title="Text color hex value"
                                                     />
                                                 </div>
                                             </div>
@@ -591,12 +598,17 @@ export default MyWebChat;`;
                                                         value={toSafeColorValue(config.theme.background_color, '#FFFFFF')}
                                                         onChange={(e) => handleConfigChange('theme', 'background_color', e.target.value)}
                                                         className="w-10 h-10 rounded border border-gray-300"
+                                                        aria-label="Background color picker"
+                                                        title="Background color picker"
                                                     />
                                                     <input
                                                         type="text"
                                                         value={config.theme.background_color}
                                                         onChange={(e) => handleConfigChange('theme', 'background_color', e.target.value)}
                                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                                                        aria-label="Background color hex value"
+                                                        placeholder="#RRGGBB"
+                                                        title="Background color hex value"
                                                     />
                                                 </div>
                                             </div>
@@ -608,11 +620,13 @@ export default MyWebChat;`;
                                         <h4 className="font-medium text-muted-foreground mb-3">Position & Layout</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-muted-foreground mb-1">Position</label>
+                                                <label htmlFor="position" className="block text-sm font-medium text-muted-foreground mb-1">Position</label>
                                                 <select
+                                                    id="position"
                                                     value={config.position}
                                                     onChange={(e) => handleConfigChange('', 'position', e.target.value)}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    aria-label="WebChat position"
                                                 >
                                                     <option value="bottom_right">Bottom Right</option>
                                                     <option value="bottom_left">Bottom Left</option>
@@ -621,15 +635,17 @@ export default MyWebChat;`;
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-muted-foreground mb-1">Mobile Responsive</label>
+                                                <label htmlFor="mobile_responsive" className="block text-sm font-medium text-muted-foreground mb-1">Mobile Responsive</label>
                                                 <div className="flex items-center">
                                                     <input
                                                         type="checkbox"
+                                                        id="mobile_responsive"
                                                         checked={config.mobile_responsive}
                                                         onChange={(e) => handleConfigChange('', 'mobile_responsive', e.target.checked)}
                                                         className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                        aria-label="Enable mobile responsiveness"
                                                     />
-                                                    <span className="ml-2 text-sm text-muted-foreground">Enable mobile responsiveness</span>
+                                                    <label htmlFor="mobile_responsive" className="ml-2 text-sm text-muted-foreground">Enable mobile responsiveness</label>
                                                 </div>
                                             </div>
                                         </div>
@@ -697,29 +713,35 @@ export default MyWebChat;`;
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="high_contrast"
                                                     checked={config.accessibility_features.high_contrast}
                                                     onChange={(e) => handleConfigChange('accessibility', 'high_contrast', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="High Contrast Mode"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">High Contrast Mode</span>
+                                                <label htmlFor="high_contrast" className="ml-2 text-sm text-muted-foreground">High Contrast Mode</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="screen_reader_support"
                                                     checked={config.accessibility_features.screen_reader_support}
                                                     onChange={(e) => handleConfigChange('accessibility', 'screen_reader_support', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Screen Reader Support"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Screen Reader Support</span>
+                                                <label htmlFor="screen_reader_support" className="ml-2 text-sm text-muted-foreground">Screen Reader Support</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="keyboard_navigation"
                                                     checked={config.accessibility_features.keyboard_navigation}
                                                     onChange={(e) => handleConfigChange('accessibility', 'keyboard_navigation', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Keyboard Navigation"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Keyboard Navigation</span>
+                                                <label htmlFor="keyboard_navigation" className="ml-2 text-sm text-muted-foreground">Keyboard Navigation</label>
                                             </div>
                                         </div>
                                     </div>
@@ -738,27 +760,33 @@ export default MyWebChat;`;
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="voice_input_enabled"
                                                     checked={config.voice_input_enabled}
                                                     onChange={(e) => handleConfigChange('', 'voice_input_enabled', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Enable Voice Input"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Enable Voice Input</span>
+                                                <label htmlFor="voice_input_enabled" className="ml-2 text-sm text-muted-foreground">Enable Voice Input</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="voice_output_enabled"
                                                     checked={config.voice_output_enabled}
                                                     onChange={(e) => handleConfigChange('', 'voice_output_enabled', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Enable Voice Output"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Enable Voice Output</span>
+                                                <label htmlFor="voice_output_enabled" className="ml-2 text-sm text-muted-foreground">Enable Voice Output</label>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-muted-foreground mb-1">Voice Language</label>
+                                                <label htmlFor="voice_language" className="block text-sm font-medium text-muted-foreground mb-1">Voice Language</label>
                                                 <select
+                                                    id="voice_language"
                                                     value={config.voice_language}
                                                     onChange={(e) => handleConfigChange('', 'voice_language', e.target.value)}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    aria-label="Voice language"
                                                 >
                                                     <option value="en-US">English (US)</option>
                                                     <option value="en-GB">English (UK)</option>
@@ -807,11 +835,13 @@ export default MyWebChat;`;
                                         <div className="flex items-center mb-3">
                                             <input
                                                 type="checkbox"
+                                                id="feedback_enabled"
                                                 checked={config.feedback_enabled}
                                                 onChange={(e) => handleConfigChange('', 'feedback_enabled', e.target.checked)}
                                                 className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                aria-label="Enable User Feedback Collection"
                                             />
-                                            <span className="ml-2 text-sm text-muted-foreground">Enable User Feedback Collection</span>
+                                            <label htmlFor="feedback_enabled" className="ml-2 text-sm text-muted-foreground">Enable User Feedback Collection</label>
                                         </div>
 
                                         {config.feedback_enabled && (
@@ -866,11 +896,13 @@ export default MyWebChat;`;
                                         <div className="flex items-center mb-3">
                                             <input
                                                 type="checkbox"
+                                                id="allow_file_uploads"
                                                 checked={config.allow_file_uploads}
                                                 onChange={(e) => handleConfigChange('', 'allow_file_uploads', e.target.checked)}
                                                 className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                aria-label="Allow File Uploads"
                                             />
-                                            <span className="ml-2 text-sm text-muted-foreground">Allow File Uploads</span>
+                                            <label htmlFor="allow_file_uploads" className="ml-2 text-sm text-muted-foreground">Allow File Uploads</label>
                                         </div>
 
                                         {config.allow_file_uploads && (
@@ -923,47 +955,57 @@ export default MyWebChat;`;
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="auto_open"
                                                     checked={config.auto_open}
                                                     onChange={(e) => handleConfigChange('', 'auto_open', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Auto-open on Page Load"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Auto-open on Page Load</span>
+                                                <label htmlFor="auto_open" className="ml-2 text-sm text-muted-foreground">Auto-open on Page Load</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="persistent_menu"
                                                     checked={config.persistent_menu}
                                                     onChange={(e) => handleConfigChange('', 'persistent_menu', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Show Persistent Menu"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Show Persistent Menu</span>
+                                                <label htmlFor="persistent_menu" className="ml-2 text-sm text-muted-foreground">Show Persistent Menu</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="show_typing_indicator"
                                                     checked={config.show_typing_indicator}
                                                     onChange={(e) => handleConfigChange('', 'show_typing_indicator', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Show Typing Indicator"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Show Typing Indicator</span>
+                                                <label htmlFor="show_typing_indicator" className="ml-2 text-sm text-muted-foreground">Show Typing Indicator</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="show_message_timestamps"
                                                     checked={config.show_message_timestamps}
                                                     onChange={(e) => handleConfigChange('', 'show_message_timestamps', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Show Message Timestamps"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Show Message Timestamps</span>
+                                                <label htmlFor="show_message_timestamps" className="ml-2 text-sm text-muted-foreground">Show Message Timestamps</label>
                                             </div>
                                             <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="show_user_avatars"
                                                     checked={config.show_user_avatars}
                                                     onChange={(e) => handleConfigChange('', 'show_user_avatars', e.target.checked)}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    aria-label="Show User Avatars"
                                                 />
-                                                <span className="ml-2 text-sm text-muted-foreground">Show User Avatars</span>
+                                                <label htmlFor="show_user_avatars" className="ml-2 text-sm text-muted-foreground">Show User Avatars</label>
                                             </div>
                                         </div>
 
@@ -998,11 +1040,13 @@ export default MyWebChat;`;
                                         <div className="flex items-center mb-4">
                                             <input
                                                 type="checkbox"
+                                                id="analytics_enabled"
                                                 checked={config.analytics_enabled}
                                                 onChange={(e) => handleConfigChange('', 'analytics_enabled', e.target.checked)}
                                                 className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                aria-label="Enable Analytics Tracking"
                                             />
-                                            <span className="ml-2 text-sm text-muted-foreground">Enable Analytics Tracking</span>
+                                            <label htmlFor="analytics_enabled" className="ml-2 text-sm text-muted-foreground">Enable Analytics Tracking</label>
                                         </div>
 
                                         {config.analytics_enabled && (
@@ -1189,11 +1233,13 @@ export default MyWebChat;`;
                                         <h4 className="font-medium text-muted-foreground mb-3">Embed Options</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-muted-foreground mb-1">Embed Type</label>
+                                                <label htmlFor="embed_type" className="block text-sm font-medium text-muted-foreground mb-1">Embed Type</label>
                                                 <select
+                                                    id="embed_type"
                                                     value={config.embed_type}
                                                     onChange={(e) => handleConfigChange('', 'embed_type', e.target.value)}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    aria-label="Embed type"
                                                 >
                                                     <option value="bubble">Bubble</option>
                                                     <option value="iframe">Iframe</option>
@@ -1208,6 +1254,8 @@ export default MyWebChat;`;
                                                     value={sessionId || 'your_session_id'}
                                                     readOnly
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                                                    aria-label="Session ID"
+                                                    title="Session ID"
                                                 />
                                             </div>
                                         </div>

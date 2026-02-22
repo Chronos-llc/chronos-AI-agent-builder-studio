@@ -94,3 +94,90 @@ class UsageStats(BaseModel):
 
 class UsageRecordWithAgent(UsageRecordResponse):
     agent_name: Optional[str] = None
+
+
+class ResourceUsageType(str, Enum):
+    AI_SPEND = "ai_spend"
+    FILE_STORAGE = "file_storage"
+    VECTOR_DB_STORAGE = "vector_db_storage"
+    TABLE_ROWS = "table_rows"
+    COLLABORATORS = "collaborators"
+    AGENTS = "agents"
+
+
+class ResourceUsageSnapshot(BaseModel):
+    resource_type: ResourceUsageType
+    unit: str
+    current: float
+    base_limit: Optional[float] = None
+    addon_limit: float = 0
+    total_limit: Optional[float] = None
+    percent_used: float = 0
+    overage_units: float = 0
+    estimated_overage_monthly_usd: float = 0
+
+
+class UsageResourcesResponse(BaseModel):
+    plan: str
+    resources: list[ResourceUsageSnapshot]
+    updated_at: datetime
+
+
+class AgentUsageResourcesResponse(BaseModel):
+    agent_id: int
+    plan: str
+    resources: list[ResourceUsageSnapshot]
+    updated_at: datetime
+
+
+class AISpendTrackRequest(BaseModel):
+    agent_id: Optional[int] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    cost_amount: float = Field(..., ge=0)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+    tokens: Optional[int] = Field(default=None, ge=0)
+    source: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class AISpendTrackResponse(BaseModel):
+    id: int
+    user_id: int
+    agent_id: Optional[int] = None
+    cost_amount: float
+    currency: str
+    event_at: datetime
+
+
+class AddonAllocationBase(BaseModel):
+    user_id: int
+    resource_type: ResourceUsageType
+    units: int = Field(..., ge=1)
+    unit_price_usd: float = Field(..., ge=0)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+    effective_from: Optional[datetime] = None
+    effective_to: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class AddonAllocationCreate(AddonAllocationBase):
+    pass
+
+
+class AddonAllocationResponse(BaseModel):
+    id: int
+    user_id: int
+    resource_type: ResourceUsageType
+    units: int
+    unit_price_usd: float
+    currency: str
+    is_active: bool
+    effective_from: datetime
+    effective_to: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

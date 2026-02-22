@@ -11,6 +11,7 @@ import {
   CreditCard,
   DollarSign,
   BarChart2,
+  Search,
   Edit,
   Trash2,
   CheckCircle,
@@ -26,7 +27,14 @@ import { Switch } from '../../ui/switch'
 import { Badge } from '../../ui/badge'
 import { toast } from 'react-hot-toast'
 import { PaymentProvider } from '../../../types/payment'
-import type { PaymentMethod, PaymentSettings, PaymentTransaction, PaymentStats } from '../../../types/payment'
+import type {
+  PaymentMethod,
+  PaymentSettings,
+  PaymentTransaction,
+  PaymentStats,
+  UserBalanceSummary,
+  UserBalanceUserListItem,
+} from '../../../types/payment'
 import {
   getPaymentMethods,
   getPaymentSettings,
@@ -35,11 +43,14 @@ import {
   createPaymentMethod,
   updatePaymentMethod,
   deletePaymentMethod,
-  updatePaymentSettings
+  updatePaymentSettings,
+  adjustUserBalance,
+  getBalanceUsers,
+  getUserBalanceSummary,
 } from '../../../services/paymentService'
 
 // Tab type definition
-type TabValue = 'methods' | 'settings' | 'transactions' | 'statistics'
+type TabValue = 'methods' | 'settings' | 'transactions' | 'statistics' | 'balances'
 
 export const PaymentMode = () => {
   const [activeTab, setActiveTab] = useState<TabValue>('methods')
@@ -49,6 +60,15 @@ export const PaymentMode = () => {
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<PaymentStats | null>(null)
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
+  const [balanceUsers, setBalanceUsers] = useState<UserBalanceUserListItem[]>([])
+  const [balanceSearch, setBalanceSearch] = useState('')
+  const [selectedBalanceUserId, setSelectedBalanceUserId] = useState<number | null>(null)
+  const [balanceSummary, setBalanceSummary] = useState<UserBalanceSummary | null>(null)
+  const [balanceForm, setBalanceForm] = useState({
+    currency: 'USD',
+    amount_delta: 0,
+    reason: '',
+  })
 
 
   // Form state for creating/editing payment methods
@@ -73,6 +93,7 @@ export const PaymentMode = () => {
     loadSettings()
     loadStatistics()
     loadTransactions()
+    loadBalanceUsers()
   }, [])
 
   const loadMethods = async () => {
@@ -127,6 +148,32 @@ export const PaymentMode = () => {
     }
   }
 
+  const loadBalanceUsers = async (search?: string) => {
+    try {
+      const response = await getBalanceUsers(search)
+      setBalanceUsers(response.items)
+      if (!selectedBalanceUserId && response.items.length > 0) {
+        const first = response.items[0]
+        setSelectedBalanceUserId(first.user_id)
+        await loadBalanceSummary(first.user_id)
+      } else if (selectedBalanceUserId) {
+        await loadBalanceSummary(selectedBalanceUserId)
+      }
+    } catch (err) {
+      console.error('Error loading balance users:', err)
+    }
+  }
+
+  const loadBalanceSummary = async (userId: number) => {
+    try {
+      const summary = await getUserBalanceSummary(userId)
+      setBalanceSummary(summary)
+    } catch (err) {
+      console.error('Error loading balance summary:', err)
+      setBalanceSummary(null)
+    }
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -142,7 +189,13 @@ export const PaymentMode = () => {
   }
 
   const handleSettingsSelectChange = (name: string, value: string) => {
-    setSettingsFormData(prev => ({ ...prev, [name]: name === 'default_payment_method_id' ? parseInt(value) : value }))
+    setSettingsFormData(prev => ({
+      ...prev,
+      [name]:
+        name === 'default_payment_method_id'
+          ? (value ? parseInt(value, 10) : null)
+          : value,
+    }))
   }
 
   const handleSwitchChange = (name: string, checked: boolean) => {
@@ -269,6 +322,44 @@ export const PaymentMode = () => {
     }
   }
 
+  const handleBalanceSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await loadBalanceUsers(balanceSearch.trim() || undefined)
+  }
+
+  const handleAdjustBalance = async (direction: 'add' | 'deduct') => {
+    if (!selectedBalanceUserId) {
+      toast.error('Select a user to adjust balance')
+      return
+    }
+    if (!balanceForm.reason.trim()) {
+      toast.error('Reason is required')
+      return
+    }
+    if (!balanceForm.amount_delta || Number.isNaN(balanceForm.amount_delta)) {
+      toast.error('Amount must be greater than zero')
+      return
+    }
+
+    const amount = Math.abs(balanceForm.amount_delta)
+    try {
+      setLoading(true)
+      const summary = await adjustUserBalance(selectedBalanceUserId, {
+        currency: balanceForm.currency.toUpperCase(),
+        amount_delta: direction === 'add' ? amount : -amount,
+        reason: balanceForm.reason.trim(),
+      })
+      setBalanceSummary(summary)
+      toast.success(`Balance ${direction === 'add' ? 'credited' : 'debited'} successfully`)
+      setBalanceForm((previous) => ({ ...previous, amount_delta: 0, reason: '' }))
+      await loadBalanceUsers(balanceSearch.trim() || undefined)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to adjust balance')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -330,7 +421,7 @@ export const PaymentMode = () => {
       {/* Main Content Tabs */}
       <Card className="p-6">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="methods" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               Payment Methods
@@ -346,6 +437,10 @@ export const PaymentMode = () => {
             <TabsTrigger value="statistics" className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4" />
               Statistics
+            </TabsTrigger>
+            <TabsTrigger value="balances" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Balances
             </TabsTrigger>
           </TabsList>
 
@@ -575,14 +670,19 @@ export const PaymentMode = () => {
                     <div>
                       <label className="block text-sm font-medium mb-2">Default Payment Method</label>
                       <Select 
-                        value={settingsFormData.default_payment_method_id?.toString() || ''} 
-                        onValueChange={(value) => handleSettingsSelectChange('default_payment_method_id', value)}
+                        value={settingsFormData.default_payment_method_id?.toString() || '__none__'} 
+                        onValueChange={(value) =>
+                          handleSettingsSelectChange(
+                            'default_payment_method_id',
+                            value === '__none__' ? '' : value,
+                          )
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select default method" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {methods.map(method => (
                             <SelectItem key={method.id} value={method.id.toString()}>
                               {method.name}
@@ -747,6 +847,161 @@ export const PaymentMode = () => {
                 </Card>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="balances" className="space-y-4">
+            <h3 className="text-xl font-semibold">User Balances</h3>
+            <p className="text-sm text-muted-foreground">
+              Add or deduct wallet balances per user in any currency.
+            </p>
+
+            <Card className="p-4">
+              <form className="flex flex-wrap items-center gap-3" onSubmit={handleBalanceSearch}>
+                <div className="relative flex-1 min-w-[240px]">
+                  <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={balanceSearch}
+                    onChange={(event) => setBalanceSearch(event.target.value)}
+                    placeholder="Search by username or email..."
+                    className="pl-9"
+                  />
+                </div>
+                <Button type="submit" variant="outline">
+                  Search
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setBalanceSearch('')
+                    void loadBalanceUsers()
+                  }}
+                >
+                  Reset
+                </Button>
+              </form>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
+              <Card className="max-h-[560px] overflow-auto p-3">
+                <div className="space-y-2">
+                  {balanceUsers.length === 0 ? (
+                    <p className="p-3 text-sm text-muted-foreground">No users found.</p>
+                  ) : (
+                    balanceUsers.map((item) => (
+                      <button
+                        key={item.user_id}
+                        type="button"
+                        className={`w-full rounded-md border p-3 text-left transition ${
+                          selectedBalanceUserId === item.user_id
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:bg-accent'
+                        }`}
+                        onClick={() => {
+                          setSelectedBalanceUserId(item.user_id)
+                          void loadBalanceSummary(item.user_id)
+                        }}
+                      >
+                        <p className="font-medium">{item.username}</p>
+                        <p className="text-xs text-muted-foreground">{item.email}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              <Card className="space-y-4 p-4">
+                {!selectedBalanceUserId || !balanceSummary ? (
+                  <p className="text-sm text-muted-foreground">Select a user to view balances.</p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      {balanceSummary.balances.length === 0 ? (
+                        <div className="rounded-md border border-border p-4 text-sm text-muted-foreground">
+                          No balances yet.
+                        </div>
+                      ) : (
+                        balanceSummary.balances.map((balance) => (
+                          <div key={balance.id} className="rounded-md border border-border p-4">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">{balance.currency}</p>
+                            <p className="mt-2 text-2xl font-semibold">{balance.balance.toFixed(2)}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="rounded-md border border-border p-4">
+                      <h4 className="text-base font-semibold">Adjust Balance</h4>
+                      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <Input
+                          value={balanceForm.currency}
+                          onChange={(event) => setBalanceForm((prev) => ({ ...prev, currency: event.target.value.toUpperCase() }))}
+                          placeholder="Currency (USD)"
+                          maxLength={3}
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={balanceForm.amount_delta}
+                          onChange={(event) =>
+                            setBalanceForm((prev) => ({ ...prev, amount_delta: Number(event.target.value) }))
+                          }
+                          placeholder="Amount"
+                        />
+                        <Input
+                          value={balanceForm.reason}
+                          onChange={(event) => setBalanceForm((prev) => ({ ...prev, reason: event.target.value }))}
+                          placeholder="Reason"
+                        />
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => void handleAdjustBalance('add')}
+                          disabled={loading}
+                        >
+                          Credit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => void handleAdjustBalance('deduct')}
+                          disabled={loading}
+                        >
+                          Debit
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border border-border p-4">
+                      <h4 className="text-base font-semibold">Recent Balance Transactions</h4>
+                      <div className="mt-3 space-y-2">
+                        {balanceSummary.transactions.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No balance transactions yet.</p>
+                        ) : (
+                          balanceSummary.transactions.slice(0, 20).map((tx) => (
+                            <div key={tx.id} className="flex items-center justify-between rounded-md bg-secondary p-3">
+                              <div>
+                                <p className="text-sm font-medium">{tx.reason}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(tx.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-sm font-semibold ${tx.amount_delta >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {tx.amount_delta >= 0 ? '+' : ''}
+                                  {tx.amount_delta.toFixed(2)} {tx.currency}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </Card>

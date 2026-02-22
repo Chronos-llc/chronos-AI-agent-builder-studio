@@ -26,10 +26,27 @@ class AgentModel(BaseModel):
     # Basic information
     name = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=True)
-    status = Column(Enum(AgentStatus), default=AgentStatus.DRAFT, nullable=False)
+    status = Column(
+        Enum(
+            AgentStatus,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            native_enum=False,
+        ),
+        default=AgentStatus.DRAFT,
+        nullable=False,
+    )
     
     # Agent type for platform switching (text/voice)
-    agent_type = Column(Enum(AgentType), default=AgentType.TEXT, nullable=False, index=True)
+    agent_type = Column(
+        Enum(
+            AgentType,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            native_enum=False,
+        ),
+        default=AgentType.TEXT,
+        nullable=False,
+        index=True,
+    )
     
     # Configuration
     model_config = Column(JSON, nullable=True)  # LLM configuration

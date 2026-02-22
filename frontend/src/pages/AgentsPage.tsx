@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Play, 
   Pause, 
@@ -15,6 +15,7 @@ import {
 import { PlatformSwitcher } from '../components/studio/PlatformSwitcher';
 import { getAgents } from '../services/agentService';
 import type { Agent } from '../types/marketplace';
+import { PlatformLoadingScreen } from '../components/loading/PlatformLoadingScreen';
 
 const AgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -22,6 +23,8 @@ const AgentsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [agentTypeFilter, setAgentTypeFilter] = useState<'text' | 'voice'>('text');
   const [loading, setLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Load user's agents
@@ -136,14 +139,28 @@ const AgentsPage: React.FC = () => {
     return 'text-rose-400';
   };
 
+  const handleOpenInSuite = (agentId: number) => {
+    setIsNavigating(true);
+    navigate(`/app/agents/${agentId}/suite`);
+  };
+
+  const handleCreateNewAgent = () => {
+    setIsNavigating(true);
+    navigate('/app/agents/new');
+  };
+
+  if (isNavigating) {
+    return <PlatformLoadingScreen />;
+  }
+
   if (loading) {
     return (
       <div className="page-container">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Agents</h1>
-          <Link to="/app/agents/new" className="btn btn-primary">
+          <button onClick={handleCreateNewAgent} className="btn btn-primary">
             Create New Agent
-          </Link>
+          </button>
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-300"></div>
@@ -167,9 +184,9 @@ const AgentsPage: React.FC = () => {
             onChange={setAgentTypeFilter} 
             className="hidden md:block"
           />
-          <Link to="/app/agents/new" className="btn btn-primary">
+          <button onClick={handleCreateNewAgent} className="btn btn-primary">
             Create New Agent
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -228,9 +245,9 @@ const AgentsPage: React.FC = () => {
             }
           </p>
           {agents.length === 0 && (
-            <Link to="/app/agents/new" className="btn btn-primary">
+            <button onClick={handleCreateNewAgent} className="btn btn-primary">
               Create Agent
-            </Link>
+            </button>
           )}
         </div>
       ) : (
@@ -311,14 +328,14 @@ const AgentsPage: React.FC = () => {
                     </>
                   )}
                 </button>
-                <Link
-                  to={`/app/agents/${agent.id}/suite`}
+                <button
+                  onClick={() => handleOpenInSuite(agent.id)}
                   className="flex items-center justify-center px-3 py-2 bg-cyan-500/15 text-cyan-200 rounded hover:bg-cyan-500/25 transition-colors text-sm font-medium"
                   title="Open in Suite"
                   aria-label="Open in suite"
                 >
                   Suite
-                </Link>
+                </button>
                 <Link
                   to={`/app/agents/${agent.id}/edit`}
                   className="flex items-center justify-center px-3 py-2 bg-black/25 text-muted-foreground rounded hover:bg-muted hover:text-foreground transition-colors"

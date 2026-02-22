@@ -36,6 +36,27 @@ class User(BaseModel):
     settings = relationship("UserSettings", back_populates="user", cascade="all, delete-orphan")
     usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
     plan = relationship("UserPlan", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    workspace_members = relationship(
+        "WorkspaceMember",
+        foreign_keys="WorkspaceMember.owner_user_id",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    workspace_memberships = relationship(
+        "WorkspaceMember",
+        foreign_keys="WorkspaceMember.member_user_id",
+        back_populates="member",
+        cascade="all, delete-orphan",
+    )
+    addon_allocations = relationship("UserAddonAllocation", back_populates="user", cascade="all, delete-orphan")
+    ai_spend_events = relationship("AISpendEvent", back_populates="user", cascade="all, delete-orphan")
+    balance_accounts = relationship("UserBalanceAccount", back_populates="user", cascade="all, delete-orphan")
+    balance_transactions = relationship(
+        "UserBalanceTransaction",
+        foreign_keys="UserBalanceTransaction.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     integrations = relationship(
         "Integration",

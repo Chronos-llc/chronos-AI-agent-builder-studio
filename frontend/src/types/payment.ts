@@ -103,6 +103,50 @@ export interface PaymentStats {
   total_revenue?: number;
 }
 
+export interface UserBalanceAccount {
+  id: number
+  user_id: number
+  currency: string
+  balance: number
+  updated_at: string
+}
+
+export interface UserBalanceTransaction {
+  id: number
+  user_id: number
+  currency: string
+  amount_delta: number
+  reason: string
+  admin_user_id?: number | null
+  additional_metadata?: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface UserBalanceSummary {
+  user_id: number
+  balances: UserBalanceAccount[]
+  transactions: UserBalanceTransaction[]
+}
+
+export interface UserBalanceUserListItem {
+  user_id: number
+  username: string
+  email: string
+  balances: Record<string, number>
+}
+
+export interface UserBalanceUsersResponse {
+  items: UserBalanceUserListItem[]
+  total: number
+}
+
+export interface UserBalanceAdjustPayload {
+  currency: string
+  amount_delta: number
+  reason: string
+  metadata?: Record<string, unknown>
+}
+
 // Export all types
 export type PaymentMethod = PaymentMethodResponse;
 export type PaymentSettings = PaymentSettingsResponse;

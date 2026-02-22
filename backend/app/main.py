@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 import uvicorn
 import logging
 import asyncio
@@ -8,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, integration_admin_management, support_system, payment_methods, platform_updates, skills, skills_marketplace
+from app.api import auth, users, agents, usage, templates, websocket, actions, integrations, mcp, enhanced_mcp, ai_providers, integration_monitoring, communication_channels, webchat, knowledge, training, meta_agent, personal_access_tokens, messaging_api, marketplace, admin_auth, fuzzy_tools, voice, virtual_computer, workflow_generation, user_profiles, conversations, agentic_thinking, phone_numbers, integration_moderation, integration_admin_management, support_system, payment_methods, platform_updates, skills, skills_marketplace, admin_usage, workspace_members
 from app.core.logging import setup_logging
 from app.core.mcp_client import initialize_mcp_integrations
 from app.core.enhanced_mcp_manager import initialize_enhanced_mcp
@@ -38,6 +39,19 @@ async def lifespan(app: FastAPI):
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Normalize legacy enum casing in SQLite rows created before enum alignment.
+        await conn.execute(
+            text(
+                "UPDATE agents SET status = lower(status) "
+                "WHERE status IN ('DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED')"
+            )
+        )
+        await conn.execute(
+            text(
+                "UPDATE agents SET agent_type = lower(agent_type) "
+                "WHERE agent_type IN ('TEXT', 'VOICE')"
+            )
+        )
 
     # Align legacy skills tables with current model columns.
     await ensure_skills_schema_alignment()
@@ -116,6 +130,8 @@ app.include_router(user_profiles.router, prefix="/api/v1", tags=["user-profiles"
 app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
 app.include_router(actions.router, prefix="/api/v1", tags=["actions", "hooks"])
 app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"])
+app.include_router(admin_usage.router, prefix="/api/v1/admin/usage", tags=["admin-usage"])
+app.include_router(workspace_members.router, prefix="/api/v1/workspace", tags=["workspace-members"])
 app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])
 app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
 app.include_router(integration_moderation.router, prefix="/api/v1", tags=["integration-moderation"])

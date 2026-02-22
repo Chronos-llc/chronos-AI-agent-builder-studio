@@ -18,11 +18,18 @@ class IntegrationType(str, Enum):
 class IntegrationCategory(str, Enum):
     DATA_SOURCES = "data_sources"
     AI_MODELS = "ai_models"
+    AI = "ai"
     COMMUNICATION = "communication"
+    COMMUNICATIONS = "communications"
     AUTOMATION = "automation"
     MONITORING = "monitoring"
     STORAGE = "storage"
     UTILITIES = "utilities"
+    PRODUCTIVITY = "productivity"
+    DEVELOPMENT = "development"
+    LIFESTYLE = "lifestyle"
+    SEARCH = "search"
+    GEOSPATIAL = "geospatial"
 
 
 class IntegrationStatus(str, Enum):
@@ -298,3 +305,27 @@ class IntegrationSubmissionEventResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class InstalledIntegrationResponse(BaseModel):
+    integration_id: int
+    name: str
+    description: Optional[str] = None
+    integration_type: str
+    category: str
+    icon: Optional[str] = None
+    app_icon_url: Optional[str] = None
+    version: str
+    status: str
+    visibility: str
+    download_count: int = 0
+    rating: float = 0.0
+    review_count: int = 0
+    installed_count: int = 0
+    active_installed_count: int = 0
+    last_installed_at: Optional[datetime] = None
+
+
+class InstalledIntegrationsResponse(BaseModel):
+    items: List[InstalledIntegrationResponse]
+    total: int

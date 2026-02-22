@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import VersionControlPanel from './VersionControlPanel'
 import BotSettingsPanel from './BotSettingsPanel'
@@ -16,6 +16,7 @@ import { Loader2, Save, Settings, Users, FileText, Database, Code, MessageSquare
 import { PublishButton } from './PublishButton'
 import CopiedAgentsManager from './CopiedAgentsManager'
 import { AgentSkillMarketplace } from './AgentSkillMarketplace'
+import { PlatformLoadingScreen } from '../loading/PlatformLoadingScreen'
 
 // Types
 interface AgentConfig {
@@ -51,6 +52,7 @@ interface ChatMessage {
 
 export const StudioLayout = () => {
     const { id } = useParams()
+    const [searchParams] = useSearchParams()
     const [agentConfig, setAgentConfig] = useState<AgentConfig>({
         name: '',
         description: '',
@@ -93,6 +95,13 @@ export const StudioLayout = () => {
         fetchAgentData()
     }, [id])
 
+    useEffect(() => {
+        const requestedTab = (searchParams.get('tab') || '').toLowerCase()
+        if (requestedTab === 'fuzzy') {
+            setActiveTab('fuzzy')
+        }
+    }, [searchParams])
+
     const handleSave = async () => {
         try {
             setIsSaving(true)
@@ -134,17 +143,13 @@ export const StudioLayout = () => {
     }
 
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        )
+        return <PlatformLoadingScreen />
     }
 
     return (
-        <div className="flex h-screen bg-background overflow-hidden">
-            {/* Sidebar - Fixed position with independent scrolling */}
-            <div className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card z-30">
+        <div className="flex h-[calc(100vh-2rem)] bg-background overflow-hidden rounded-lg border border-border">
+            {/* Sidebar - Relative position within the parent container */}
+            <div className="w-64 border-r border-border bg-card shrink-0">
                 <div className="h-full flex flex-col">
                     <div className="p-4 border-b border-border shrink-0">
                         <h2 className="font-semibold text-lg">Agent Studio</h2>
@@ -253,8 +258,8 @@ export const StudioLayout = () => {
                 </div>
             </div>
 
-            {/* Main Content - Add margin-left to account for fixed sidebar */}
-            <div className="flex-1 flex flex-col overflow-hidden ml-64">
+            {/* Main Content - No margin needed since sidebar is relative */}
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border bg-card">
                     <div className="flex items-center gap-4">

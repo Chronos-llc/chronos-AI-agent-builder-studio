@@ -1,21 +1,44 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, func
+from sqlalchemy.exc import OperationalError
 from typing import List, Dict, Any
+from datetime import datetime, UTC
+import logging
 
 from app.core.database import get_db
+from app.core.usage_metering_engine import build_user_usage_snapshot
 from app.models.user import User
 from app.models.agent import AgentModel, AgentVersion, Action
-from app.models.usage import UserPlan, UsageType
+from app.models.communication_channel import CommunicationChannel
+from app.models.conversation import Conversation, ConversationMessage, ConversationAction
+from app.models.usage import ResourceType, UsageType, UserPlan, UsageRecord
 from app.api.auth import get_current_user
 from app.schemas.agent import (
-    AgentResponse, AgentCreate, AgentUpdate, AgentType,
+    AgentResponse, AgentCreate, AgentUpdate, AgentType, AgentHomeCard, AgentHomeCardsResponse,
     AgentVersionResponse, AgentVersionCreate,
     ActionResponse, ActionCreate, ActionUpdate,
     SubAgentConfig, AgentConfigUpdate
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+def _normalize_channel_type(channel_type: Any) -> str | None:
+    if channel_type is None:
+        return None
+
+    raw_value = channel_type.value if hasattr(channel_type, "value") else channel_type
+    normalized = str(raw_value).strip().lower()
+    if not normalized:
+        return None
+
+    # Handles legacy enum-string serialization like "ConversationChannelType.WEBCHAT"
+    if "." in normalized:
+        normalized = normalized.rsplit(".", 1)[-1]
+
+    return normalized
 
 
 @router.get("/", response_model=list[AgentResponse])
@@ -45,6 +68,152 @@ async def get_agents(
     return agents
 
 
+@router.get("/home/cards", response_model=AgentHomeCardsResponse)
+async def get_home_agent_cards(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return live Home dashboard cards for the current user's agents."""
+
+    agents_result = await db.execute(
+        select(AgentModel)
+        .where(AgentModel.owner_id == current_user.id)
+        .order_by(AgentModel.updated_at.desc())
+    )
+    agents = list(agents_result.scalars().all())
+    agent_ids = [agent.id for agent in agents]
+
+    active_plan_result = await db.execute(
+        select(UserPlan).where(
+            and_(
+                UserPlan.user_id == current_user.id,
+                UserPlan.is_active.is_(True),
+            )
+        )
+    )
+    active_plan = active_plan_result.scalar_one_or_none()
+    plan_value = active_plan.plan_type.value if active_plan and active_plan.plan_type else "pay_as_you_go"
+
+    if not agent_ids:
+        workspace_name = f"{current_user.full_name or current_user.username}'s Workspace"
+        return AgentHomeCardsResponse(
+            generated_at=datetime.now(UTC),
+            workspace_name=workspace_name,
+            plan=plan_value,
+            agents=[],
+        )
+
+    message_counts_result = await db.execute(
+        select(Conversation.agent_id, func.count(ConversationMessage.id))
+        .join(ConversationMessage, ConversationMessage.conversation_id == Conversation.id)
+        .where(
+            and_(
+                Conversation.user_id == current_user.id,
+                Conversation.agent_id.in_(agent_ids),
+                ConversationMessage.role == "user",
+            )
+        )
+        .group_by(Conversation.agent_id)
+    )
+    message_counts = {
+        int(agent_id): int(count)
+        for agent_id, count in message_counts_result.all()
+    }
+
+    error_counts_result = await db.execute(
+        select(Conversation.agent_id, func.count(ConversationAction.id))
+        .join(ConversationAction, ConversationAction.conversation_id == Conversation.id)
+        .where(
+            and_(
+                Conversation.user_id == current_user.id,
+                Conversation.agent_id.in_(agent_ids),
+                func.lower(ConversationAction.status).in_(["failed", "error"]),
+            )
+        )
+        .group_by(Conversation.agent_id)
+    )
+    error_counts = {
+        int(agent_id): int(count)
+        for agent_id, count in error_counts_result.all()
+    }
+
+    last_message_result = await db.execute(
+        select(Conversation.agent_id, func.max(Conversation.last_message_at))
+        .where(
+            and_(
+                Conversation.user_id == current_user.id,
+                Conversation.agent_id.in_(agent_ids),
+            )
+        )
+        .group_by(Conversation.agent_id)
+    )
+    last_message_by_agent = {
+        int(agent_id): timestamp
+        for agent_id, timestamp in last_message_result.all()
+    }
+
+    channel_sets: dict[int, set[str]] = {agent_id: set() for agent_id in agent_ids}
+
+    try:
+        channel_config_result = await db.execute(
+            select(CommunicationChannel.agent_id, CommunicationChannel.channel_type)
+            .where(
+                and_(
+                    CommunicationChannel.agent_id.in_(agent_ids),
+                    CommunicationChannel.is_active.is_(True),
+                )
+            )
+        )
+        for agent_id, channel_type in channel_config_result.all():
+            if agent_id is None:
+                continue
+            normalized = _normalize_channel_type(channel_type)
+            if normalized:
+                channel_sets[int(agent_id)].add(normalized)
+    except OperationalError:
+        # Backward compatibility for DBs missing recent communication_channels columns.
+        logger.warning("Skipping communication_channels join for home cards due to schema mismatch.")
+
+    conversation_channels_result = await db.execute(
+        select(Conversation.agent_id, Conversation.channel_type)
+        .where(
+            and_(
+                Conversation.user_id == current_user.id,
+                Conversation.agent_id.in_(agent_ids),
+            )
+        )
+    )
+    for agent_id, channel_type in conversation_channels_result.all():
+        if agent_id is None:
+            continue
+        normalized = _normalize_channel_type(channel_type)
+        if normalized:
+            channel_sets[int(agent_id)].add(normalized)
+
+    cards = [
+        AgentHomeCard(
+            id=agent.id,
+            name=agent.name,
+            status=agent.status.value if hasattr(agent.status, "value") else str(agent.status),
+            created_at=agent.created_at,
+            updated_at=agent.updated_at,
+            last_message_at=last_message_by_agent.get(agent.id),
+            deployed_channels=sorted(channel_sets.get(agent.id, set())),
+            messages_received=message_counts.get(agent.id, 0),
+            errors_encountered=error_counts.get(agent.id, 0),
+        )
+        for agent in agents
+    ]
+
+    workspace_name = f"{current_user.full_name or current_user.username}'s Workspace"
+    return AgentHomeCardsResponse(
+        generated_at=datetime.now(UTC),
+        workspace_name=workspace_name,
+        plan=plan_value,
+        agents=cards,
+    )
+
+
 @router.post("/", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     agent_data: AgentCreate,
@@ -53,21 +222,19 @@ async def create_agent(
 ):
     """Create a new agent"""
 
-    # Check user's plan limits
-    result = await db.execute(select(UserPlan).where(UserPlan.user_id == current_user.id))
-    user_plan = result.scalar_one_or_none()
-
-    if not user_plan:
-        user_plan = UserPlan(user_id=current_user.id)
-        db.add(user_plan)
-        await db.commit()
-        await db.refresh(user_plan)
-
-    # Check agent creation limit
-    if not user_plan.can_create_agent():
+    # Check plan + add-on limits via usage engine
+    usage_snapshot = await build_user_usage_snapshot(db, current_user.id)
+    agent_resource = next(
+        (item for item in usage_snapshot.resources if item.resource_type == ResourceType.AGENTS),
+        None,
+    )
+    if agent_resource and agent_resource.total_limit is not None and agent_resource.current >= agent_resource.total_limit:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Agent creation limit reached. Your plan allows {user_plan.max_agents} agents."
+            detail=(
+                "Agent creation limit reached. "
+                f"Current {int(agent_resource.current)} / {int(agent_resource.total_limit)} allowed."
+            ),
         )
 
     # Create agent - handle backward compatibility
@@ -87,22 +254,27 @@ async def create_agent(
     await db.commit()
     await db.refresh(agent)
 
-    # Update plan counters
-    user_plan.current_agents += 1
-    await db.commit()
+    # Ensure plan row exists for legacy counters
+    result = await db.execute(select(UserPlan).where(UserPlan.user_id == current_user.id))
+    user_plan = result.scalar_one_or_none()
+    if not user_plan:
+        user_plan = UserPlan(user_id=current_user.id)
+        db.add(user_plan)
+    legacy_current_agents = int(user_plan.current_agents or 0)
+    computed_current_agents = int(agent_resource.current if agent_resource else 0) + 1
+    user_plan.current_agents = max(computed_current_agents, legacy_current_agents + 1)
 
-    # Track usage
-    from app.api.usage import track_usage
-    await track_usage(
-        usage_data={
-            "usage_type": UsageType.AGENT_CREATION,
-            "amount": 1.0,
-            "unit": "agents",
-            "agent_id": agent.id
-        },
-        current_user=current_user,
-        db=db
+    # Track legacy usage record for historical reporting compatibility.
+    db.add(
+        UsageRecord(
+            user_id=current_user.id,
+            agent_id=agent.id,
+            usage_type=UsageType.AGENT_CREATION,
+            amount=1.0,
+            unit="agents",
+        )
     )
+    await db.commit()
 
     return agent
 

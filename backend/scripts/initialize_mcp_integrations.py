@@ -7,7 +7,9 @@ This script can be run standalone or imported during application startup
 import asyncio
 import sys
 import os
+import secrets
 from typing import Optional
+from datetime import datetime, UTC
 
 # Add the app directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -16,11 +18,46 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import get_password_hash
 from app.models.integration import Integration as IntegrationModel
+from app.models.integration import IntegrationStatus, IntegrationVisibility
 from app.models.user import User as UserModel
 
 
-async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int:
+SEED_AUTHOR_EMAIL = os.getenv("CHRONOS_SEED_AUTHOR_EMAIL", "integrations.seed@chronos.local")
+SEED_AUTHOR_USERNAME = os.getenv("CHRONOS_SEED_AUTHOR_USERNAME", "chronos_integrations_seed")
+
+
+async def _get_or_create_seed_author(db: AsyncSession) -> UserModel:
+    existing = (
+        await db.execute(
+            select(UserModel).where(
+                (UserModel.email == SEED_AUTHOR_EMAIL) | (UserModel.username == SEED_AUTHOR_USERNAME)
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        return existing
+
+    seed_user = UserModel(
+        email=SEED_AUTHOR_EMAIL,
+        username=SEED_AUTHOR_USERNAME,
+        full_name="Chronos Integrations Seed",
+        hashed_password=get_password_hash(secrets.token_urlsafe(32)),
+        is_active=True,
+        is_verified=True,
+        is_superuser=False,
+    )
+    db.add(seed_user)
+    await db.flush()
+    return seed_user
+
+
+async def create_mcp_integrations(
+    db: AsyncSession,
+    default_user_id: int,
+    integrations_data: Optional[list[dict]] = None,
+) -> tuple[int, int]:
     """Create the MCP server integrations in the database"""
     
     # Define the MCP integrations
@@ -1009,7 +1046,11 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
         }
     ]
     
+    if integrations_data is not None:
+        mcp_integrations = integrations_data
+
     created_count = 0
+    updated_count = 0
     
     # Create integrations
     for integration_data in mcp_integrations:
@@ -1019,20 +1060,35 @@ async def create_mcp_integrations(db: AsyncSession, default_user_id: int) -> int
         )
         existing = result.scalars().first()
         
-        if existing:
-            print(f"Integration '{integration_data['name']}' already exists, skipping...")
-            continue
-            
-        # Create new integration
+        # Upsert and normalize to published/public for curated seed catalog
         allowed_fields = set(IntegrationModel.__table__.columns.keys())
         payload = {k: v for k, v in integration_data.items() if k in allowed_fields}
-        integration = IntegrationModel(**payload, author_id=default_user_id)
+        payload.update(
+            {
+                "status": IntegrationStatus.PUBLISHED.value,
+                "visibility": IntegrationVisibility.PUBLIC.value,
+                "is_public": True,
+                "author_id": default_user_id,
+                "submitted_at": datetime.now(UTC),
+                "reviewed_at": datetime.now(UTC),
+                "published_at": datetime.now(UTC),
+            }
+        )
+
+        if existing:
+            for key, value in payload.items():
+                if key in allowed_fields or key == "author_id":
+                    setattr(existing, key, value)
+            updated_count += 1
+            print(f"[UPSERT] Updated integration: {integration_data['name']}")
+            continue
+
+        integration = IntegrationModel(**payload)
         db.add(integration)
         created_count += 1
-        
         print(f"[OK] Created integration: {integration_data['name']}")
 
-    return created_count
+    return created_count, updated_count
 
 
 async def initialize_mcp_integrations() -> bool:
@@ -1045,20 +1101,22 @@ async def initialize_mcp_integrations() -> bool:
         # Find or create a default user for integrations
         result = await db.execute(select(UserModel).limit(1))
         default_user = result.scalars().first()
-        
+
         if not default_user:
-            print("[WARN] No user found in database. MCP integrations require at least one user.")
-            await db.close()
-            return False
-            
+            default_user = await _get_or_create_seed_author(db)
+            print(f"[INFO] Created seed author user: {default_user.email} (ID: {default_user.id})")
+
         print(f"[INFO] Using user: {default_user.email} (ID: {default_user.id})")
         
         # Create MCP integrations
-        created_count = await create_mcp_integrations(db, default_user.id)
+        created_count, updated_count = await create_mcp_integrations(db, default_user.id)
         
-        if created_count > 0:
+        if created_count > 0 or updated_count > 0:
             await db.commit()
-            print(f"[OK] Successfully added {created_count} MCP server integrations to the Chronos Hub Marketplace.")
+            print(
+                f"[OK] Seed sync complete. Created {created_count}, updated {updated_count} "
+                "MCP integrations for the Chronos Hub Marketplace."
+            )
         else:
             print("[INFO] All MCP server integrations already exist in the database.")
             

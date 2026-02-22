@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -81,13 +81,19 @@ class PaymentTransactionCreate(PaymentTransactionBase):
     pass
 
 
-class PaymentTransactionResponse(PaymentTransactionBase):
+class PaymentTransactionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    user_id: int
+    amount: float
+    currency: str
+    payment_method_id: int
+    transaction_type: str
+    status: str
+    metadata: Optional[Dict[str, Any]] = Field(default=None, alias="additional_metadata")
     id: int
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class PaymentTransactionList(BaseModel):
@@ -95,3 +101,53 @@ class PaymentTransactionList(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class UserBalanceAccountResponse(BaseModel):
+    id: int
+    user_id: int
+    currency: str
+    balance: float
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserBalanceTransactionResponse(BaseModel):
+    id: int
+    user_id: int
+    currency: str
+    amount_delta: float
+    reason: str
+    admin_user_id: Optional[int] = None
+    additional_metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserBalanceSummaryResponse(BaseModel):
+    user_id: int
+    balances: List[UserBalanceAccountResponse]
+    transactions: List[UserBalanceTransactionResponse]
+
+
+class UserBalanceAdjustRequest(BaseModel):
+    currency: str = Field(..., min_length=3, max_length=3)
+    amount_delta: float = Field(..., ne=0)
+    reason: str = Field(..., min_length=2, max_length=255)
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class UserBalanceUserListItem(BaseModel):
+    user_id: int
+    username: str
+    email: str
+    balances: Dict[str, float]
+
+
+class UserBalanceUsersResponse(BaseModel):
+    items: List[UserBalanceUserListItem]
+    total: int

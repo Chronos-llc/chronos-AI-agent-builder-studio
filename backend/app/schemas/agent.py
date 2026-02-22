@@ -60,6 +60,25 @@ class AgentResponse(AgentBase):
         from_attributes = True
 
 
+class AgentHomeCard(BaseModel):
+    id: int
+    name: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    last_message_at: Optional[datetime] = None
+    deployed_channels: List[str] = Field(default_factory=list)
+    messages_received: int = 0
+    errors_encountered: int = 0
+
+
+class AgentHomeCardsResponse(BaseModel):
+    generated_at: datetime
+    workspace_name: str
+    plan: str
+    agents: List[AgentHomeCard]
+
+
 class AgentVersionBase(BaseModel):
     version_number: str
     changelog: Optional[str] = None
