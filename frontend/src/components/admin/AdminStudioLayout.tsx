@@ -43,7 +43,7 @@ const ADMIN_ROUTE_MODES: AdminMode[] = [
     'integrations-create',
     'integrations-review',
     'integrations-update',
-    'integration-submissions',
+    'integrations-submissions',
     'skills-marketplace',
     'skills-publish',
     'skills-review',
@@ -255,7 +255,7 @@ export const AdminStudioLayout = () => {
             navigate('/app/admin/dashboard', { replace: true })
             return
         }
-        if (routeMode === 'integration-submissions') {
+        if (routeMode === 'integrations-submissions') {
             navigate('/app/admin/integrations-review', { replace: true })
             return
         }
@@ -300,7 +300,7 @@ export const AdminStudioLayout = () => {
         if (resolvedPath === '/app/admin') {
             resolvedPath = '/app/admin/dashboard'
         }
-        if (resolvedPath === '/app/admin/integration-submissions') {
+        if (resolvedPath === '/app/admin/integrations-submissions') {
             resolvedPath = '/app/admin/integrations-review'
         }
         if (resolvedPath === '/app/admin/integrations') {
@@ -368,7 +368,7 @@ export const AdminStudioLayout = () => {
                 }
                 return <IntegrationManageMode />
             case 'integrations-review':
-            case 'integration-submissions':
+            case 'integrations-submissions':
                 return <IntegrationSubmissionsMode />
             case 'skills-marketplace':
                 return <SkillsMode initialTab="marketplace" hideTabs />

@@ -15,6 +15,8 @@ export const DEFAULT_PLATFORM_LOADING_MESSAGES = [
 
 interface PlatformLoadingScreenProps {
   mode?: 'page' | 'overlay'
+  /** Single static message to display (overrides rotating messages when provided) */
+  message?: string
   messages?: readonly string[]
   stepIntervalMs?: number
   className?: string
@@ -25,6 +27,7 @@ const resolveMessages = (messages?: readonly string[]) =>
 
 export const PlatformLoadingScreen: React.FC<PlatformLoadingScreenProps> = ({
   mode = 'page',
+  message,
   messages,
   stepIntervalMs = 3000,
   className,
@@ -38,15 +41,15 @@ export const PlatformLoadingScreen: React.FC<PlatformLoadingScreenProps> = ({
   }, [loadingMessages])
 
   useEffect(() => {
-    if (loadingMessages.length <= 1) return
+    if (message || loadingMessages.length <= 1) return
     const timerId = window.setInterval(() => {
       setStepIndex(previous => (previous + 1) % loadingMessages.length)
     }, stepIntervalMs)
 
     return () => window.clearInterval(timerId)
-  }, [loadingMessages, stepIntervalMs])
+  }, [message, loadingMessages, stepIntervalMs])
 
-  const activeMessage = loadingMessages[stepIndex] || DEFAULT_PLATFORM_LOADING_MESSAGES[0]
+  const activeMessage = message || loadingMessages[stepIndex] || DEFAULT_PLATFORM_LOADING_MESSAGES[0]
 
   return (
     <section
