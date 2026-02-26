@@ -1,44 +1,14 @@
 import axios from 'axios'
 import type { IntegrationSubmissionCreate } from './integrationSubmissionService'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
 const ADMIN_HUB_BASE = `${API_BASE_URL}/api/v1/admin/integrations/hub`
 const ADMIN_SUBMISSIONS_BASE = `${API_BASE_URL}/api/v1/admin/integrations/submissions`
 
 const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('access_token') || ''}`,
+  Authorization: `Bearer ${localStorage.getItem('chronos_access_token') || localStorage.getItem('access_token') || ''}`,
   'Content-Type': 'application/json',
 })
-
-// ─── Code-review-specified interfaces ────────────────────────────────────────
-
-export interface AdminIntegration {
-  id: string
-  name: string
-  description: string
-  category: string
-  status: 'active' | 'inactive' | 'pending'
-  created_at: string
-  updated_at: string
-  config_schema?: Record<string, unknown>
-  icon_url?: string
-  publisher?: string
-  version?: string
-}
-
-export interface CreateIntegrationPayload {
-  name: string
-  description: string
-  category: string
-  config_schema?: Record<string, unknown>
-  icon_url?: string
-  publisher?: string
-  version?: string
-}
-
-export interface UpdateIntegrationPayload extends Partial<CreateIntegrationPayload> {
-  status?: 'active' | 'inactive' | 'pending'
-}
 
 export interface AdminIntegrationHubItem {
   id: number
@@ -87,6 +57,17 @@ export interface AdminIntegrationHubStatistics {
   success_count: number
   error_count: number
   avg_response_time: number
+}
+
+export interface AdminIntegrationSubmission {
+  id: number
+  name: string
+  integration_type: string
+  category: string
+  status: string
+  visibility: string
+  updated_at: string
+  moderation_notes?: string
 }
 
 export const adminIntegrationService = {
@@ -146,23 +127,16 @@ export const adminIntegrationService = {
   async listSubmissions(params?: {
     status?: string
     integration_type?: string
-  }): Promise<Record<string, any>[]> {
-    const response = await axios.get<Record<string, any>[]>(ADMIN_SUBMISSIONS_BASE, {
+  }): Promise<AdminIntegrationSubmission[]> {
+    const response = await axios.get<AdminIntegrationSubmission[]>(ADMIN_SUBMISSIONS_BASE, {
       headers: authHeaders(),
       params,
-  // ─── Code-review-specified CRUD methods ──────────────────────────────────
-
-  async getIntegrations(): Promise<AdminIntegration[]> {
-    const response = await axios.get<AdminIntegration[]>(`${API_BASE_URL}/api/admin/integrations`, {
-      headers: authHeaders(),
     })
     return response.data
   },
 
   async getSubmission(integrationId: number): Promise<Record<string, any>> {
     const response = await axios.get<Record<string, any>>(`${ADMIN_SUBMISSIONS_BASE}/${integrationId}`, {
-  async getIntegration(id: string): Promise<AdminIntegration> {
-    const response = await axios.get<AdminIntegration>(`${API_BASE_URL}/api/admin/integrations/${id}`, {
       headers: authHeaders(),
     })
     return response.data
@@ -187,25 +161,6 @@ export const adminIntegrationService = {
       { headers: authHeaders() },
     )
     return response.data
-  },
-  async createIntegration(payload: CreateIntegrationPayload): Promise<AdminIntegration> {
-    const response = await axios.post<AdminIntegration>(`${API_BASE_URL}/api/admin/integrations`, payload, {
-      headers: authHeaders(),
-    })
-    return response.data
-  },
-
-  async updateIntegration(id: string, payload: UpdateIntegrationPayload): Promise<AdminIntegration> {
-    const response = await axios.put<AdminIntegration>(`${API_BASE_URL}/api/admin/integrations/${id}`, payload, {
-      headers: authHeaders(),
-    })
-    return response.data
-  },
-
-  async deleteIntegration(id: string): Promise<void> {
-    await axios.delete(`${API_BASE_URL}/api/admin/integrations/${id}`, {
-      headers: authHeaders(),
-    })
   },
 }
 

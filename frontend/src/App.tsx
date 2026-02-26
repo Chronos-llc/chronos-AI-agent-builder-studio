@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage'
 import AdminPage from './pages/AdminPage'
 import AdminRoute from './components/admin/AdminRoute'
 import IntegrationsPage from './pages/IntegrationsPage'
+import IntegrationsHubRoutePage from './pages/IntegrationsHubRoutePage'
 import IntegrationDetailsPage from './pages/IntegrationDetailsPage'
 import IntegrationInstallPage from './pages/IntegrationInstallPage'
 import IntegrationConfigurationPage from './pages/IntegrationConfigurationPage'
@@ -120,6 +121,7 @@ function App() {
                                 <Route path="agents/:id/suite" element={<AgentSuitePage />} />
                                 <Route path="settings" element={<SettingsPage />} />
                                 <Route path="integrations" element={<IntegrationsPage />} />
+                                <Route path="integrations/hub" element={<IntegrationsHubRoutePage />} />
                                 <Route path="integrations/create" element={<IntegrationCreatePage />} />
                                 <Route path="integrations/:id" element={<IntegrationDetailsPage />} />
                                 <Route path="integrations/:id/install" element={<IntegrationInstallPage />} />

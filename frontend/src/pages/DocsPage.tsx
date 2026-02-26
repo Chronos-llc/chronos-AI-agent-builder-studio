@@ -96,7 +96,7 @@ const DocsPage: React.FC = () => {
         <section className="mt-8 grid gap-4 md:grid-cols-2">
           {DOC_SECTIONS.map((section, index) => (
             <Reveal key={section.id} delay={index * 70}>
-              <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <article id={section.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                 <div className="flex items-center gap-3">
                   <section.icon className="h-5 w-5 text-cyan-200" />
                   <h2 className="text-lg font-semibold">{section.title}</h2>

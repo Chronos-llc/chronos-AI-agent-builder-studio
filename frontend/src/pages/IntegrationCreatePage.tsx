@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { CreateIntegrationWizard } from '../components/integrations/CreateIntegrationWizard'
 import {
@@ -77,6 +78,9 @@ const IntegrationCreatePage: React.FC = () => {
               Publishing integrations is available from the Team/Developer plan and above.
             </p>
             <p className="mt-3 text-xs text-amber-200">Current plan: {planType || 'free'}</p>
+            <Link to="/docs#mcp" className="mt-3 inline-block text-xs text-cyan-200 underline underline-offset-4">
+              Read developer documentation
+            </Link>
           </div>
         )}
 
