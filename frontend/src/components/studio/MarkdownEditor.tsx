@@ -87,7 +87,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         })
 
         // Remove remaining HTML angle brackets to avoid any leftover HTML tags
-        markdown = markdown.replace(/</g, '').replace(/>/g, '')
+        // Escape HTML angle brackets to preserve them in markdown
+        markdown = markdown.replace(/</g, '<').replace(/>/g, '>')
 
         // Clean up multiple newlines
         markdown = markdown.replace(/\n{3,}/g, '\n\n')
