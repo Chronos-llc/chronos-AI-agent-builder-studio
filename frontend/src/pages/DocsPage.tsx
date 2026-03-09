@@ -1,66 +1,39 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Bot, Cable, MessagesSquare, Mic2, Sparkles, Workflow } from 'lucide-react'
+import { ArrowRight, Bot, Cable, MessagesSquare, Mic2, Sparkles, Workflow, BookOpen, Settings, Code, Clock, FileText } from 'lucide-react'
 import { ChronosLogo } from '../components/brand/ChronosLogo'
 import { Reveal } from '../components/Reveal'
 import { ComprehensiveFooter } from '../components/landing/ComprehensiveFooter'
 import { LanguageSwitcher } from '../components/landing/LanguageSwitcher'
 import { useMarketingI18n } from '../hooks/useMarketingI18n'
-
-const DOC_SECTIONS = [
-  {
-    id: 'overview',
-    title: 'Overview',
-    description:
-      'Chronos Studio is a unified stack for building, deploying, and operating both voice and work/chat agents from a single control plane.',
-    icon: Sparkles,
-  },
-  {
-    id: 'architecture',
-    title: 'Unified Voice + Chat Architecture',
-    description:
-      'The same orchestration layer powers voice and chat runtimes. Tools, model routing, memory, and policy controls are shared across channels.',
-    icon: Cable,
-  },
-  {
-    id: 'builder',
-    title: 'Agent Builder + Fuzzy',
-    description:
-      'Design agent behavior, select models, connect tools, and use Fuzzy guidance to shape prompts, capabilities, and orchestration settings.',
-    icon: Bot,
-  },
-  {
-    id: 'suite',
-    title: 'Agent Suite',
-    description:
-      'Run conversations, continue tasks, inspect action logs, and monitor context usage in one premium operation workspace.',
-    icon: MessagesSquare,
-  },
-  {
-    id: 'workflow',
-    title: 'Workflow Generator + Virtual Computer',
-    description:
-      'Build deterministic workflow paths and execute code tasks through controlled sandbox runtimes for operational automation.',
-    icon: Workflow,
-  },
-  {
-    id: 'mcp',
-    title: 'MCP + Integrations',
-    description:
-      'Install integrations and MCP servers from the hub, then map them into agent actions and workflow steps.',
-    icon: Cable,
-  },
-  {
-    id: 'voice',
-    title: 'Voice Studio + Channels',
-    description:
-      'Configure STT/TTS/voice stacks, connect telephony providers, and deploy assistants across communication channels.',
-    icon: Mic2,
-  },
-]
+import { DOCUMENTATION_SECTIONS } from '../services/documentationService'
 
 const DocsPage: React.FC = () => {
   const { t } = useMarketingI18n()
+
+  // Get section icon
+  const getSectionIcon = (sectionId: string) => {
+    switch (sectionId) {
+      case 'overview':
+        return <BookOpen className="h-5 w-5 text-cyan-200" />
+      case 'agent-builder':
+        return <Settings className="h-5 w-5 text-cyan-200" />
+      case 'agent-suite':
+        return <FileText className="h-5 w-5 text-cyan-200" />
+      case 'integrations':
+        return <Code className="h-5 w-5 text-cyan-200" />
+      case 'workflow':
+        return <Workflow className="h-5 w-5 text-cyan-200" />
+      case 'voice':
+        return <Mic2 className="h-5 w-5 text-cyan-200" />
+      case 'api':
+        return <Code className="h-5 w-5 text-cyan-200" />
+      case 'advanced':
+        return <Clock className="h-5 w-5 text-cyan-200" />
+      default:
+        return <BookOpen className="h-5 w-5 text-cyan-200" />
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#06080D] text-white">
@@ -93,16 +66,25 @@ const DocsPage: React.FC = () => {
           </section>
         </Reveal>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-2">
-          {DOC_SECTIONS.map((section, index) => (
+        <section className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {DOCUMENTATION_SECTIONS.map((section, index) => (
             <Reveal key={section.id} delay={index * 70}>
-              <article id={section.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <div className="flex items-center gap-3">
-                  <section.icon className="h-5 w-5 text-cyan-200" />
-                  <h2 className="text-lg font-semibold">{section.title}</h2>
-                </div>
-                <p className="mt-3 text-sm text-white/75">{section.description}</p>
-              </article>
+              <Link 
+                to={`/docs/${section.id}`} 
+                className="group block rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:border-cyan-500/50 hover:bg-white/[0.05] transition-all"
+              >
+                <article id={section.id} className="h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    {getSectionIcon(section.id)}
+                    <h2 className="text-lg font-semibold">{section.title}</h2>
+                  </div>
+                  <p className="text-sm text-white/75 mb-4">{section.description}</p>
+                  <div className="flex items-center gap-2 text-sm text-cyan-300 group-hover:text-cyan-200">
+                    Explore documentation
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </article>
+              </Link>
             </Reveal>
           ))}
         </section>
