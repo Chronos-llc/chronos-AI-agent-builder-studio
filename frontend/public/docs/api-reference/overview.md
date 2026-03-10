@@ -3,176 +3,101 @@ sidebar_position: 1
 title: API Overview
 ---
 
-# API Reference Overview
+# API Reference
 
-The Chronos Studio API provides programmatic access to all platform features, enabling you to build custom integrations, automate workflows, and manage agents at scale.
+The Chronos Studio REST API gives you full programmatic control over agents, conversations, tools, and voice — everything available in the dashboard and CLI, accessible via HTTP.
 
 ## Base URL
 
-All API requests should be made to:
-
 ```
-https://api.chronos.studio/v1
+https://api.mohex.org/v1
 ```
 
 ## Authentication
 
-All API requests require authentication using API keys or OAuth 2.0. See [Authentication Guide](/docs/api-reference/authentication) for details.
+All API requests require a Bearer token:
 
-## Request Format
-
-### Headers
 ```bash
-Authorization: Bearer YOUR_API_KEY
-Content-Type: application/json
-X-Organization-ID: org_abc123
+curl https://api.mohex.org/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### Request Body
-Most POST and PUT requests require JSON bodies:
-
-```json
-{
-  "name": "My Agent",
-  "type": "conversational",
-  "config": {
-    "temperature": 0.7
-  }
-}
-```
+Generate API keys in the [Dashboard → Settings → API Keys](https://app.mohex.org/settings/api-keys).
 
 ## Response Format
 
-All responses follow a consistent structure:
+All responses are JSON:
 
-### Success Response
 ```json
 {
+  "success": true,
   "data": { ... },
   "meta": {
     "request_id": "req_abc123",
-    "timestamp": "2024-01-15T10:30:00Z"
+    "timestamp": "2026-03-09T12:00:00Z"
   }
 }
 ```
 
-### Error Response
+Error responses:
+
 ```json
 {
+  "success": false,
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid request parameters",
-    "details": [
-      {"field": "name", "message": "Name is required"}
-    ]
-  },
-  "meta": {
-    "request_id": "req_abc123"
-  }
-}
-```
-
-## Pagination
-
-List endpoints support pagination:
-
-```bash
-GET /agents?page=2&limit=20
-```
-
-Response includes pagination metadata:
-```json
-{
-  "data": [...],
-  "pagination": {
-    "page": 2,
-    "limit": 20,
-    "total": 150,
-    "pages": 8
+    "code": "agent_not_found",
+    "message": "Agent 'my-agent' does not exist",
+    "status": 404
   }
 }
 ```
 
 ## Rate Limits
 
-| Plan | Requests/Minute | Requests/Day |
-|------|-----------------|--------------|
-| Free | 60 | 1,000 |
-| Pro | 300 | 50,000 |
-| Enterprise | 1,000 | Unlimited |
+| Plan | Requests/min | Concurrent |
+|------|-------------|------------|
+| Free | 60 | 5 |
+| Pro | 600 | 50 |
+| Enterprise | Custom | Custom |
 
-Rate limit headers are included in responses:
+Rate limit headers:
 ```
-X-RateLimit-Limit: 300
-X-RateLimit-Remaining: 295
-X-RateLimit-Reset: 1705317600
+X-RateLimit-Limit: 600
+X-RateLimit-Remaining: 587
+X-RateLimit-Reset: 1709964000
 ```
 
 ## API Sections
 
-### Agents API
-Create and manage AI agents, configure behavior, and handle interactions.
-
-- [Agents API](/docs/api-reference/agents)
-- Create, read, update, delete agents
-- Manage agent configurations
-- Handle conversations
-
-### Tools API
-Configure and manage tools available to agents.
-
-- [Tools API](/docs/api-reference/tools)
-- Register custom tools
-- Configure tool parameters
-- Manage tool permissions
-
-### Voice API
-Programmatic access to voice agent features.
-
-- [Voice API](/docs/api-reference/voice)
-- Initiate voice calls
-- Manage voice configurations
-- Handle voice events
-
-### Webhooks
-Receive real-time events from your agents.
-
-- [Webhooks API](/docs/api-reference/webhooks)
-- Configure webhook endpoints
-- Manage webhook events
-- Handle webhook payloads
+| Section | Description |
+|---------|-------------|
+| [Authentication](./authentication) | API keys, OAuth, tokens |
+| [Agents](./agents) | Create, configure, manage agents |
+| [Voice](./voice) | Voice sessions, phone numbers |
+| [Tools](./tools) | Tool management and execution |
+| [Webhooks](./webhooks) | Event subscriptions |
 
 ## SDKs
 
-### Official SDKs
-- **Python**: `pip install chronos-sdk`
-- **Node.js**: `npm install chronos-sdk`
-- **Go**: `go get github.com/chronos/studio-go`
+Use our official SDKs instead of raw HTTP when possible:
 
-### Community SDKs
-- Ruby, PHP, and other community-maintained libraries
-
-## Error Codes
-
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| VALIDATION_ERROR | 400 | Invalid request parameters |
-| AUTHENTICATION_ERROR | 401 | Invalid or missing credentials |
-| PERMISSION_DENIED | 403 | Insufficient permissions |
-| NOT_FOUND | 404 | Resource not found |
-| RATE_LIMIT_EXCEEDED | 429 | Too many requests |
-| INTERNAL_ERROR | 500 | Server error |
-
-## Versioning
-
-The API uses URL versioning. Current version is `v1`.
-
-```bash
-https://api.chronos.studio/v1/agents
+```python
+# Python
+pip install chronos-sdk
+from chronos import ChronosClient
+client = ChronosClient(api_key="your_key")
 ```
 
-## Support
+```typescript
+// TypeScript
+npm install @chronos-studio/sdk
+import { ChronosClient } from '@chronos-studio/sdk';
+const client = new ChronosClient({ apiKey: 'your_key' });
+```
 
-- **Documentation**: You're here!
-- **Status Page**: status.chronos.studio
-- **Support Email**: support@chronos.studio
+---
+
+## Next Steps
+
+- [Authentication](./authentication) — Set up API access
+- [Agents API](./agents) — Manage agents programmatically
