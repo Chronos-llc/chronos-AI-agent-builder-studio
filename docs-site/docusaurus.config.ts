@@ -15,15 +15,15 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://Chronos-llc.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/chronos-AI-agent-builder-studio/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'chronosllc0', // Usually your GitHub org/user name.
-  projectName: 'chronos-ai-agent-builder', // Usually your repo name.
+  organizationName: 'Chronos-llc', // Usually your GitHub org/user name.
+  projectName: 'chronos-AI-agent-builder-studio', // Usually your repo name.
 
   onBrokenLinks: 'throw',
 
@@ -44,7 +44,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/chronosllc0/chronos-ai-agent-builder/tree/main/docs-site/docs/',
+            'https://github.com/Chronos-llc/chronos-AI-agent-builder-studio/tree/main/docs-site/docs/',
         },
 
         theme: {
@@ -75,7 +75,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: 'https://github.com/chronosllc0/chronos-ai-agent-builder',
+          href: 'https://github.com/Chronos-llc/chronos-AI-agent-builder-studio',
           label: 'GitHub',
           position: 'right',
         },
@@ -114,7 +114,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/chronosllc0/chronos-ai-agent-builder',
+              href: 'https://github.com/Chronos-llc/chronos-AI-agent-builder-studio',
             },
           ],
         },
@@ -123,7 +123,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/chronosllc0',
+              href: 'https://github.com/Chronos-llc',
             },
           ],
         },
