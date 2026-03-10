@@ -21,16 +21,16 @@ The simplest authentication method. Best for server-to-server communication.
 
 ```bash
 curl https://api.mohex.org/v1/agents \
-  -H "Authorization: Bearer ck_live_abc123..."
+  -H "Authorization: Bearer chronos_live_abc123..."
 ```
 
 ### Key Types
 
 | Prefix | Type | Use Case |
 |--------|------|----------|
-| `ck_live_` | Live key | Production requests |
-| `ck_test_` | Test key | Development/staging |
-| `ck_pub_` | Public key | Client-side (limited permissions) |
+| `chronos_live_` | Live key | Production requests |
+| `chronos_test_` | Test key | Development/staging |
+| `chronos_pub_` | Public key | Client-side (limited permissions) |
 
 ## OAuth 2.0
 
@@ -86,7 +86,7 @@ POST https://auth.mohex.org/oauth/token
 
 ## Security Best Practices
 
-1. **Never expose live keys client-side** — use public keys (`ck_pub_`) for browsers
+1. **Never expose live keys client-side** — use public keys (`chronos_pub_`) for browsers
 2. **Rotate keys regularly** — update every 90 days
 3. **Use minimal scopes** — only request what you need
 4. **Set IP allowlists** — restrict keys to known IPs in production
