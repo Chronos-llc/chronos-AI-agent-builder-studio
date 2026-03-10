@@ -134,7 +134,7 @@ def test_user_hub_and_installed_integrations_endpoints():
     assert ids["public_id"] in installed_ids
 
     # Free users should only see published public integrations.
-    hub_response = client.get("/api/v1/integrations/hub", headers=_auth_headers(token))
+    hub_response = client.get("/api/v1/integrations/hub?page_size=100", headers=_auth_headers(token))
     assert hub_response.status_code == 200, hub_response.text
     hub_ids = {item["id"] for item in hub_response.json()}
     assert ids["public_id"] in hub_ids
@@ -142,7 +142,7 @@ def test_user_hub_and_installed_integrations_endpoints():
     assert ids["team_id"] not in hub_ids
 
     asyncio.run(_set_plan(email, PlanType.TEAM_DEVELOPER))
-    team_hub_response = client.get("/api/v1/integrations/hub", headers=_auth_headers(token))
+    team_hub_response = client.get("/api/v1/integrations/hub?page_size=100", headers=_auth_headers(token))
     assert team_hub_response.status_code == 200
     team_hub_ids = {item["id"] for item in team_hub_response.json()}
     assert ids["team_id"] in team_hub_ids

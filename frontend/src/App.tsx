@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage'
 import AdminPage from './pages/AdminPage'
 import AdminRoute from './components/admin/AdminRoute'
 import IntegrationsPage from './pages/IntegrationsPage'
+import IntegrationsHubRoutePage from './pages/IntegrationsHubRoutePage'
 import IntegrationDetailsPage from './pages/IntegrationDetailsPage'
 import IntegrationInstallPage from './pages/IntegrationInstallPage'
 import IntegrationConfigurationPage from './pages/IntegrationConfigurationPage'
@@ -28,6 +29,7 @@ import FuzzyOnboardingPage from './pages/FuzzyOnboardingPage'
 import AgentSuitePage from './pages/AgentSuitePage'
 import PricingPage from './pages/PricingPage'
 import DocsPage from './pages/DocsPage'
+import DocumentationPage from './pages/DocumentationPage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import { StudioShell } from './components/studio/StudioShell'
@@ -54,6 +56,8 @@ function App() {
                             <Route path="/" element={<LandingPage />} />
                             <Route path="/pricing" element={<PricingPage />} />
                             <Route path="/docs" element={<DocsPage />} />
+                            <Route path="/docs/:sectionId" element={<DocumentationPage />} />
+                            <Route path="/docs/:sectionId/:pageId" element={<DocumentationPage />} />
                             <Route path="/terms" element={<TermsPage />} />
                             <Route path="/privacy" element={<PrivacyPage />} />
                             <Route path="/login" element={<LoginPage />} />
@@ -120,6 +124,7 @@ function App() {
                                 <Route path="agents/:id/suite" element={<AgentSuitePage />} />
                                 <Route path="settings" element={<SettingsPage />} />
                                 <Route path="integrations" element={<IntegrationsPage />} />
+                                <Route path="integrations/hub" element={<IntegrationsHubRoutePage />} />
                                 <Route path="integrations/create" element={<IntegrationCreatePage />} />
                                 <Route path="integrations/:id" element={<IntegrationDetailsPage />} />
                                 <Route path="integrations/:id/install" element={<IntegrationInstallPage />} />

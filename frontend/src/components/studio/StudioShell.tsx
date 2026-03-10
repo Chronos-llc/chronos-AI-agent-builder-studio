@@ -15,6 +15,7 @@ import {
   Repeat2,
   PanelLeftClose,
   PanelLeftOpen,
+  Store,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../contexts/AuthContext'
@@ -36,6 +37,7 @@ const navItems = [
   { label: 'Dashboard', to: '/app', icon: LayoutDashboard },
   { label: 'Agents', to: '/app/agents', icon: Bot },
   { label: 'Integrations', to: '/app/integrations', icon: Puzzle },
+  { label: 'Chronos Hub', to: '/app/integrations/hub', icon: Store },
   { label: 'Channels', to: '/app/channels', icon: Radio },
   { label: 'Usage', to: '/app/usage', icon: Gauge },
   { label: 'Settings', to: '/app/settings', icon: Settings },
@@ -174,6 +176,13 @@ export const StudioShell: React.FC = () => {
                   </h1>
                 </div>
               </div>
+              <NavLink
+                to="/app/integrations/hub"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
+              >
+                <Store className="h-4 w-4" />
+                Chronos Hub
+              </NavLink>
               <NavLink
                 to="/app/agents/new"
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
