@@ -2,6 +2,53 @@
 
 A comprehensive platform for building, managing, and deploying AI agents with advanced configuration capabilities.
 
+## Documentation
+
+A professional documentation site is available at `docs-site/` directory, built with Docusaurus.
+
+### Features
+
+- **User Guide**: Detailed instructions for using the Chronos AI platform
+- **API Guide**: Comprehensive API documentation
+- **Agentic Thinking**: Documentation for the experimental planning mode
+- **Playwright Deployment**: Guide for deploying Playwright MCP server
+- **Search Functionality**: Full-text search across all documentation
+- **Dark Theme**: Modern dark theme with cyan accents matching Chronos brand
+
+### Running the Documentation Site
+
+```bash
+# Navigate to documentation site directory
+cd docs-site
+
+# Install dependencies (first time only)
+npm install
+
+# Start development server (runs on http://localhost:3000)
+npm start
+
+# Build for production
+npm run build
+
+# Serve production build locally
+npm run serve
+```
+
+### Documentation Site Structure
+
+```
+docs-site/
+├── docs/                    # Documentation content
+│   ├── user-guide.md       # User Guide
+│   ├── api-guide.md        # API Guide
+│   ├── agentic-thinking.md # Agentic Thinking feature
+│   └── playwright-deployment.md # Playwright deployment guide
+├── src/                     # Docusaurus theme and customizations
+├── docusaurus.config.ts    # Site configuration
+├── sidebars.ts             # Documentation sidebar configuration
+└── package.json            # Dependencies and scripts
+```
+
 ## Features
 
 - 🤖 **Agent Builder**: Visual interface for creating and configuring AI agents
