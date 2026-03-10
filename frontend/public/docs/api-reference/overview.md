@@ -10,7 +10,7 @@ The Chronos Studio REST API gives you full programmatic control over agents, con
 ## Base URL
 
 ```
-https://api.mohex.org/v1
+https://api.chronos.studio/v1
 ```
 
 ## Authentication
@@ -18,11 +18,11 @@ https://api.mohex.org/v1
 All API requests require a Bearer token:
 
 ```bash
-curl https://api.mohex.org/v1/agents \
+curl https://api.chronos.studio/v1/agents \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-Generate API keys in the [Dashboard → Settings → API Keys](https://app.mohex.org/settings/api-keys).
+Generate API keys in the [Dashboard → Settings → API Keys](https://app.chronos.studio/settings/api-keys).
 
 ## Response Format
 
