@@ -210,11 +210,50 @@ export const DOCUMENTATION_SECTIONS: DocumentationSection[] = [
 export const loadDocumentationContent = async (pageId: string): Promise<string> => {
   try {
     // First check if there's an existing markdown file
-    const existingFiles = {
+    const existingFiles: Record<string, string> = {
       'agentic-thinking': 'agentic-thinking.md',
       'api-guide': 'api-guide.md',
+      'intro': 'intro.md',
       'playwright-deployment': 'playwright-deployment.md',
-      'user-guide': 'user-guide.md'
+      'user-guide': 'user-guide.md',
+      'agents/blueprints': 'agents/blueprints.md',
+      'agents/creating-agents': 'agents/creating-agents.md',
+      'agents/memory': 'agents/memory.md',
+      'agents/multi-agent': 'agents/multi-agent.md',
+      'agents/overview': 'agents/overview.md',
+      'agents/tools': 'agents/tools.md',
+      'api-reference/agents': 'api-reference/agents.md',
+      'api-reference/authentication': 'api-reference/authentication.md',
+      'api-reference/overview': 'api-reference/overview.md',
+      'api-reference/tools': 'api-reference/tools.md',
+      'api-reference/voice': 'api-reference/voice.md',
+      'api-reference/webhooks': 'api-reference/webhooks.md',
+      'getting-started/concepts': 'getting-started/concepts.md',
+      'getting-started/first-agent': 'getting-started/first-agent.md',
+      'getting-started/installation': 'getting-started/installation.md',
+      'getting-started/quickstart': 'getting-started/quickstart.md',
+      'guides/customer-support-bot': 'guides/customer-support-bot.md',
+      'guides/sales-voice-agent': 'guides/sales-voice-agent.md',
+      'guides/white-label': 'guides/white-label.md',
+      'guides/workflow-automation': 'guides/workflow-automation.md',
+      'integrations/apis': 'integrations/apis.md',
+      'integrations/databases': 'integrations/databases.md',
+      'integrations/mcp': 'integrations/mcp.md',
+      'integrations/messaging': 'integrations/messaging.md',
+      'integrations/overview': 'integrations/overview.md',
+      'platform/dashboard': 'platform/dashboard.md',
+      'platform/jestha': 'platform/jestha.md',
+      'platform/overview': 'platform/overview.md',
+      'platform/spark': 'platform/spark.md',
+      'resources/changelog': 'resources/changelog.md',
+      'resources/faq': 'resources/faq.md',
+      'resources/roadmap': 'resources/roadmap.md',
+      'resources/support': 'resources/support.md',
+      'voice-ai/emotion-detection': 'voice-ai/emotion-detection.md',
+      'voice-ai/getting-started': 'voice-ai/getting-started.md',
+      'voice-ai/overview': 'voice-ai/overview.md',
+      'voice-ai/telephony': 'voice-ai/telephony.md',
+      'voice-ai/voice-models': 'voice-ai/voice-models.md',
     }
 
     if (existingFiles[pageId as keyof typeof existingFiles]) {
