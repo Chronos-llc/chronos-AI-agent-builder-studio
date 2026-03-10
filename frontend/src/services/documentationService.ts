@@ -206,19 +206,45 @@ export const DOCUMENTATION_SECTIONS: DocumentationSection[] = [
   }
 ]
 
+// File to markdown filename mappings - keys match page IDs from DOCUMENTATION_SECTIONS
+const FILE_MAPPINGS: Record<string, string> = {
+  'introduction': 'introduction.md',
+  'architecture': 'architecture.md',
+  'quick-start': 'quick-start.md',
+  'creating-agents': 'creating-agents.md',
+  'agent-config': 'agent-config.md',
+  'agent-types': 'agent-types.md',
+  'version-control': 'version-control.md',
+  'running-agents': 'running-agents.md',
+  'agent-monitoring': 'agent-monitoring.md',
+  'agent-analytics': 'agent-analytics.md',
+  'mcp-servers': 'mcp-servers.md',
+  'ai-providers': 'ai-providers.md',
+  'external-services': 'external-services.md',
+  'workflow-generator': 'workflow-generator.md',
+  'virtual-computer': 'virtual-computer.md',
+  'task-execution': 'task-execution.md',
+  'voice-configuration': 'voice-configuration.md',
+  'communication-channels': 'communication-channels.md',
+  'phone-numbers': 'phone-numbers.md',
+  'api-overview': 'api-overview.md',
+  'api-endpoints': 'api-endpoints.md',
+  'api-examples': 'api-examples.md',
+  'agentic-thinking': 'agentic-thinking.md',
+  'custom-integrations': 'custom-integrations.md',
+  'deployment': 'deployment.md',
+  'security': 'security.md',
+  'user-guide': 'user-guide.md',
+  'api-guide': 'api-guide.md',
+  'playwright-deployment': 'playwright-deployment.md',
+}
+
 // Function to load documentation content from markdown files
 export const loadDocumentationContent = async (pageId: string): Promise<string> => {
   try {
-    // First check if there's an existing markdown file
-    const existingFiles = {
-      'agentic-thinking': 'agentic-thinking.md',
-      'api-guide': 'api-guide.md',
-      'playwright-deployment': 'playwright-deployment.md',
-      'user-guide': 'user-guide.md'
-    }
-
-    if (existingFiles[pageId as keyof typeof existingFiles]) {
-      const response = await fetch(`/docs/${existingFiles[pageId as keyof typeof existingFiles]}`)
+    const filename = FILE_MAPPINGS[pageId]
+    if (filename) {
+      const response = await fetch(`/docs/${filename}`)
       if (response.ok) {
         return await response.text()
       }
