@@ -11,7 +11,7 @@ The simplest authentication method. Best for server-to-server communication.
 
 ### Generate a Key
 
-1. Go to [Dashboard → Settings → API Keys](https://app.mohex.org/settings/api-keys)
+1. Go to [Dashboard → Settings → API Keys](https://app.chronos.studio/settings/api-keys)
 2. Click **Create New Key**
 3. Name it (e.g., "production-backend")
 4. Set permissions (read, write, admin)
@@ -20,17 +20,17 @@ The simplest authentication method. Best for server-to-server communication.
 ### Usage
 
 ```bash
-curl https://api.mohex.org/v1/agents \
-  -H "Authorization: Bearer chronos_live_abc123..."
+curl https://api.chronos.studio/v1/agents \
+  -H "Authorization: Bearer sk_live_abc123..."
 ```
 
 ### Key Types
 
 | Prefix | Type | Use Case |
 |--------|------|----------|
-| `chronos_live_` | Live key | Production requests |
-| `chronos_test_` | Test key | Development/staging |
-| `chronos_pub_` | Public key | Client-side (limited permissions) |
+| `sk_live_` | Live key | Production requests |
+| `sk_test_` | Test key | Development/staging |
+| `sk_pub_` | Public key | Client-side (limited permissions) |
 
 ## OAuth 2.0
 
@@ -40,7 +40,7 @@ For applications that act on behalf of users.
 
 ```
 1. Redirect user to:
-   https://auth.mohex.org/oauth/authorize?
+   https://auth.chronos.studio/oauth/authorize?
      client_id=YOUR_CLIENT_ID&
      redirect_uri=YOUR_CALLBACK&
      response_type=code&
@@ -49,7 +49,7 @@ For applications that act on behalf of users.
 2. User authorizes your app
 
 3. Exchange code for token:
-   POST https://auth.mohex.org/oauth/token
+   POST https://auth.chronos.studio/oauth/token
    {
      "grant_type": "authorization_code",
      "code": "AUTH_CODE",
@@ -76,7 +76,7 @@ For applications that act on behalf of users.
 ## Token Refresh
 
 ```bash
-POST https://auth.mohex.org/oauth/token
+POST https://auth.chronos.studio/oauth/token
 {
   "grant_type": "refresh_token",
   "refresh_token": "YOUR_REFRESH_TOKEN",
@@ -86,7 +86,7 @@ POST https://auth.mohex.org/oauth/token
 
 ## Security Best Practices
 
-1. **Never expose live keys client-side** — use public keys (`chronos_pub_`) for browsers
+1. **Never expose live keys client-side** — use public keys (`sk_pub_`) for browsers
 2. **Rotate keys regularly** — update every 90 days
 3. **Use minimal scopes** — only request what you need
 4. **Set IP allowlists** — restrict keys to known IPs in production
