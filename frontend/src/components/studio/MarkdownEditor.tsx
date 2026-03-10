@@ -86,8 +86,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             return content.split('\n').map((line: string) => `> ${line}`).join('\n') + '\n\n'
         })
 
-        // Remove remaining HTML tags
-        markdown = markdown.replace(/<[^>]*>/g, '')
+        // Remove remaining HTML angle brackets to avoid any leftover HTML tags
+        // Escape HTML angle brackets to preserve them in markdown
+        markdown = markdown.replace(/</g, '<').replace(/>/g, '>')
 
         // Clean up multiple newlines
         markdown = markdown.replace(/\n{3,}/g, '\n\n')
