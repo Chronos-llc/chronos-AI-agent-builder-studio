@@ -1,64 +1,85 @@
 ---
 sidebar_position: 1
-title: Agent System Overview
+title: Agents Overview
 ---
 
-# Agent System Overview
+# AI Agents Overview
 
-The Chronos Studio agent system provides a powerful framework for building autonomous AI agents capable of reasoning, planning, and executing complex tasks. This section covers the fundamentals of how agents work within the platform.
+Agents are the core building block of Chronos Studio. An agent is an autonomous AI system that reasons, takes actions through tools, maintains memory, and communicates through multiple channels.
 
-## What is an Agent?
+## What Makes a Chronos Agent?
 
-An agent in Chronos Studio is an autonomous entity that can:
-- Receive input from users or other systems
-- Reason about tasks and break them into subtasks
-- Execute actions using available tools
-- Maintain context and memory across interactions
-- Produce meaningful outputs and responses
+Every agent has five fundamental components:
 
-## Agent Architecture
+```
+┌─────────────────────────────────────┐
+│             Agent                    │
+│                                     │
+│  ┌─────────┐      ┌─────────────┐  │
+│  │  Model   │ ←──→ │   System    │  │
+│  │  (LLM)   │      │   Prompt    │  │
+│  └─────────┘      └─────────────┘  │
+│       │                             │
+│  ┌─────────┐      ┌─────────────┐  │
+│  │  Tools   │      │   Memory    │  │
+│  │          │      │             │  │
+│  └─────────┘      └─────────────┘  │
+│       │                             │
+│  ┌──────────────────────────────┐   │
+│  │        Channels               │   │
+│  │  API │ Telegram │ Voice │ ... │   │
+│  └──────────────────────────────┘   │
+└─────────────────────────────────────┘
+```
 
-### Core Components
+### 1. Model
+The underlying LLM that powers reasoning. Chronos supports:
+- **Google Gemini** (2.0 Flash, 2.0 Pro, 1.5 Pro)
+- **OpenAI GPT** (GPT-4o, GPT-4 Turbo)
+- **Anthropic Claude** (Claude 3.5 Sonnet, Claude 3 Opus)
+- **Open-source** (Llama, Mixtral, via compatible endpoints)
 
-**Reasoning Engine**
-The reasoning engine processes user input and determines the appropriate course of action. It uses large language models to understand context, generate plans, and decide which tools to invoke.
+### 2. System Prompt
+Instructions that define the agent's personality, behavior, and constraints.
 
-**Tool System**
-Agents interact with the external world through tools. These can be API calls, database queries, file operations, or any custom functionality you need to integrate.
+### 3. Tools
+Functions the agent can call to interact with the world — search the web, query databases, send emails, call APIs.
 
-**Memory System**
-Agents maintain conversation history and can store persistent data for long-term context. This enables personalized interactions and continuity across sessions.
+### 4. Memory
+Persistent context that survives across conversations — user preferences, past interactions, knowledge bases.
 
-**Communication Layer**
-Agents can communicate with users through multiple channels including chat, voice, and webhooks.
+### 5. Channels
+Communication endpoints — REST API, Telegram, WhatsApp, Slack, voice calls, web widgets.
 
 ## Agent Types
 
-### Conversational Agents
-Designed for dialogue-based interactions, these agents excel at customer support, sales conversations, and general Q&A scenarios.
+| Type | Description | Example |
+|------|-------------|---------|
+| **Task Agent** | Executes specific tasks on demand | Research assistant, code reviewer |
+| **Conversational Agent** | Engages in ongoing dialogue | Customer support, companion |
+| **Voice Agent** | Handles real-time voice interactions | Phone support, voice assistant |
+| **Autonomous Agent** | Runs independently on schedules/triggers | Monitoring, reporting, automation |
+| **Multi-Agent System** | Multiple agents collaborating | Research pipeline, content workflow |
 
-### Task Agents
-Focused on completing specific tasks, these agents can automate workflows, process data, and handle structured requests.
+## Agent Lifecycle
 
-### Voice Agents
-Specialized agents optimized for real-time voice interactions with speech recognition and synthesis capabilities.
+```
+Design → Configure → Test → Deploy → Monitor → Iterate
+```
 
-### Multi-Agent Systems
-Multiple agents working together, each with specialized roles, can handle complex scenarios requiring diverse expertise.
+1. **Design** — Use Spark or manually define your agent's purpose
+2. **Configure** — Set up model, tools, memory, and channels
+3. **Test** — Run locally with `chronos dev`
+4. **Deploy** — Push to production with `chronos deploy`
+5. **Monitor** — Track performance in the dashboard
+6. **Iterate** — Update configuration and redeploy
 
-## Creating Agents
-
-Agents can be created through:
-- The visual Agent Builder in the dashboard
-- Configuration files (YAML/JSON)
-- API programming
-- Agent blueprints and templates
-
-See [Creating Agents](/docs/agents/creating-agents) for detailed instructions.
+---
 
 ## Next Steps
 
-- Explore [Agent Blueprints](/docs/agents/blueprints) for pre-built templates
-- Learn about [Memory Management](/docs/agents/memory)
-- Discover [Multi-Agent Systems](/docs/agents/multi-agent)
-- Configure [Tools and Integrations](/docs/agents/tools)
+- [Creating Agents](./creating-agents) — Step-by-step configuration guide
+- [Tools](./tools) — Build and use agent tools
+- [Memory](./memory) — Configure persistent memory
+- [Blueprints](./blueprints) — Reusable agent templates
+- [Multi-Agent Systems](./multi-agent) — Agent collaboration
