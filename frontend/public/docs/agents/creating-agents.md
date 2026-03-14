@@ -1,448 +1,197 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 title: Creating Agents
 ---
 
 # Creating Agents
 
-This guide walks you through creating AI agents in Chronos Studio using the visual builder, CLI, API, and programmatic approaches.
+This guide covers everything you need to configure and deploy a Chronos agent.
 
-## Agent Configuration Guide
+## Agent Configuration
 
-### Core Configuration Options
-
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| name | string | Yes | Agent display name |
-| type | enum | Yes | conversational, task, voice, multi |
-| system_prompt | string | Yes | Instructions for the agent |
-| temperature | float | No | Creativity vs determinism (0-1, default: 0.7) |
-| max_tokens | int | No | Maximum response length |
-| tools | array | No | Enabled tool names |
-| memory | object | No | Memory configuration |
-| voice | object | No | Voice-specific settings |
-
-### Configuration File Format
+Every agent is defined by an `agent.yaml` file:
 
 ```yaml
-# agent.yaml
-name: "My Support Agent"
-type: "conversational"
-version: "1.0.0"
+# agent.yaml — Complete configuration reference
+name: my-agent                    # Unique identifier
+description: What this agent does # Human-readable description
+version: 1.0.0                   # Semantic version
 
+# === Model ===
+model: gemini-2.0-flash          # LLM to use
+temperature: 0.7                 # 0.0 (deterministic) to 1.0 (creative)
+max_tokens: 4096                 # Maximum response length
+top_p: 0.9                       # Nucleus sampling (optional)
+
+# === System Prompt ===
 system_prompt: |
-  You are a helpful customer support agent for Acme Corp.
-  You have extensive knowledge of our products and policies.
-  Always be polite, professional, and concise.
+  You are a helpful assistant specialized in data analysis.
+  Always provide sources for claims.
+  Format responses with clear headers and bullet points.
 
-config:
-  temperature: 0.7
-  max_tokens: 2048
-  response_format: "markdown"
+# Or reference an external file:
+# system_prompt_file: ./prompts/system.md
 
-tools:
-  - search_knowledge_base
-  - create_ticket
-  - send_email
-  - get_order_status
-
+# === Memory ===
 memory:
-  type: "conversation"
-  max_history: 50
-  persist: true
+  type: persistent               # session | persistent | none
+  ttl: 30d                       # How long to remember (persistent only)
+  max_context_messages: 50       # Messages included in context window
+  vector_search: true            # Enable semantic search over history
 
-voice:
-  enabled: true
-  provider: "elevenlabs"
-  voice_id: "rachel"
-```
-
-## Creating Agents via Dashboard
-
-### Step 1: Access the Agent Builder
-Navigate to the Agents section in your Chronos Studio dashboard and click "Create New Agent".
-
-### Step 2: Define Basic Information
-- **Name**: Enter a descriptive name for your agent
-- **Description**: Briefly describe the agent's purpose
-- **Type**: Select agent type (Conversational, Task, Voice, or Multi-Agent)
-
-### Step 3: Configure Agent Behavior
-
-**System Prompt**
-Define the agent's personality and instructions:
-```
-You are a helpful customer support agent for Acme Corp.
-You have extensive knowledge of our products and policies.
-Always be polite, professional, and concise.
-```
-
-**Conversation Starters**
-Set initial messages to guide users:
-- "How can I help you today?"
-- "Do you have questions about our products?"
-
-**Response Preferences**
-- Temperature setting (0.0-1.0)
-- Max tokens limit
-- Response format (plain text, JSON, markdown)
-
-### Step 4: Add Tools
-Configure tools to extend agent capabilities:
-- Search tools
-- API integrations
-- Database queries
-- Custom functions
-
-### Step 5: Set Memory Configuration
-- Conversation history length
-- Persistent storage options
-- Context window settings
-
-### Step 6: Test and Deploy
-Use the built-in chat to test your agent, then deploy to production.
-
-## Creating Agents via CLI
-
-### Installation
-
-```bash
-npm install -g @chronos/cli
-```
-
-### Create a New Agent
-
-```bash
-# Interactive creation
-chronos agents create
-
-# Non-interactive with flags
-chronos agents create \
-  --name "My Support Agent" \
-  --type conversational \
-  --system-prompt "You are a helpful support agent..." \
-  --config ./agent.yaml
-```
-
-### CLI Commands
-
-```bash
-# List agents
-chronos agents list
-
-# Get agent details
-chronos agents get agent_abc123
-
-# Update agent
-chronos agents update agent_abc123 --config ./updated-config.yaml
-
-# Delete agent
-chronos agents delete agent_abc123
-
-# Deploy agent
-chronos agents deploy agent_abc123 --env production
-
-# View logs
-chronos agents logs agent_abc123 --tail 100
-```
-
-### Agent YAML Configuration
-
-```yaml
-# agent.yaml
-name: "Support Agent"
-type: "conversational"
-version: "1.0.0"
-
-system_prompt: |
-  You are a helpful customer support agent.
-
-config:
-  temperature: 0.7
-  max_tokens: 2048
-
+# === Tools ===
 tools:
-  - name: "search_knowledge_base"
-    enabled: true
-  - name: "create_ticket"
-    enabled: true
+  # Built-in tools
+  - name: web_search
+    builtin: true
+    config:
+      max_results: 5
 
-environment:
-  NODE_ENV: "production"
-  LOG_LEVEL: "info"
+  - name: code_interpreter
+    builtin: true
+
+  # Custom tools
+  - name: query_database
+    path: ./tools/db_query.py
+    config:
+      connection_string: ${DATABASE_URL}
+
+  # MCP tools
+  - name: github
+    mcp: true
+    server: github-mcp-server
+
+# === Channels ===
+channels:
+  - type: api                    # Always recommended
+  - type: telegram
+    config:
+      bot_token: ${TELEGRAM_BOT_TOKEN}
+  - type: whatsapp
+    config:
+      phone_number_id: ${WA_PHONE_ID}
+      access_token: ${WA_ACCESS_TOKEN}
+  - type: slack
+    config:
+      bot_token: ${SLACK_BOT_TOKEN}
+
+# === Guardrails ===
+guardrails:
+  max_tool_calls: 10             # Max tool calls per turn
+  blocked_topics: []             # Topics the agent should refuse
+  pii_detection: true            # Detect and mask PII
+  rate_limit: 100/min            # Max requests per minute
+
+# === Scheduling (Autonomous Agents) ===
+schedule:
+  cron: "0 8 * * *"             # Run daily at 8 AM
+  trigger: new_email             # Or trigger on events
+  action: summarize_and_notify
 ```
 
-## Creating Agents via API
+## Creating via CLI
 
-### Using the REST API
+### From a Template
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/agents \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Support Agent",
-    "type": "conversational",
-    "config": {
-      "system_prompt": "You are a helpful support agent...",
-      "temperature": 0.7,
-      "max_tokens": 2048,
-      "tools": ["search_knowledge_base", "create_ticket"],
-      "memory": {
-        "type": "conversation",
-        "max_history": 50
-      }
-    }
-  }'
+# List available templates
+chronos templates list
+
+# Create from template
+chronos init my-agent --template customer-support
+chronos init my-agent --template research-assistant
+chronos init my-agent --template voice-receptionist
 ```
 
-### Response
+### From Scratch
 
-```json
-{
-  "id": "agent_abc123",
-  "name": "My Support Agent",
-  "status": "active",
-  "created_at": "2024-01-15T10:30:00Z",
-  "endpoint": "https://api.chronos.studio/v1/agents/agent_abc123"
-}
+```bash
+chronos init my-agent --template blank
 ```
 
-### API Endpoints
+### From a Blueprint
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /v1/agents | Create new agent |
-| GET | /v1/agents | List all agents |
-| GET | /v1/agents/:id | Get agent details |
-| PUT | /v1/agents/:id | Update agent |
-| DELETE | /v1/agents/:id | Delete agent |
-| POST | /v1/agents/:id/deploy | Deploy agent |
-| GET | /v1/agents/:id/logs | Get agent logs |
+```bash
+chronos create --from blueprint:ecommerce-support
+```
 
-## Creating Agents via SDK
+## Creating via Dashboard
 
-### Python SDK
+1. Go to **Agents → New Agent**
+2. Choose a starting point:
+   - **Spark** — Describe in natural language
+   - **Template** — Start from a template
+   - **Blank** — Configure everything manually
+3. Configure model, tools, memory
+4. Test in the live preview
+5. Deploy
+
+## Creating via API
 
 ```python
-from chronos import Agent
+from chronos import ChronosClient
 
-agent = Agent.create(
-    name="My Support Agent",
-    type="conversational",
-    config={
-        "system_prompt": "You are a helpful support agent...",
-        "temperature": 0.7,
-        "tools": ["search_knowledge_base", "create_ticket"]
-    }
+client = ChronosClient(api_key="your_key")
+
+agent = client.agents.create(
+    name="data-analyst",
+    model="gemini-2.0-flash",
+    system_prompt="You are a data analyst...",
+    tools=[
+        {"name": "web_search", "builtin": True},
+        {"name": "code_interpreter", "builtin": True},
+    ],
+    memory={"type": "persistent", "ttl": "30d"},
+    channels=[{"type": "api"}],
 )
-```
 
-### Node.js SDK
-
-```javascript
-const { Agent } = require('chronos-sdk');
-
-const agent = await Agent.create({
-  name: "My Support Agent",
-  type: "conversational",
-  config: {
-    systemPrompt: "You are a helpful support agent...",
-    temperature: 0.7,
-    tools: ["search_knowledge_base", "create_ticket"]
-  }
-});
+print(f"Agent created: {agent.id}")
+print(f"Endpoint: {agent.endpoint}")
 ```
 
 ## Environment Variables
 
-### Agent Configuration
+Use `${VAR_NAME}` in `agent.yaml` for secrets:
 
 ```bash
-# Required
-CHRONOS_API_KEY=sk_xxxxx
+# Set environment variables
+chronos env set TELEGRAM_BOT_TOKEN="your_token"
+chronos env set DATABASE_URL="postgres://..."
 
-# Optional - Agent settings
-CHRONOS_AGENT_NAME=MyAgent
-CHRONOS_AGENT_TYPE=conversational
-CHRONOS_MAX_TOKENS=2048
-CHRONOS_TEMPERATURE=0.7
-
-# Optional - Memory
-CHRONOS_MEMORY_TYPE=conversation
-CHRONOS_MEMORY_MAX_HISTORY=50
-
-# Optional - Voice
-CHRONOS_VOICE_ENABLED=true
-CHRONOS_VOICE_PROVIDER=elevenlabs
-CHRONOS_VOICE_ID=rachel
-
-# Optional - Tools
-CHRONOS_TOOLS_ENABLED=true
-CHRONOS_CUSTOM_TOOLS_PATH=./tools
-```
-
-### Using Environment Variables
-
-```python
-import os
-from chronos import Agent
-
-agent = Agent.create(
-    name=os.getenv("CHRONOS_AGENT_NAME", "Default Agent"),
-    type=os.getenv("CHRONOS_AGENT_TYPE", "conversational"),
-    config={
-        "temperature": float(os.getenv("CHRONOS_TEMPERATURE", "0.7"))
-    }
-)
+# View configured variables
+chronos env list
 ```
 
 ## Local Development
 
-### Setting Up Local Dev Environment
-
 ```bash
-# Clone the agent template
-chronos init my-agent --template support-agent
-
-# Navigate to project
-cd my-agent
-
-# Install dependencies
-npm install
-
-# Configure local environment
-cp .env.example .env
-# Edit .env with your API keys
-
-# Start local development server
+# Start interactive dev mode
 chronos dev
 
-# Run tests
-chronos test
+# Dev mode with hot reload (watches for file changes)
+chronos dev --watch
 
-# Build for production
-chronos build
-```
-
-### Local Development Server
-
-```bash
-# Start with hot reload
-chronos dev --port 3000 --debug
-
-# Run with specific config
-chronos dev --config ./dev-config.yaml
-
-# Enable verbose logging
-chronos dev --verbose
-```
-
-### Testing Agents Locally
-
-```bash
-# Interactive chat
-chronos chat
-
-# Run test suite
-chronos test
-
-# Test with specific input
-chronos test --input "Hello, I need help"
+# Dev mode with a specific test file
+chronos dev --test tests/scenarios.yaml
 ```
 
 ## Deployment
 
-### Deploy to Production
-
 ```bash
-# Via CLI
-chronos agents deploy agent_abc123 --env production
+# Deploy to production
+chronos deploy
 
-# Via API
-curl -X POST https://api.chronos.studio/v1/agents/agent_abc123/deploy \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"environment": "production"}'
+# Deploy to a specific environment
+chronos deploy --env staging
+
+# Deploy with a version tag
+chronos deploy --tag v1.2.0
 ```
 
-### Deployment Options
-
-| Option | Description |
-|--------|-------------|
-| staging | Deploy to staging environment |
-| production | Deploy to production |
-| canary | Canary deployment (gradual rollout) |
-| rollback | Rollback to previous version |
-
-### Docker Deployment
-
-```dockerfile
-FROM chronos/agent-runtime:latest
-
-COPY agent.yaml /app/agent.yaml
-COPY tools /app/tools
-
-ENV CHRONOS_API_KEY=${API_KEY}
-
-CMD ["chronos", "start", "--config", "/app/agent.yaml"]
-```
-
-```bash
-# Build and run
-docker build -t my-agent .
-docker run -e API_KEY=xxx my-agent
-```
-
-### Kubernetes Deployment
-
-```yaml
-apiVersion: chronos.ai/v1
-kind: Agent
-metadata:
-  name: my-support-agent
-spec:
-  version: "1.0.0"
-  replicas: 3
-  resources:
-    requests:
-      memory: "512Mi"
-      cpu: "500m"
-    limits:
-      memory: "1Gi"
-      cpu: "1000m"
-  autoscaling:
-    enabled: true
-    minReplicas: 2
-    maxReplicas: 10
-```
-
-### Monitoring Deployment
-
-```bash
-# View deployment status
-chronos agents status agent_abc123
-
-# Check logs
-chronos agents logs agent_abc123 --follow
-
-# View metrics
-chronos agents metrics agent_abc123
-```
-
-## Best Practices
-
-1. **Start Simple**: Begin with basic configuration and add complexity gradually
-2. **Iterate**: Test frequently and refine prompts based on interactions
-3. **Monitor**: Use analytics to track performance and identify issues
-4. **Version**: Keep track of configuration changes
-5. **Secure**: Follow security best practices for API keys and data
-6. **Scale**: Plan for traffic growth and configure auto-scaling
-7. **Backup**: Maintain backups of agent configurations
+---
 
 ## Next Steps
 
-- Learn about [Agent Memory](/docs/agents/memory)
-- Explore [Agent Blueprints](/docs/agents/blueprints)
-- Configure [Tools Configuration](/docs/agents/tools)
-- Set up [Multi-Agent Systems](/docs/agents/multi-agent)
+- [Tools](./tools) — Add capabilities to your agent
+- [Memory](./memory) — Configure persistent memory
+- [Blueprints](./blueprints) — Save reusable templates

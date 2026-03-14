@@ -1,376 +1,144 @@
 ---
-sidebar_position: 4
-title: Workflow Automation
+sidebar_position: 3
+title: "Guide: Workflow Automation"
 ---
 
-# Workflow Automation
+# Guide: Workflow Automation
 
-Learn how to automate complex business processes using Chronos Studio agents and workflows.
+Automate recurring business processes with scheduled agents, event triggers, and multi-step workflows.
 
-## Overview
+## Types of Automation
 
-Workflow automation allows you to:
-- Connect agents to business processes
-- Trigger actions based on events
-- Orchestrate multi-step tasks
-- Handle approvals and exceptions
-
-## Workflow Components
-
-### Triggers
-Events that start a workflow:
-
-| Trigger | Description |
-|---------|-------------|
-| Webhook | HTTP request received |
-| Schedule | Time-based execution |
-| Event | Agent/voice event |
-| Manual | User-initiated |
-
-### Actions
-Operations performed in a workflow:
-
-- API calls
-- Database operations
-- Send notifications
-- Create/update records
-- Wait for conditions
-
-### Conditions
-Logic for branching:
-
-- If/else branches
-- Data validation
-- Threshold checks
-
-## Creating Workflows
-
-### Dashboard
-
-1. Navigate to **Workflows**
-2. Click **Create Workflow**
-3. Choose trigger type
-4. Add actions and conditions
-5. Save and activate
-
-### YAML Configuration
+### Scheduled Agents
+Run agents on a cron schedule:
 
 ```yaml
-name: Order Processing
+name: daily-digest
+schedule:
+  cron: "0 8 * * 1-5"          # 8 AM, Monday-Friday
+  timezone: America/New_York
+
+system_prompt: |
+  Compile a daily briefing:
+  1. Summarize unread emails
+  2. List today's meetings
+  3. Check project status
+  4. Create a prioritized task list
+  Send the briefing to Slack.
+
+tools:
+  - name: read_emails
+    builtin: true
+  - name: get_calendar
+    builtin: true
+  - name: check_projects
+    path: ./tools/projects.py
+  - name: send_slack_message
+    builtin: true
+```
+
+### Event-Triggered Agents
+Run agents when events happen:
+
+```yaml
+name: new-lead-processor
 trigger:
   type: webhook
-  path: /webhooks/order-created
+  event: new_lead_created
+  source: hubspot
 
-steps:
-  - name: validate_order
-    action: http_request
-    config:
-      url: https://api.orders.com/validate
-      method: POST
-      body: "{{ trigger.body }}"
-    on_failure: notify_admin
+system_prompt: |
+  A new lead has arrived. Research them and prepare a briefing:
+  1. Look up their company
+  2. Check their LinkedIn profile
+  3. Identify relevant case studies
+  4. Draft a personalized outreach email
+  5. Notify the sales team
 
-  - name: check_inventory
-    action: database_query
-    config:
-      query: "SELECT stock FROM products WHERE id = {{ trigger.body.product_id }}"
-    conditions:
-      - if: "{{ steps.check_inventory.stock > 0 }}"
-        continue: true
-      - else:
-          action: notify_out_of_stock
-          stop: true
-
-  - name: process_payment
-    action: http_request
-    config:
-      url: https://api.payments.com/charge
-      method: POST
-      body:
-        amount: "{{ trigger.body.amount }}"
-        customer: "{{ trigger.body.customer_id }}"
-
-  - name: create_shipment
-    action: http_request
-    config:
-      url: https://api.shipping.com/labels
-      method: POST
-
-  - name: send_confirmation
-    action: send_email
-    config:
-      to: "{{ trigger.body.customer_email }}"
-      template: order_confirmation
+tools:
+  - name: web_search
+    builtin: true
+  - name: get_lead_details
+    path: ./tools/lead_details.py
+  - name: draft_email
+    builtin: true
+  - name: notify_sales
+    path: ./tools/notify.py
 ```
 
-## Agent Workflows
-
-### Agent as Workflow Step
-
-```python
-from chronos.workflows import Workflow
-
-workflow = Workflow(
-    name="Customer Onboarding",
-    trigger={"type": "user.created"}
-)
-
-# Step 1: AI classification
-workflow.add_step(
-    name="classify_customer",
-    agent="agent_classifier",
-    input="{{ trigger.user_data }}",
-    output_var="classification"
-)
-
-# Step 2: Route based on classification
-workflow.add_condition(
-    if="{{ steps.classification.tier }} == 'enterprise'",
-    then="setup_enterprise_account",
-    else="setup_standard_account"
-)
-
-# Step 3: Execute appropriate setup
-workflow.add_step(
-    name="setup_enterprise_account",
-    actions=[
-        create_account(type="enterprise"),
-        assign_dedicated_manager(),
-        send_welcome_package()
-    ]
-)
-```
-
-### Complete Automation Example
-
-```python
-from chronos import WorkflowBuilder
-
-builder = WorkflowBuilder()
-
-# Create customer onboarding workflow
-onboarding = (
-    builder.workflow("Customer Onboarding")
-    .trigger(
-        type="webhook",
-        path="/webhooks/new-customer"
-    )
-    
-    # Step 1: Analyze customer data
-    .agent_step(
-        name="analyze_customer",
-        agent="classifier_agent",
-        input={"customer": "{{trigger.data}}"},
-        output="customer_profile"
-    )
-    
-    # Step 2: Create account
-    .action(
-        name="create_account",
-        operation="create_record",
-        table="accounts",
-        data={
-            "name": "{{trigger.data.company}}",
-            "tier": "{{steps.analyze_customer.tier}}",
-            "owner": "{{trigger.data.owner}}"
-        }
-    )
-    
-    # Step 3: Configure environment
-    .agent_step(
-        name="provision_resources",
-        agent="provisioning_agent",
-        input={
-            "tier": "{{steps.analyze_customer.tier}}",
-            "account_id": "{{steps.create_account.id}}"
-        }
-    )
-    
-    # Step 4: Send welcome email
-    .action(
-        name="send_welcome",
-        operation="send_email",
-        template="welcome",
-        to="{{trigger.data.email}}"
-    )
-    
-    # Error handling
-    .on_error(
-        notify="alerts@example.com",
-        retry_count=3
-    )
-    
-    .build()
-)
-
-# Activate workflow
-onboarding.activate()
-```
-
-## Scheduled Workflows
-
-### Cron Expressions
+### Multi-Step Workflows
+Chain multiple agents in sequence:
 
 ```yaml
-name: Daily Report Generation
-trigger:
-  type: schedule
-  cron: "0 8 * * *"  # Daily at 8 AM
+name: content-pipeline
+type: workflow
 
 steps:
-  - name: fetch_data
-    action: database_query
-    query: "SELECT * FROM activities WHERE date = yesterday"
-    output: daily_activities
+  - name: research
+    agent: web-researcher
+    input: "Research {{topic}} with current data and statistics"
+    output: research_data
 
-  - name: analyze
-    agent: "reporting_agent"
-    input:
-      data: "{{ steps.fetch_data }}"
-      type: "daily_summary"
-    output: report
+  - name: write
+    agent: blog-writer
+    input: "Write a blog post about {{topic}} using this research: {{research_data}}"
+    output: draft
 
-  - name: send_report
-    action: send_email
-    to: "team@example.com"
-    subject: "Daily Report - {{ now }}"
-    body: "{{ steps.analyze.report }}"
+  - name: edit
+    agent: editor
+    input: "Edit this draft for clarity and SEO: {{draft}}"
+    output: final_post
+
+  - name: publish
+    agent: publisher
+    input: "Publish to WordPress and share on social media: {{final_post}}"
+    output: result
+
+trigger:
+  schedule:
+    cron: "0 9 * * 1"            # Every Monday at 9 AM
+  input:
+    topic: "AI agents industry update"
 ```
 
-### Built-in Schedules
+## Common Automations
 
+### Email Monitoring
+```yaml
+trigger:
+  type: email
+  filter: "to:support@company.com"
+action:
+  agent: email-responder
+  task: "Categorize email, draft response, flag urgent items"
+```
+
+### Social Media Monitoring
 ```yaml
 trigger:
   type: schedule
-  frequency: hourly  # Options: minutely, hourly, daily, weekly, monthly
+  cron: "0 */4 * * *"          # Every 4 hours
+action:
+  agent: social-monitor
+  task: "Check Twitter/LinkedIn mentions, summarize sentiment"
 ```
 
-## Approval Workflows
-
-### Human-in-the-Loop
-
+### Report Generation
 ```yaml
-name: Expense Approval
 trigger:
-  type: webhook
-  path: /webhooks/expense-submitted
-
-steps:
-  - name: validate_expense
-    action: validate
-    schema: expense_schema
-
-  - name: check_amount
-    conditions:
-      - if: "{{ trigger.body.amount }} > 1000"
-        action: request_approval
-      - else:
-          auto_approve: true
-
-  - name: request_approval
-    action: create_approval_task
-    config:
-      approver: "{{ trigger.body.manager }}"
-      task: "Review expense of ${{ trigger.body.amount }}"
-      due_in: 24 hours
-      actions:
-        - approve: process_payment
-        - reject: notify_rejection
+  type: schedule
+  cron: "0 17 * * 5"           # Friday at 5 PM
+action:
+  agent: report-generator
+  task: "Generate weekly KPI report from analytics + CRM data"
+  output:
+    - send_email: ["team@company.com"]
+    - post_slack: "#reports"
 ```
 
-## Webhook Integration
+---
 
-### Receiving Webhooks
+## Next Steps
 
-```python
-from chronos.webhooks import WebhookServer
-
-server = WebhookServer()
-
-@server.route("/webhooks/crm")
-def handle_crm_webhook(data):
-    workflow = Workflow.get("sync-crm")
-    workflow.trigger(data)
-    
-    return {"status": "accepted"}
-
-# Start server
-server.run(port=3000)
-```
-
-### Sending Webhooks
-
-```yaml
-steps:
-  - name: notify_external
-    action: http_request
-    url: https://external-api.com/webhook
-    method: POST
-    headers:
-      Authorization: "Bearer {{ secrets.WEBHOOK_KEY }}"
-    body: "{{ workflow.output }}"
-```
-
-## Error Handling
-
-### Retry Policies
-
-```yaml
-steps:
-  - name: unreliable_api
-    action: http_request
-    url: https://api.example.com/data
-    retry:
-      max_attempts: 3
-      backoff: exponential
-      initial_delay: 5  # seconds
-      max_delay: 60
-
-  - name: fallback
-    action: notify_admins
-    conditions:
-      - if: "{{ steps.unreliable_api.failed }}"
-```
-
-### Dead Letter Queue
-
-```yaml
-workflow:
-  name: Process Orders
-  dlq: /webhooks/orders-failed
-  
-  steps:
-    - name: process
-      action: process_order
-      on_failure: move_to_dlq
-```
-
-## Monitoring
-
-### Workflow Logs
-
-```bash
-# View workflow execution logs
-chronos workflows logs order-processing --limit 50
-
-# View specific execution
-chronos workflows executions view exec_abc123
-```
-
-### Metrics
-
-Track:
-- Execution count
-- Success rate
-- Average duration
-- Failed steps
-- Queue depth
-
-## Best Practices
-
-1. **Idempotency** - Handle duplicate triggers gracefully
-2. **Timeouts** - Set reasonable timeouts for each step
-3. **Error handling** - Always plan for failures
-4. **Testing** - Test workflows thoroughly before production
-5. **Monitoring** - Set up alerts for failures
-6. **Documentation** - Document complex workflows
+- [White-Label Solutions](./white-label) — Deploy agents for your clients
+- [Multi-Agent Systems](../agents/multi-agent) — Complex orchestration

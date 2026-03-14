@@ -5,211 +5,132 @@ title: Core Concepts
 
 # Core Concepts
 
-Understanding these core concepts will help you effectively build and manage AI agents with Chronos Studio.
+Understand the foundational building blocks of Chronos Studio.
 
-## Agents
+## Architecture Overview
 
-### What is an Agent?
-An agent is an autonomous AI entity that:
-- Processes user input
-- Reasons about tasks
-- Uses tools to take actions
-- Generates responses
+```
+┌─────────────────────────────────────────────────┐
+│                  Chronos Studio                  │
+├─────────────────────────────────────────────────┤
+│  Channels          │  Dashboard & API            │
+│  (Telegram, WA,    │  (Web UI, REST API,         │
+│   Slack, Voice)    │   CLI, SDKs)                │
+├─────────────────────────────────────────────────┤
+│                 Agent Runtime                    │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │
+│  │  Models   │ │  Tools   │ │  Memory & State  │ │
+│  │  (LLMs)  │ │  (Custom │ │  (Persistent,    │ │
+│  │          │ │  +Built  │ │   Vector, KV)    │ │
+│  │          │ │   -in)   │ │                  │ │
+│  └──────────┘ └──────────┘ └──────────────────┘ │
+├─────────────────────────────────────────────────┤
+│              Integration Layer                   │
+│  MCP Servers │ External APIs │ Databases │ ...  │
+└─────────────────────────────────────────────────┘
+```
 
-### Agent Types
+## Key Concepts
 
-| Type | Description | Best For |
+### Agents
+
+An **agent** is an autonomous AI system that can reason, use tools, maintain memory, and communicate through multiple channels. Every agent in Chronos has:
+
+- **Model**: The underlying LLM (Gemini, GPT, Claude, open-source)
+- **System Prompt**: Instructions defining personality and behavior
+- **Tools**: Functions the agent can call to take actions
+- **Memory**: Persistent context across conversations
+- **Channels**: Where the agent communicates (API, messaging apps, voice)
+
+### Tools
+
+**Tools** extend what your agent can do beyond text generation. They are functions your agent can call autonomously.
+
+```python
+@tool(name="send_email", description="Send an email to a recipient")
+async def send_email(to: str, subject: str, body: str) -> str:
+    # Your implementation
+    return "Email sent successfully"
+```
+
+Chronos provides **built-in tools** (web search, calculators, file operations) and supports **custom tools** you define in Python.
+
+### Memory
+
+**Memory** gives agents context across conversations:
+
+| Type | Description | Use Case |
 |------|-------------|----------|
-| Conversational | Chat-based interactions | Customer support, Q&A |
-| Task | Task-oriented automation | Data processing, workflows |
-| Voice | Voice-enabled interactions | Phone support, accessibility |
-| Multi-Agent | Multiple collaborating agents | Complex workflows |
+| **Session** | Within a single conversation | Chat context |
+| **Persistent** | Across conversations, per user | User preferences, history |
+| **Vector** | Semantic search over stored data | Knowledge bases, RAG |
+| **Key-Value** | Simple structured storage | Settings, counters |
 
-## Configuration
+### Blueprints
 
-### System Prompt
-The system prompt defines your agent's:
-- Personality and tone
-- Domain knowledge
-- Behavioral guidelines
-- Constraints
+**Blueprints** are reusable agent templates. Clone, customize, and deploy — without starting from scratch.
+
+```bash
+# Use a community blueprint
+chronos create --from blueprint:customer-support
+
+# Save your agent as a blueprint
+chronos blueprint save my-agent --name "Research Assistant v2"
+```
+
+### Multi-Agent Systems
+
+The **Multi-Agent OS** lets agents collaborate. Agents can inherit prebuilt subagents for complex workflows:
 
 ```yaml
-system_prompt: |
-  You are a [role] for [company].
-  Your traits: [qualities]
-  Always [behavior guidelines]
-  Never [constraints]
+agents:
+  - name: coordinator
+    role: Orchestrates the research pipeline
+    subagents:
+      - researcher    # Searches and gathers information
+      - summarizer    # Condenses findings
+      - fact-checker  # Verifies claims
 ```
 
-### Temperature
-Controls response randomness:
-- **0.0-0.3**: Focused, deterministic
-- **0.4-0.7**: Balanced (recommended)
-- **0.8-1.0**: Creative, varied
+### Spark — The Meta-Agent
 
-### Max Tokens
-Limits response length. Adjust based on expected response complexity.
+**Spark** is a meta-agent that builds other agents. Describe what you want in plain English:
 
-## Memory
+> "I need an agent that monitors Twitter for mentions of my brand, summarizes sentiment daily, and sends me a Telegram digest."
 
-### Conversation Memory
-Short-term context within a session:
-```json
-{
-  "type": "conversation",
-  "max_history": 50
-}
-```
+Spark generates the complete agent configuration — tools, prompts, integrations — ready to deploy.
 
-### Persistent Memory
-Long-term storage across sessions:
-```json
-{
-  "type": "persistent",
-  "storage": "database"
-}
-```
+### Channels
 
-### Vector Memory
-Semantic search capabilities:
-```json
-{
-  "type": "vector",
-  "embedding_model": "text-embedding-ada-002"
-}
-```
+**Channels** are how users interact with agents:
 
-## Tools
+- **API** — REST endpoints for programmatic access
+- **Messaging** — Telegram, WhatsApp, Slack, Discord
+- **Voice** — Phone calls, WebRTC, SIP
+- **Web Widget** — Embeddable chat component
 
-### Tool Categories
+### MCP (Model Context Protocol)
 
-**Built-in Tools**
-- `web_search`: Internet search
-- `calculator`: Mathematical operations
-- `code_interpreter`: Execute code
-- `file_reader`: Read files
+Chronos supports **MCP servers** — a standard protocol for connecting AI models to external data sources and tools. Host your own MCP servers or connect to existing ones.
 
-**Custom Tools**
-- API integrations
-- Database queries
-- Webhook triggers
-- Custom functions
+---
 
-### Tool Execution Flow
-1. Agent analyzes user request
-2. Agent decides to use a tool
-3. Tool executes with parameters
-4. Results returned to agent
-5. Agent generates response
+## Platform Components
 
-## Conversations
+| Component | What It Does |
+|-----------|-------------|
+| **Chronos Studio** | The full platform — everything below in one stack |
+| **Spark** | Natural language agent builder (meta-agent) |
+| **Jestha** | Copilot & agentic workspace app for end users |
+| **Agent Runtime** | Execution environment for deployed agents |
+| **Dashboard** | Web UI for managing agents, analytics, and settings |
+| **CLI** | Command-line tool for development and deployment |
+| **SDKs** | Python and JavaScript libraries for API access |
 
-### Sessions
-A conversation session contains:
-- Unique session ID
-- Message history
-- User context
-- Metadata
+---
 
-### Message Structure
-```json
-{
-  "role": "user|assistant",
-  "content": "Message text",
-  "timestamp": "2024-01-15T14:00:00Z",
-  "metadata": {}
-}
-```
+## Next Steps
 
-### Streaming Responses
-For real-time feedback:
-```python
-for chunk in client.agents.stream_chat(agent_id, message):
-    print(chunk.content, end="")
-```
-
-## Voice
-
-### Voice Pipeline
-1. **Speech Recognition**: Convert audio to text
-2. **Agent Processing**: Process as regular message
-3. **Speech Synthesis**: Convert response to audio
-
-### Voice Configuration
-```json
-{
-  "voice_id": "voice_rachel",
-  "speed": 1.0,
-  "emotion_detection": true,
-  "interruption_threshold": 0.5
-}
-```
-
-## Multi-Agent Systems
-
-### Architecture Patterns
-- **Hierarchical**: Manager delegates to specialists
-- **Collaborative**: Peer-to-peer communication
-- **Pipeline**: Sequential processing
-
-### Inter-Agent Communication
-```python
-# Send message between agents
-agent_a.send_to(agent_b, message)
-
-# Shared context
-group = AgentGroup([agent_a, agent_b])
-group.shared_context["key"] = value
-```
-
-## Security
-
-### Authentication
-- API keys for server-to-server
-- OAuth 2.0 for user delegation
-- JWT tokens for sessions
-
-### Secrets Management
-```python
-from chronos.secrets import get_secret
-
-api_key = get_secret("MY_API_KEY")
-# Never expose in logs or code
-```
-
-### Rate Limiting
-Apply per-plan limits:
-- Free: 60 req/min
-- Pro: 300 req/min
-- Enterprise: Custom
-
-## Webhooks
-
-### Event Types
-- Agent events (messages, errors)
-- Voice events (calls, transcriptions)
-- System events (deployments, alerts)
-
-### Webhook Security
-Always verify signatures:
-```python
-verify_signature(payload, signature, secret)
-```
-
-## Analytics
-
-### Key Metrics
-- **Messages processed**: Total conversations
-- **Token usage**: Cost tracking
-- **Response time**: Latency monitoring
-- **Resolution rate**: Task completion
-- **User satisfaction**: Ratings and feedback
-
-## Best Practices
-
-1. **Start simple** - Add complexity gradually
-2. **Iterate** - Test and refine continuously
-3. **Monitor** - Track performance metrics
-4. **Secure** - Protect credentials and data
-5. **Document** - Keep track of configurations
+- [Create Your First Agent](./first-agent) — Hands-on tutorial
+- [Agent Tools Deep Dive](../agents/tools) — Build powerful tools
+- [Voice AI Overview](../voice-ai/overview) — Add voice capabilities

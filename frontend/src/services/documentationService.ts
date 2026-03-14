@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react'
 
+export interface DocumentationPage {
+  id: string
+  title: string
+  description: string
+  filePath: string
+  content?: string
+  category?: string
+}
+
 export interface DocumentationSection {
   id: string
   title: string
@@ -8,282 +17,362 @@ export interface DocumentationSection {
   pages: DocumentationPage[]
 }
 
-export interface DocumentationPage {
-  id: string
-  title: string
-  description: string
-  content?: string
-  category?: string
-}
-
-// Sample documentation structure (will be replaced with actual content)
+/**
+ * Real 8-section information architecture matching the drafted docs spec.
+ * Each page's `filePath` points to an actual markdown file under /docs/.
+ */
 export const DOCUMENTATION_SECTIONS: DocumentationSection[] = [
   {
-    id: 'overview',
-    title: 'Overview',
-    description: 'Learn about Chronos Studio features and architecture',
+    id: 'getting-started',
+    title: 'Getting Started',
+    description: 'Set up Chronos Studio and build your first agent in minutes',
     pages: [
       {
-        id: 'introduction',
-        title: 'Introduction',
-        description: 'What is Chronos Studio and how it works'
-      },
-      {
-        id: 'architecture',
-        title: 'Architecture',
-        description: 'Technical architecture and system components'
-      },
-      {
-        id: 'quick-start',
+        id: 'quickstart',
         title: 'Quick Start',
-        description: 'Getting started guide'
-      }
-    ]
+        description: 'Get up and running in 5 minutes',
+        filePath: 'getting-started/quickstart.md',
+      },
+      {
+        id: 'installation',
+        title: 'Installation',
+        description: 'Install and configure Chronos Studio',
+        filePath: 'getting-started/installation.md',
+      },
+      {
+        id: 'first-agent',
+        title: 'Your First Agent',
+        description: 'Build and deploy your first AI agent',
+        filePath: 'getting-started/first-agent.md',
+      },
+      {
+        id: 'concepts',
+        title: 'Core Concepts',
+        description: 'Understand the fundamentals of Chronos Studio',
+        filePath: 'getting-started/concepts.md',
+      },
+    ],
   },
   {
-    id: 'agent-builder',
-    title: 'Agent Builder',
-    description: 'Building and configuring AI agents',
+    id: 'platform',
+    title: 'Platform',
+    description: 'Explore the Chronos Studio platform, dashboard, Spark, and Jestha',
     pages: [
+      {
+        id: 'overview',
+        title: 'Platform Overview',
+        description: 'Architecture and core components',
+        filePath: 'platform/overview.md',
+      },
+      {
+        id: 'dashboard',
+        title: 'Dashboard',
+        description: 'Navigate and manage your workspace',
+        filePath: 'platform/dashboard.md',
+      },
+      {
+        id: 'spark',
+        title: 'Spark',
+        description: 'Meta-agent for building agents via natural language',
+        filePath: 'platform/spark.md',
+      },
+      {
+        id: 'jestha',
+        title: 'Jestha',
+        description: 'Your copilot agentic workspace app',
+        filePath: 'platform/jestha.md',
+      },
+    ],
+  },
+  {
+    id: 'agents',
+    title: 'Agents',
+    description: 'Create, configure, and orchestrate AI agents',
+    pages: [
+      {
+        id: 'overview',
+        title: 'Agents Overview',
+        description: 'How agents work in Chronos Studio',
+        filePath: 'agents/overview.md',
+      },
       {
         id: 'creating-agents',
         title: 'Creating Agents',
-        description: 'Step-by-step guide to creating agents'
+        description: 'Step-by-step agent creation guide',
+        filePath: 'agents/creating-agents.md',
       },
       {
-        id: 'agent-config',
-        title: 'Agent Configuration',
-        description: 'Configuration options for agents'
+        id: 'tools',
+        title: 'Tools',
+        description: 'Equip agents with tools and capabilities',
+        filePath: 'agents/tools.md',
       },
       {
-        id: 'agent-types',
-        title: 'Agent Types',
-        description: 'Different types of agents available'
+        id: 'memory',
+        title: 'Memory',
+        description: 'Agent memory and context management',
+        filePath: 'agents/memory.md',
       },
       {
-        id: 'version-control',
-        title: 'Version Control',
-        description: 'Managing agent versions'
-      }
-    ]
+        id: 'blueprints',
+        title: 'Blueprints',
+        description: 'Reusable agent templates and blueprints',
+        filePath: 'agents/blueprints.md',
+      },
+      {
+        id: 'multi-agent',
+        title: 'Multi-Agent',
+        description: 'Orchestrate multiple agents together',
+        filePath: 'agents/multi-agent.md',
+      },
+    ],
   },
   {
-    id: 'agent-suite',
-    title: 'Agent Suite',
-    description: 'Running and monitoring agents',
+    id: 'voice-ai',
+    title: 'Voice AI',
+    description: 'Build real-time voice agents with sub-second latency',
     pages: [
       {
-        id: 'running-agents',
-        title: 'Running Agents',
-        description: 'How to run and manage agents'
+        id: 'overview',
+        title: 'Voice AI Overview',
+        description: 'Introduction to voice agent capabilities',
+        filePath: 'voice-ai/overview.md',
       },
       {
-        id: 'agent-monitoring',
-        title: 'Agent Monitoring',
-        description: 'Monitoring agent performance'
+        id: 'getting-started',
+        title: 'Getting Started with Voice',
+        description: 'Set up your first voice agent',
+        filePath: 'voice-ai/getting-started.md',
       },
       {
-        id: 'agent-analytics',
-        title: 'Agent Analytics',
-        description: 'Analyzing agent behavior'
-      }
-    ]
+        id: 'voice-models',
+        title: 'Voice Models',
+        description: 'Available voice models and providers',
+        filePath: 'voice-ai/voice-models.md',
+      },
+      {
+        id: 'telephony',
+        title: 'Telephony',
+        description: 'Phone and SIP integration',
+        filePath: 'voice-ai/telephony.md',
+      },
+      {
+        id: 'emotion-detection',
+        title: 'Emotion Detection',
+        description: 'Real-time sentiment and emotion analysis',
+        filePath: 'voice-ai/emotion-detection.md',
+      },
+    ],
   },
   {
     id: 'integrations',
     title: 'Integrations',
-    description: 'Connecting external services',
+    description: 'Connect MCP servers, APIs, messaging, and databases',
     pages: [
       {
-        id: 'mcp-servers',
+        id: 'overview',
+        title: 'Integrations Overview',
+        description: 'Available integrations and how to connect',
+        filePath: 'integrations/overview.md',
+      },
+      {
+        id: 'mcp',
         title: 'MCP Servers',
-        description: 'Using MCP servers'
+        description: 'Model Context Protocol integration',
+        filePath: 'integrations/mcp.md',
       },
       {
-        id: 'ai-providers',
-        title: 'AI Providers',
-        description: 'Integrating AI providers'
+        id: 'apis',
+        title: 'APIs',
+        description: 'REST API and custom API integrations',
+        filePath: 'integrations/apis.md',
       },
       {
-        id: 'external-services',
-        title: 'External Services',
-        description: 'Connecting to external APIs'
-      }
-    ]
+        id: 'messaging',
+        title: 'Messaging',
+        description: 'Slack, Discord, Twilio, and more',
+        filePath: 'integrations/messaging.md',
+      },
+      {
+        id: 'databases',
+        title: 'Databases',
+        description: 'Database connections and storage',
+        filePath: 'integrations/databases.md',
+      },
+    ],
   },
   {
-    id: 'workflow',
-    title: 'Workflow & Automation',
-    description: 'Building automated workflows',
+    id: 'api-reference',
+    title: 'API Reference',
+    description: 'Complete API documentation with examples',
     pages: [
       {
-        id: 'workflow-generator',
-        title: 'Workflow Generator',
-        description: 'Creating workflows'
-      },
-      {
-        id: 'virtual-computer',
-        title: 'Virtual Computer',
-        description: 'Using the virtual computer'
-      },
-      {
-        id: 'task-execution',
-        title: 'Task Execution',
-        description: 'Executing tasks'
-      }
-    ]
-  },
-  {
-    id: 'voice',
-    title: 'Voice Studio',
-    description: 'Voice agent configuration',
-    pages: [
-      {
-        id: 'voice-configuration',
-        title: 'Voice Configuration',
-        description: 'Configuring voice agents'
-      },
-      {
-        id: 'communication-channels',
-        title: 'Communication Channels',
-        description: 'Setting up communication channels'
-      },
-      {
-        id: 'phone-numbers',
-        title: 'Phone Numbers',
-        description: 'Managing phone numbers'
-      }
-    ]
-  },
-  {
-    id: 'api',
-    title: 'API Documentation',
-    description: 'API reference and examples',
-    pages: [
-      {
-        id: 'api-overview',
+        id: 'overview',
         title: 'API Overview',
-        description: 'API introduction'
+        description: 'API introduction and base URLs',
+        filePath: 'api-reference/overview.md',
       },
       {
-        id: 'api-endpoints',
-        title: 'API Endpoints',
-        description: 'API endpoint reference'
+        id: 'authentication',
+        title: 'Authentication',
+        description: 'API keys, JWT tokens, and OAuth',
+        filePath: 'api-reference/authentication.md',
       },
       {
-        id: 'api-examples',
-        title: 'API Examples',
-        description: 'API usage examples'
-      }
-    ]
+        id: 'agents',
+        title: 'Agents API',
+        description: 'CRUD operations for agents',
+        filePath: 'api-reference/agents.md',
+      },
+      {
+        id: 'voice',
+        title: 'Voice API',
+        description: 'Voice agent endpoints',
+        filePath: 'api-reference/voice.md',
+      },
+      {
+        id: 'tools',
+        title: 'Tools API',
+        description: 'Tool management endpoints',
+        filePath: 'api-reference/tools.md',
+      },
+      {
+        id: 'webhooks',
+        title: 'Webhooks',
+        description: 'Event webhooks and callbacks',
+        filePath: 'api-reference/webhooks.md',
+      },
+    ],
   },
   {
-    id: 'advanced',
-    title: 'Advanced Topics',
-    description: 'Advanced features and customization',
+    id: 'guides',
+    title: 'Guides',
+    description: 'End-to-end tutorials for common use cases',
     pages: [
       {
-        id: 'agentic-thinking',
-        title: 'Agentic Thinking',
-        description: 'Advanced agent behavior'
+        id: 'customer-support-bot',
+        title: 'Customer Support Bot',
+        description: 'Build an AI-powered support agent',
+        filePath: 'guides/customer-support-bot.md',
       },
       {
-        id: 'custom-integrations',
-        title: 'Custom Integrations',
-        description: 'Building custom integrations'
+        id: 'sales-voice-agent',
+        title: 'Sales Voice Agent',
+        description: 'Create an outbound sales voice agent',
+        filePath: 'guides/sales-voice-agent.md',
       },
       {
-        id: 'deployment',
-        title: 'Deployment',
-        description: 'Deployment options'
+        id: 'workflow-automation',
+        title: 'Workflow Automation',
+        description: 'Automate complex multi-step workflows',
+        filePath: 'guides/workflow-automation.md',
       },
       {
-        id: 'security',
-        title: 'Security',
-        description: 'Security best practices'
-      }
-    ]
-  }
+        id: 'white-label',
+        title: 'White Label',
+        description: 'Deploy white-label agent solutions',
+        filePath: 'guides/white-label.md',
+      },
+    ],
+  },
+  {
+    id: 'resources',
+    title: 'Resources',
+    description: 'FAQ, changelog, roadmap, and support',
+    pages: [
+      {
+        id: 'faq',
+        title: 'FAQ',
+        description: 'Frequently asked questions',
+        filePath: 'resources/faq.md',
+      },
+      {
+        id: 'changelog',
+        title: 'Changelog',
+        description: 'Release notes and version history',
+        filePath: 'resources/changelog.md',
+      },
+      {
+        id: 'roadmap',
+        title: 'Roadmap',
+        description: 'Upcoming features and milestones',
+        filePath: 'resources/roadmap.md',
+      },
+      {
+        id: 'support',
+        title: 'Support',
+        description: 'Get help and contact the team',
+        filePath: 'resources/support.md',
+      },
+    ],
+  },
 ]
 
-// File to markdown filename mappings - keys match page IDs from DOCUMENTATION_SECTIONS
-const FILE_MAPPINGS: Record<string, string> = {
-  'introduction': 'introduction.md',
-  'architecture': 'architecture.md',
-  'quick-start': 'quick-start.md',
-  'creating-agents': 'agents/creating-agents.md',
-  'blueprints': 'agents/blueprints.md',
-  'memory': 'agents/memory.md',
-  'agent-config': 'agent-config.md',
-  'agent-types': 'agent-types.md',
-  'version-control': 'version-control.md',
-  'running-agents': 'running-agents.md',
-  'agent-monitoring': 'agent-monitoring.md',
-  'agent-analytics': 'agent-analytics.md',
-  'mcp-servers': 'mcp-servers.md',
-  'ai-providers': 'ai-providers.md',
-  'external-services': 'external-services.md',
-  'workflow-generator': 'workflow-generator.md',
-  'virtual-computer': 'virtual-computer.md',
-  'task-execution': 'task-execution.md',
-  'voice-configuration': 'voice-configuration.md',
-  'communication-channels': 'communication-channels.md',
-  'phone-numbers': 'phone-numbers.md',
-  'api-overview': 'api-overview.md',
-  'api-endpoints': 'api-endpoints.md',
-  'api-examples': 'api-examples.md',
-  'agentic-thinking': 'agentic-thinking.md',
-  'custom-integrations': 'custom-integrations.md',
-  'deployment': 'deployment.md',
-  'security': 'security.md',
-  'user-guide': 'user-guide.md',
-  'api-guide': 'api-guide.md',
-  'playwright-deployment': 'playwright-deployment.md',
+/**
+ * Strip YAML frontmatter (---...---) from markdown content.
+ */
+function stripFrontmatter(content: string): string {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n/)
+  if (match) {
+    return content.slice(match[0].length)
+  }
+  return content
 }
 
-// Function to load documentation content from markdown files
-export const loadDocumentationContent = async (pageId: string): Promise<string> => {
+/**
+ * Clean MDX/JSX-style content for plain react-markdown rendering.
+ * Converts className="" to class="" and removes style={{...}} attributes
+ * so the markdown renderer doesn't choke on JSX syntax.
+ */
+function cleanMdxContent(content: string): string {
+  // Replace className="..." with class="..."
+  let cleaned = content.replace(/className="([^"]*)"/g, 'class="$1"')
+  // Remove style={{...}} inline JSX style objects (they break react-markdown)
+  cleaned = cleaned.replace(/\s*style=\{\{[^}]*\}\}/g, '')
+  return cleaned
+}
+
+/**
+ * Load documentation content from a markdown file by its filePath.
+ */
+export const loadDocumentationContent = async (
+  sectionId: string,
+  pageId: string
+): Promise<string> => {
   try {
-    const filename = FILE_MAPPINGS[pageId]
-    if (filename) {
-      const response = await fetch(`/docs/${filename}`)
+    // Find the page in sections
+    const section = DOCUMENTATION_SECTIONS.find((s) => s.id === sectionId)
+    const page = section?.pages.find((p) => p.id === pageId)
+
+    if (page?.filePath) {
+      const response = await fetch(`/docs/${page.filePath}`)
       if (response.ok) {
-        return await response.text()
+        let text = await response.text()
+        text = stripFrontmatter(text)
+        text = cleanMdxContent(text)
+        return text
       }
     }
 
-    // Fallback content
-    return `# ${pageId.replace('-', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-    
-This documentation page is currently being developed. Check back soon for more information.
+    // Try loading intro.md for the root welcome page
+    if (pageId === 'intro' || pageId === 'welcome') {
+      const response = await fetch('/docs/intro.md')
+      if (response.ok) {
+        let text = await response.text()
+        text = stripFrontmatter(text)
+        text = cleanMdxContent(text)
+        return text
+      }
+    }
 
-## Features
-
-- Comprehensive documentation coming soon
-- Detailed examples and tutorials
-- API references
-- Best practices and guidelines
-
-## Getting Help
-
-If you need immediate assistance, please:
-
-1. Check the [Chronos Studio Documentation](/)
-2. Create a [support ticket](/app/support)
-3. Join our [community forum](https://chronos.ai/community)
-
-`
+    return `# Page Not Found\n\nThe documentation page "${pageId}" could not be loaded. Please navigate back to the [Docs Hub](/docs).`
   } catch (error) {
     console.error('Error loading documentation content:', error)
-    return `# Documentation Unavailable
-    
-We're sorry, but we couldn't load the documentation for this page. Please try again later.
-
-If this issue persists, please contact our support team.`
+    return `# Documentation Unavailable\n\nWe couldn't load this page. Please try again or return to the [Docs Hub](/docs).`
   }
 }
 
-export const useDocumentationContent = (pageId: string) => {
+export const useDocumentationContent = (sectionId: string, pageId: string) => {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -292,7 +381,7 @@ export const useDocumentationContent = (pageId: string) => {
     const loadContent = async () => {
       try {
         setLoading(true)
-        const docContent = await loadDocumentationContent(pageId)
+        const docContent = await loadDocumentationContent(sectionId, pageId)
         setContent(docContent)
         setError(null)
       } catch (err) {
@@ -304,7 +393,7 @@ export const useDocumentationContent = (pageId: string) => {
     }
 
     loadContent()
-  }, [pageId])
+  }, [sectionId, pageId])
 
   return { content, loading, error }
 }

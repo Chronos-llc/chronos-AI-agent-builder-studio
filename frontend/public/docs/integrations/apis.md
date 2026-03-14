@@ -1,200 +1,124 @@
 ---
-sidebar_position: 2
-title: API Integrations
+sidebar_position: 3
+title: External APIs
 ---
 
-# API Integrations
+# External API Integrations
 
-Connect your agents to external APIs to extend their capabilities.
+Connect your agents to any REST API — internal services, third-party platforms, or custom backends.
 
-## Supported APIs
+## API Tool Definition
 
-### CRM Systems
+```python
+# tools/stripe_api.py
+from chronos.tools import tool
+from chronos.config import env
+import httpx
 
-| Provider | Status | Features |
-|----------|--------|----------|
-| Salesforce | Supported | Leads, contacts, opportunities |
-| HubSpot | Supported | Contacts, deals, tickets |
-| Pipedrive | Supported | Deals, contacts |
-| Zoho CRM | Supported | Full CRM operations |
+@tool(
+    name="get_customer_billing",
+    description="Look up a customer's billing information in Stripe"
+)
+async def get_customer_billing(customer_email: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            "https://api.stripe.com/v1/customers/search",
+            params={"query": f"email:'{customer_email}'"},
+            headers={"Authorization": f"Bearer {env('STRIPE_SECRET_KEY')}"}
+        )
+        data = response.json()
 
-### Helpdesk
+        if data["data"]:
+            customer = data["data"][0]
+            return {
+                "name": customer["name"],
+                "email": customer["email"],
+                "plan": customer.get("subscriptions", {}).get("data", [{}])[0].get("plan", {}).get("nickname", "None"),
+                "status": customer.get("subscriptions", {}).get("data", [{}])[0].get("status", "inactive")
+            }
+        return {"error": "Customer not found"}
+```
 
-| Provider | Status | Features |
-|----------|--------|----------|
-| Zendesk | Supported | Tickets, users |
-| Freshdesk | Supported | Tickets, contacts |
-| Intercom | Supported | Conversations, users |
-| HelpScout | Supported | Conversations |
+## OpenAPI / Swagger Import
 
-### E-commerce
-
-| Provider | Status | Features |
-|----------|--------|----------|
-| Shopify | Supported | Orders, products, customers |
-| Stripe | Supported | Payments, customers |
-| WooCommerce | Supported | Orders, products |
-
-### Communication
-
-| Provider | Status | Features |
-|----------|--------|----------|
-| Twilio | Supported | SMS, voice, WhatsApp |
-| SendGrid | Supported | Email sending |
-| Mailgun | Supported | Email sending |
-
-## Creating API Integrations
-
-### Via Dashboard
-
-1. Navigate to **Integrations**
-2. Click **Add Integration**
-3. Select service type
-4. Configure credentials
-5. Test connection
-
-### Via API
+Automatically generate tools from an OpenAPI spec:
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/integrations \
-  -H "Authorization: Bearer YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "salesforce",
-    "name": "Production Salesforce",
-    "credentials": {
-      "client_id": "YOUR_CLIENT_ID",
-      "client_secret": "YOUR_CLIENT_SECRET",
-      "instance_url": "https://yourcompany.salesforce.com"
-    }
-  }'
+chronos tools import-openapi https://api.example.com/openapi.json \
+  --name example-api \
+  --auth-header "Authorization: Bearer ${API_KEY}"
 ```
 
-## Using Integrations in Agents
-
-### Automatic Tool Generation
-
-```python
-# Integration automatically creates tools
-integration = client.integrations.get("salesforce")
-
-# Tools available to agents
-agent = client.agents.create(
-    name="Sales Agent",
-    config={
-        "tools": integration.available_tools
-    }
-)
-```
-
-### Direct API Calls
-
-```python
-# Query Salesforce
-result = integration.query(
-    "SELECT Id, Name FROM Account WHERE Type = 'Customer'"
-)
-
-# Create record
-account = integration.create("Account", {
-    "Name": "New Customer",
-    "Type": "Prospect"
-})
-```
+This generates tool definitions for every endpoint in the spec.
 
 ## Authentication Methods
 
-### OAuth 2.0
-```json
-{
-  "auth": {
-    "type": "oauth2",
-    "authorization_url": "https://service.com/oauth/authorize",
-    "token_url": "https://service.com/oauth/token",
-    "scopes": ["read", "write"]
-  }
-}
-```
-
 ### API Key
-```json
-{
-  "auth": {
-    "type": "api_key",
-    "header": "X-API-Key",
-    "key": "your_api_key"
-  }
-}
+```yaml
+tools:
+  - name: external_api
+    path: ./tools/api.py
+    auth:
+      type: api_key
+      header: X-API-Key
+      key: ${EXTERNAL_API_KEY}
 ```
 
-### Basic Auth
-```json
-{
-  "auth": {
-    "type": "basic",
-    "username": "user",
-    "password": "pass"
-  }
-}
+### OAuth 2.0
+```yaml
+tools:
+  - name: google_sheets
+    path: ./tools/sheets.py
+    auth:
+      type: oauth2
+      provider: google
+      scopes:
+        - https://www.googleapis.com/auth/spreadsheets
 ```
 
-## Rate Limiting
-
-Each integration handles rate limiting:
-
-```python
-# Automatic retry on rate limit
-integration.set_rate_limit(
-    requests_per_minute=60,
-    retry_on_limit=True,
-    backoff_strategy="exponential"
-)
+### Bearer Token
+```yaml
+tools:
+  - name: internal_api
+    path: ./tools/internal.py
+    auth:
+      type: bearer
+      token: ${INTERNAL_TOKEN}
 ```
 
-## Error Handling
+## Webhooks
 
-```python
-try:
-    result = integration.get("Contact", "contact_id")
-except IntegrationError as e:
-    if e.code == "RATE_LIMIT":
-        wait_and_retry(e.retry_after)
-    elif e.code == "AUTH_EXPIRED":
-        refresh_credentials()
-    else:
-        log_error(e)
+Receive events from external services:
+
+```yaml
+webhooks:
+  - name: stripe_events
+    path: /webhooks/stripe
+    secret: ${STRIPE_WEBHOOK_SECRET}
+    events:
+      - payment_intent.succeeded
+      - customer.subscription.updated
+    agent: billing-agent
 ```
 
-## Webhooks for Integration Events
+When a webhook fires, the specified agent processes the event.
 
-```bash
-chronos webhooks create \
-  --url https://yourapp.com/webhooks/integration \
-  --events "integration.synced", "integration.error"
+## Rate Limiting & Retries
+
+```yaml
+tools:
+  - name: external_api
+    path: ./tools/api.py
+    rate_limit: 100/min
+    retry:
+      max_attempts: 3
+      backoff: exponential
+      initial_delay: 1s
 ```
 
-## Custom API Integration
+---
 
-### HTTP Integration
+## Next Steps
 
-```python
-class CustomAPI(Integration):
-    name = "custom_api"
-    base_url = "https://api.yourservice.com"
-    
-    @property
-    def auth(self):
-        return {"Bearer": self.secrets["api_key"]}
-    
-    def get_customer(self, customer_id):
-        return self.get(f"/customers/{customer_id}")
-    
-    def create_order(self, data):
-        return self.post("/orders", data)
-```
-
-### Register Custom Integration
-
-```bash
-chronos integrations register custom_api.py
-```
+- [Messaging Platforms](./messaging) — Connect chat channels
+- [Databases](./databases) — Connect data stores

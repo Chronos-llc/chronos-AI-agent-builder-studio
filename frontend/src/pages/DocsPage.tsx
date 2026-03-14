@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Bot, Cable, MessagesSquare, Mic2, Sparkles, Workflow, BookOpen, Settings, Code, Clock, FileText } from 'lucide-react'
+import { ArrowRight, Bot, Cable, MessagesSquare, Mic2, Sparkles, Workflow, BookOpen, Settings, Code, Clock, FileText, Rocket, Layout, Map, HelpCircle } from 'lucide-react'
 import { ChronosLogo } from '../components/brand/ChronosLogo'
 import { Reveal } from '../components/Reveal'
 import { ComprehensiveFooter } from '../components/landing/ComprehensiveFooter'
@@ -14,22 +14,22 @@ const DocsPage: React.FC = () => {
   // Get section icon
   const getSectionIcon = (sectionId: string) => {
     switch (sectionId) {
-      case 'overview':
-        return <BookOpen className="h-5 w-5 text-cyan-200" />
-      case 'agent-builder':
-        return <Settings className="h-5 w-5 text-cyan-200" />
-      case 'agent-suite':
-        return <FileText className="h-5 w-5 text-cyan-200" />
-      case 'integrations':
-        return <Code className="h-5 w-5 text-cyan-200" />
-      case 'workflow':
-        return <Workflow className="h-5 w-5 text-cyan-200" />
-      case 'voice':
+      case 'getting-started':
+        return <Rocket className="h-5 w-5 text-cyan-200" />
+      case 'platform':
+        return <Layout className="h-5 w-5 text-cyan-200" />
+      case 'agents':
+        return <Bot className="h-5 w-5 text-cyan-200" />
+      case 'voice-ai':
         return <Mic2 className="h-5 w-5 text-cyan-200" />
-      case 'api':
+      case 'integrations':
+        return <Cable className="h-5 w-5 text-cyan-200" />
+      case 'api-reference':
         return <Code className="h-5 w-5 text-cyan-200" />
-      case 'advanced':
-        return <Clock className="h-5 w-5 text-cyan-200" />
+      case 'guides':
+        return <Map className="h-5 w-5 text-cyan-200" />
+      case 'resources':
+        return <HelpCircle className="h-5 w-5 text-cyan-200" />
       default:
         return <BookOpen className="h-5 w-5 text-cyan-200" />
     }

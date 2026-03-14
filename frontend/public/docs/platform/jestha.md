@@ -1,180 +1,103 @@
 ---
-sidebar_position: 3
-title: Jestha Platform
+sidebar_position: 4
+title: Jestha — Agentic Workspace
 ---
 
-# Jestha Platform
+# Jestha — Agentic Workspace
 
-Jestha is Chronos Studio's custom deployment infrastructure designed specifically for AI agent workloads.
+Jestha is the copilot and agentic workspace application built on top of Chronos Studio. It's where humans and AI agents collaborate in a unified environment.
 
-## Overview
+## What Is Jestha?
 
-Jestha provides:
-- Optimized GPU instances
-- Low-latency inference
-- Global deployment
-- Auto-scaling
+Think of Jestha as your AI-powered workspace — a place where you interact with multiple agents, delegate tasks, and orchestrate complex workflows through natural language.
 
-## Features
+## Key Features
 
-### Infrastructure
+### Unified Agent Access
+Interact with all your Chronos agents from a single workspace. No switching between apps or endpoints.
 
-- **GPU-Accelerated**: NVIDIA A100, H100 instances
-- **Global CDN**: 20+ regions worldwide
-- **99.99% Uptime**: SLA-backed availability
-- **Auto-scaling**: Dynamic capacity management
+```
+You → Jestha: "Research the top 5 competitors in the voice AI space
+               and create a comparison spreadsheet"
 
-### Security
-
-- **Encryption**: AES-256 at rest, TLS in transit
-- **Isolation**: Per-customer compute isolation
-- **Compliance**: SOC 2, GDPR, HIPAA options
-- **Audit Logs**: Full activity tracking
-
-## Deployment Options
-
-### Serverless
-
-```bash
-chronos deploy serverless \
-  --agent agent_123 \
-  --regions us-east,eu-west,ap-south
+Jestha → [Routes to research-agent] → [Routes to doc-agent]
+      → "Here's your competitor analysis. I've created a spreadsheet
+         with 5 companies compared across 12 dimensions."
 ```
 
-### Dedicated
+### Task Delegation
+Describe complex tasks in plain language. Jestha breaks them down and routes to the right agents.
 
-```bash
-chronos deploy dedicated \
-  --agent agent_123 \
-  --instance-type a100-80gb \
-  --min-replicas 2
+### Cross-Agent Orchestration
+Jestha coordinates multiple agents working together:
+
+```
+"Summarize yesterday's sales calls, identify action items,
+ and create follow-up email drafts for each prospect."
+
+→ voice-transcriber: Processes call recordings
+→ summarizer: Creates meeting summaries
+→ action-extractor: Identifies follow-ups
+→ email-drafter: Generates personalized emails
+→ Jestha: Presents everything in one organized view
 ```
 
-### Edge
+### Workspace Features
 
-```bash
-chronos deploy edge \
-  --agent agent_123 \
-  --edge-locations 10
+- **Conversations** — Persistent chat threads with context
+- **Files & Documents** — Share and process files with agents
+- **Workflows** — Save multi-step processes as reusable workflows
+- **Notifications** — Get updates on agent tasks and completions
+- **Team Collaboration** — Share agents and workflows with your team
+
+## Getting Started with Jestha
+
+### 1. Open the Workspace
+
+Navigate to [jestha.mohex.org](https://jestha.mohex.org) or use the desktop app.
+
+### 2. Connect Your Agents
+
+All agents deployed on Chronos Studio are automatically available in Jestha. You can also connect external agents via MCP.
+
+### 3. Start a Conversation
+
+Just type naturally:
+
+- "Help me write a blog post about AI agents"
+- "Analyze this CSV and create a chart"
+- "Schedule a meeting with the engineering team for next Tuesday"
+- "What did we discuss about the product roadmap last week?"
+
+### 4. Create Workflows
+
+Save frequently used multi-step processes:
+
+```
+Workflow: "Daily Briefing"
+Steps:
+  1. Summarize unread emails
+  2. List today's calendar events
+  3. Check project status in Linear
+  4. Generate a prioritized task list
+Trigger: Every day at 8:00 AM
 ```
 
-## Configuration
+## Jestha vs. Direct Agent Access
 
-### Resources
+| Feature | Direct API/Chat | Jestha Workspace |
+|---------|----------------|------------------|
+| Single agent interaction | ✓ | ✓ |
+| Multi-agent orchestration | Manual | Automatic |
+| Persistent context | Per agent | Across all agents |
+| File handling | Limited | Full support |
+| Saved workflows | ✗ | ✓ |
+| Team collaboration | ✗ | ✓ |
 
-```yaml
-resources:
-  cpu: 4
-  memory: 16GB
-  gpu: 1xA100
-  gpu_memory: 80GB
-```
+---
 
-### Scaling
+## Next Steps
 
-```yaml
-scaling:
-  min_replicas: 1
-  max_replicas: 10
-  target_cpu: 70
-  target_memory: 80
-  scale_up_cooldown: 60
-  scale_down_cooldown: 300
-```
-
-### Health Checks
-
-```yaml
-health:
-  liveness_probe:
-    path: /health
-    interval: 30
-    timeout: 5
-    failure_threshold: 3
-    
-  readiness_probe:
-    path: /ready
-    interval: 10
-    timeout: 3
-    failure_threshold: 2
-```
-
-## Regions
-
-### Available Regions
-
-| Region | Location | Latency (avg) |
-|--------|----------|---------------|
-| us-east-1 | Virginia | 20ms |
-| us-west-2 | Oregon | 45ms |
-| eu-west-1 | Ireland | 80ms |
-| ap-southeast-1 | Singapore | 120ms |
-| ap-northeast-1 | Tokyo | 100ms |
-
-### Multi-Region
-
-```bash
-# Deploy to multiple regions
-chronos deploy multi-region \
-  --agent agent_123 \
-  --primary us-east-1 \
-  --secondary eu-west-1,ap-southeast-1
-```
-
-## Monitoring
-
-### Metrics
-
-```bash
-# View deployment metrics
-chronos metrics deployment agent_123 \
-  --metrics requests,cpu,memory,latency
-```
-
-### Logs
-
-```bash
-# Stream logs
-chronos logs agent_123 --follow
-
-# Search logs
-chronos logs agent_123 --search "error"
-```
-
-## Cost Management
-
-### Pricing
-
-| Tier | Price/Month |
-|------|-------------|
-| Starter | $99 |
-| Pro | $499 |
-| Enterprise | Custom |
-
-### Optimization
-
-```bash
-# Enable cost optimization
-chronos deploy optimize \
-  --agent agent_123 \
-  --strategy cost \
-  --max_budget 500
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**High Latency**
-- Check region selection
-- Enable caching
-- Scale replicas
-
-**Out of Memory**
-- Increase memory allocation
-- Optimize agent configuration
-
-**Deployment Failed**
-- Check resource limits
-- Review logs
-- Verify configuration
+- [Creating Agents](../agents/creating-agents) — Build agents for your workspace
+- [Integrations](../integrations/overview) — Connect external tools
+- [Guides](../guides/workflow-automation) — Real-world workflow examples
