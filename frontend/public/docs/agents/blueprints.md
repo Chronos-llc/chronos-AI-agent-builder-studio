@@ -1,235 +1,165 @@
 ---
-sidebar_position: 2
-title: Agent Blueprints
+sidebar_position: 5
+title: Blueprints
 ---
 
 # Agent Blueprints
 
-Agent blueprints are pre-configured agent templates that provide a starting point for common use cases. They include predefined configurations, tools, prompts, and behaviors that you can customize for your specific needs.
+Blueprints are reusable agent templates — snapshot an agent's configuration, share it, and let others clone and customize it.
 
-## Voice Configuration
+## What's in a Blueprint?
 
-Blueprints include built-in voice capabilities with configurable settings:
+A blueprint captures:
+- Agent configuration (model, temperature, tokens)
+- System prompt
+- Tool definitions (built-in + custom tool interfaces)
+- Memory settings
+- Channel configurations
+- Guardrails
 
-```yaml
-voice:
-  provider: "elevenlabs"  # or "cartesia", "custom"
-  voice_id: "rachel"
-  model: "eleven_multilingual_v2"
-  stability: 0.5
-  similarity_boost: 0.75
-  style: 0.5
-  speaker_boost: true
-  latency_optimization: 4
+It does **not** capture:
+- Memory data (conversations, stored knowledge)
+- Environment variables / secrets
+- Deployment state
+
+## Using Blueprints
+
+### Browse Community Blueprints
+
+```bash
+chronos blueprints list
+
+# Filter by category
+chronos blueprints list --category support
+chronos blueprints list --category voice
+chronos blueprints list --category automation
 ```
 
-### Voice Providers
+### Create from a Blueprint
 
-| Provider | Languages | Features |
-|----------|-----------|----------|
-| ElevenLabs | 29+ | Real-time, emotion control |
-| Cartesia | 80+ | Ultra-low latency |
-| Custom | Any | Full control |
+```bash
+chronos create --from blueprint:customer-support-pro
+```
 
-### Voice Settings
+### Via Dashboard
 
-- **stability**: Controls consistency (0-1)
-- **similarity_boost**: How closely to match voice (0-1)
-- **style**: Emotional range (0-1)
-- **latency_optimization**: 0-10 scale for speed vs quality
+1. Navigate to **Agents → New → From Blueprint**
+2. Browse or search blueprints
+3. Preview the configuration
+4. Click **Use This Blueprint**
+5. Customize and deploy
+
+## Creating Blueprints
+
+### Save an Existing Agent as Blueprint
+
+```bash
+# Save your agent as a blueprint
+chronos blueprint save my-agent \
+  --name "E-commerce Support Agent" \
+  --description "Full-featured support agent with order tracking, refunds, and FAQ" \
+  --category support \
+  --tags ecommerce,support,orders
+```
+
+### Create a Blueprint from YAML
+
+```yaml
+# blueprint.yaml
+blueprint:
+  name: "Voice Receptionist"
+  description: "Professional voice agent for business phone lines"
+  category: voice
+  tags: [voice, telephony, receptionist]
+  author: chronos-studio
+
+agent:
+  model: gemini-2.0-flash
+  temperature: 0.5
+  system_prompt: |
+    You are a professional receptionist for {{company_name}}.
+    You answer calls, take messages, transfer to departments,
+    and schedule appointments. Be warm, professional, and efficient.
+
+  variables:
+    - name: company_name
+      description: Your company name
+      required: true
+    - name: departments
+      description: List of departments for call routing
+      required: true
+
+  tools:
+    - name: transfer_call
+      builtin: true
+    - name: schedule_appointment
+      builtin: true
+    - name: take_message
+      builtin: true
+
+  voice:
+    provider: elevenlabs
+    voice_id: professional-female-1
+    language: en
+    speed: 1.0
+
+  channels:
+    - type: voice
+      config:
+        phone_number: ${PHONE_NUMBER}
+```
 
 ## Blueprint Variables
 
-Blueprints support dynamic variables that can be customized at runtime:
-
-```yaml
-variables:
-  company_name:
-    type: string
-    required: true
-    description: "Your company name"
-  support_email:
-    type: string
-    required: true
-  max_ticket_age_days:
-    type: number
-    default: 30
-  escalation_threshold:
-    type: number
-    default: 3
-```
-
-### Variable Types
-
-- **string**: Text values
-- **number**: Numeric values
-- **boolean**: True/false flags
-- **enum**: Predefined options
-- **secret**: Encrypted sensitive values
-
-### Using Variables in Prompts
+Use `{{variable}}` for customizable fields:
 
 ```yaml
 system_prompt: |
-  You are a support agent for {{company_name}}.
-  Contact: {{support_email}}
-  Handle tickets older than {{max_ticket_age_days}} days as priority.
+  You work for {{company_name}} in the {{industry}} industry.
+  Your primary language is {{language}}.
+
+variables:
+  - name: company_name
+    description: Company name
+    required: true
+  - name: industry
+    description: Industry vertical
+    default: "technology"
+  - name: language
+    description: Primary response language
+    default: "English"
 ```
+
+When someone uses the blueprint, they're prompted to fill in variables.
 
 ## Sharing Blueprints
 
-### Export Command
-
 ```bash
-chronos blueprint export customer-support-agent \
-  --output ./my-blueprint.yaml
-```
+# Publish to the Chronos community
+chronos blueprint publish my-blueprint --public
 
-### Import Command
+# Share privately (generates a link)
+chronos blueprint share my-blueprint
+# → https://app.mohex.org/blueprints/abc123
 
-```bash
-chronos blueprint import ./my-blueprint.yaml
-```
-
-### Share via Registry
-
-```bash
-# Login to blueprint registry
-chronos login
-
-# Publish to organization
-chronos blueprint publish customer-support \
-  --org my-company \
-  --visibility private
-
-# Publish publicly
-chronos blueprint publish customer-support \
-  --visibility public
-```
-
-### Clone a Blueprint
-
-```bash
-chronos blueprint clone customer-support my-custom-support
+# Export as file
+chronos blueprint export my-blueprint -o blueprint.yaml
 ```
 
 ## Popular Blueprints
 
-The following blueprints are available from the manifest:
+| Blueprint | Category | Description |
+|-----------|----------|-------------|
+| `customer-support-pro` | Support | Full CS agent with ticket management |
+| `voice-receptionist` | Voice | Business phone line receptionist |
+| `research-assistant` | Productivity | Web research + knowledge base |
+| `sales-outreach` | Sales | Lead qualification + email drafts |
+| `code-reviewer` | Dev Tools | PR reviews and code analysis |
+| `social-media-manager` | Marketing | Content creation + scheduling |
 
-| Blueprint ID | Name | Category | Use Case | Popularity |
-|--------------|------|----------|----------|------------|
-| customer-support | Customer Support Agent | Support | Helpdesk, FAQ, ticket handling | 98% |
-| sales-assistant | Sales Assistant | Sales | Lead qualification, product recommendations | 95% |
-| voice-receptionist | Voice Receptionist | Voice | Call handling, appointment scheduling | 92% |
-| data-analyst | Data Analysis Agent | Analytics | SQL queries, visualizations, reports | 89% |
-| research-assistant | Research Assistant | Research | Web search, summarization, citations | 87% |
-| workflow-automation | Workflow Automation | Operations | Task orchestration, approvals | 85% |
-| onboarding-agent | User Onboarding | Customer Success | Tutorials, walkthroughs | 83% |
-| scheduler | Meeting Scheduler | Productivity | Calendar management, booking | 80% |
-| hr-assistant | HR Assistant | HR | Policy questions, benefits info | 78% |
-| it-helpdesk | IT Helpdesk | IT | Technical support, troubleshooting | 76% |
-
-## Using Blueprints
-
-### Via Dashboard
-
-1. Navigate to the Agent Builder
-2. Click "Create New Agent"
-3. Browse the blueprint gallery
-4. Select a blueprint
-5. Configure variables
-6. Customize settings
-7. Deploy
-
-### Via CLI
-
-```bash
-chronos agents create \
-  --blueprint customer-support \
-  --name "My Support Agent" \
-  --variables company_name="Acme Corp" \
-  --variables support_email="support@acme.com"
-```
-
-### Via API
-
-```bash
-POST /api/agents
-{
-  "blueprint": "customer-support",
-  "name": "My Support Agent",
-  "variables": {
-    "company_name": "Acme Corp",
-    "support_email": "support@acme.com"
-  }
-}
-```
-
-## Customizing Blueprints
-
-Blueprints serve as starting points. You can customize:
-
-- **System Prompts**: Modify agent behavior and personality
-- **Tools**: Add or remove capabilities
-- **Memory Settings**: Configure persistence and context
-- **Integrations**: Connect to your services
-- **UI/UX**: Customize chat interfaces and voice settings
-- **Voice Config**: Adjust voice model and parameters
-
-## Creating Custom Blueprints
-
-Save your agent configurations as reusable blueprints:
-
-```bash
-# Export current agent as blueprint
-chronos agents export agent_abc123 \
-  --name "My Custom Blueprint" \
-  --description "Custom agent template" \
-  --output ./blueprint.yaml
-```
-
-Or via API:
-
-```bash
-POST /api/blueprints
-{
-  "name": "My Custom Blueprint",
-  "description": "Custom agent template",
-  "config": { ... }
-}
-```
-
-Blueprints can be shared across teams or kept private.
-
-## Blueprint Manifest
-
-The blueprint manifest (`blueprints.yaml`) defines available blueprints:
-
-```yaml
-version: "1.0"
-blueprints:
-  - id: customer-support
-    name: Customer Support Agent
-    description: Comprehensive support agent
-    category: support
-    tags: [support, helpdesk, faq]
-    variables:
-      - name: company_name
-        type: string
-        required: true
-      - name: max_ticket_age_days
-        type: number
-        default: 30
-    voice_enabled: true
-    tools:
-      - search_knowledge_base
-      - create_ticket
-      - send_email
-```
+---
 
 ## Next Steps
 
-- Learn about [Creating Agents](/docs/agents/creating-agents)
-- Explore [Agent Memory](/docs/agents/memory)
-- Configure [Tools and Integrations](/docs/agents/tools)
+- [Multi-Agent Systems](./multi-agent) — Combine multiple agents
+- [Spark](../platform/spark) — Generate blueprints from natural language

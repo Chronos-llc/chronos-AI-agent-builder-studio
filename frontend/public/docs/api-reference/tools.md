@@ -39,3 +39,73 @@ GET /v1/agents/:agent_id/tools
   ]
 }
 ```
+
+## Add Tool to Agent
+
+```
+POST /v1/agents/:agent_id/tools
+```
+
+```bash
+curl -X POST https://api.mohex.org/v1/agents/agt_abc123/tools \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "send_notification",
+    "description": "Send a push notification to a user",
+    "parameters": {
+      "user_id": {"type": "string", "required": true},
+      "title": {"type": "string", "required": true},
+      "body": {"type": "string", "required": true}
+    },
+    "webhook_url": "https://your-api.com/notifications"
+  }'
+```
+
+## Execute Tool Directly
+
+```
+POST /v1/agents/:agent_id/tools/:tool_name/execute
+```
+
+```bash
+curl -X POST https://api.mohex.org/v1/agents/agt_abc123/tools/web_search/execute \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "AI agent market size 2026"}'
+```
+
+## Remove Tool
+
+```
+DELETE /v1/agents/:agent_id/tools/:tool_name
+```
+
+## Tool Execution Logs
+
+```
+GET /v1/agents/:agent_id/tools/logs?period=24h
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "tool": "web_search",
+      "status": "success",
+      "duration_ms": 1200,
+      "input": {"query": "weather in Lagos"},
+      "conversation_id": "conv_xyz",
+      "timestamp": "2026-03-09T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## Next Steps
+
+- [Webhooks](./webhooks) — Event subscriptions

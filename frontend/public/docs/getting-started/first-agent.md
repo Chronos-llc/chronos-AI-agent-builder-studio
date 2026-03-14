@@ -1,220 +1,160 @@
 ---
 sidebar_position: 3
-title: Build Your First Agent
+title: Your First Agent
 ---
 
 # Build Your First Agent
 
-This step-by-step tutorial guides you through creating a functional AI agent using Chronos Studio. By the end, you'll have a working customer support agent ready to handle inquiries.
+This guide walks you through creating a functional AI agent from scratch — with custom tools, memory, and a connected integration.
 
-## Prerequisites
+## What We'll Build
 
-- Chronos Studio account
-- API key configured
-- SDK or CLI installed
+A **personal research assistant** that can:
+- Search the web for information
+- Remember past conversations
+- Save notes to a connected database
+- Respond via Telegram or WhatsApp
 
-## Step 1: Define Your Agent's Purpose
+## Step 1: Scaffold the Project
 
-Before coding, define your agent:
-- **Role**: Customer Support Agent
-- **Capabilities**: Answer product questions, troubleshoot issues, create tickets
-- **Personality**: Friendly, professional, helpful
+```bash
+chronos init research-assistant --template blank
+cd research-assistant
+```
 
-## Step 2: Create the Agent
+## Step 2: Define the Agent
 
-### Using the Dashboard
-
-1. Log in to Chronos Studio
-2. Navigate to **Agents** → **Create New**
-3. Fill in the configuration:
+Edit `agent.yaml`:
 
 ```yaml
-name: Support Agent
-type: conversational
-description: Handles customer support inquiries
+name: research-assistant
+description: A personal research assistant with web search and memory
+version: 1.0.0
 
-config:
-  system_prompt: |
-    You are a customer support agent for Acme Products.
-    You are friendly, professional, and concise.
-    Always try to resolve issues on the first contact.
-    If you cannot help, escalate to a human agent.
-    
-  temperature: 0.7
-  max_tokens: 1024
+model: gemini-2.0-flash
+temperature: 0.7
+max_tokens: 4096
+
+system_prompt: |
+  You are a helpful research assistant. You search the web for accurate,
+  up-to-date information and provide concise, well-sourced answers.
+  You remember previous conversations and build on them.
+  Always cite your sources with links.
+
+memory:
+  type: persistent
+  ttl: 30d                    # Remember conversations for 30 days
+  max_context_messages: 50    # Include last 50 messages in context
+
+tools:
+  - name: web_search
+    builtin: true
+    config:
+      max_results: 5
+  - name: save_note
+    path: ./tools/save_note.py
+  - name: recall_notes
+    path: ./tools/recall_notes.py
+
+channels:
+  - type: api                 # Always available via REST API
+  - type: telegram            # Connect to Telegram
+    config:
+      bot_token: ${TELEGRAM_BOT_TOKEN}
 ```
 
-### Using the API
+## Step 3: Create Custom Tools
+
+### Save Note Tool
+
+Create `tools/save_note.py`:
+
+```python
+from chronos.tools import tool
+
+@tool(
+    name="save_note",
+    description="Save a research note for later reference"
+)
+async def save_note(title: str, content: str, tags: list[str] = []) -> str:
+    """Save a note to the agent's knowledge base."""
+    # Chronos handles storage automatically
+    return f"Note saved: {title}"
+```
+
+### Recall Notes Tool
+
+Create `tools/recall_notes.py`:
+
+```python
+from chronos.tools import tool
+
+@tool(
+    name="recall_notes",
+    description="Search and retrieve previously saved notes"
+)
+async def recall_notes(query: str, limit: int = 5) -> list[dict]:
+    """Search saved notes by semantic similarity."""
+    # Chronos provides built-in vector search over saved notes
+    return []  # Results populated by the platform
+```
+
+## Step 4: Test Locally
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/agents \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+chronos dev
+```
+
+```
+🤖 research-assistant is running locally
+> Search for the latest developments in AI agent frameworks in 2026
+Agent: I'll search for the latest information...
+[tool:web_search] Searching "AI agent frameworks 2026 developments"
+
+Here are the key developments in AI agent frameworks in 2026:
+
+1. **CrewAI** raised $18M and launched multi-agent orchestration...
+2. **LangGraph** introduced stateful agent workflows...
+3. **Google ADK** became the standard for Gemini-based agents...
+
+Sources:
+- [TechCrunch: AI Agent Landscape 2026](https://techcrunch.com/...)
+- [The Information: Agent Wars](https://theinformation.com/...)
+
+> Save that as a note tagged "market-research"
+Agent: [tool:save_note] Saving note...
+Note saved: "AI Agent Frameworks 2026" with tags: market-research
+```
+
+## Step 5: Deploy to Production
+
+```bash
+chronos deploy --env production
+```
+
+Output:
+
+```
+✓ Agent "research-assistant" deployed
+✓ API: https://api.mohex.org/agents/research-assistant
+✓ Telegram: Connected (@your_bot_username)
+✓ Memory: Persistent store initialized
+```
+
+## Step 6: Test the API
+
+```bash
+curl -X POST https://api.mohex.org/agents/research-assistant/chat \
+  -H "Authorization: Bearer $CHRONOS_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Support Agent",
-    "type": "conversational",
-    "config": {
-      "system_prompt": "You are a customer support agent for Acme Products...",
-      "temperature": 0.7
-    }
-  }'
+  -d '{"message": "What did we discuss about AI frameworks?"}'
 ```
 
-## Step 3: Add Tools
+---
 
-Expand your agent's capabilities with tools:
+## What's Next?
 
-### Web Search
-```bash
-chronos tools enable web_search --agent agent_abc123
-```
-
-### Custom Tool: Order Lookup
-Create a custom tool to look up orders:
-
-```python
-from chronos.tools import Tool
-
-class OrderLookup(Tool):
-    name = "lookup_order"
-    description = "Look up customer order status"
-    
-    parameters = {
-        "order_id": {"type": "string", "required": True}
-    }
-    
-    def execute(self, order_id):
-        # Connect to your order system
-        order = database.orders.find(order_id)
-        return {
-            "status": order.status,
-            "items": order.items,
-            "shipping": order.shipping_info
-        }
-```
-
-Register the tool:
-```bash
-chronos tools register order_lookup.py --agent agent_abc123
-```
-
-## Step 4: Configure Memory
-
-Enable conversation history:
-
-```json
-{
-  "memory": {
-    "type": "conversation",
-    "max_history": 50
-  }
-}
-```
-
-For persistent user memory:
-
-```json
-{
-  "memory": {
-    "type": "persistent",
-    "storage": "database"
-  }
-}
-```
-
-## Step 5: Test Your Agent
-
-### In the Dashboard
-Use the built-in chat to test:
-1. Open your agent
-2. Click "Test Chat"
-3. Try various queries
-
-### Programmatically
-```python
-from chronos import Chronos
-
-client = Chronos(api_key="sk_live_...")
-
-# Test conversation
-response = client.agents.chat(
-    agent_id="agent_abc123",
-    message="I need help with my order #12345"
-)
-
-print(response.message)
-```
-
-## Step 6: Deploy
-
-Once testing is complete, deploy to production:
-
-```bash
-chronos agent deploy agent_abc123 --env production
-```
-
-Get your production endpoint:
-```bash
-chronos agent info agent_abc123
-# endpoint: https://api.chronos.studio/v1/agents/agent_abc123
-```
-
-## Complete Example
-
-```python
-from chronos import Chronos
-from chronos.tools import register_tool
-
-# Initialize
-client = Chronos(api_key="sk_live_...")
-
-# Register custom tool
-@register_tool
-def create_support_ticket(issue: str, priority: str = "medium"):
-    """Create a support ticket in the ticketing system."""
-    ticket = {
-        "subject": issue,
-        "priority": priority,
-        "status": "open"
-    }
-    return ticket
-
-# Create agent with tools
-agent = client.agents.create(
-    name="Support Agent",
-    type="conversational",
-    config={
-        "system_prompt": """You are a support agent for Acme.
-        Use create_support_ticket when users report issues.""",
-        "temperature": 0.7,
-        "tools": ["web_search", "create_support_ticket"]
-    }
-)
-
-# Test
-response = client.agents.chat(
-    agent_id=agent.id,
-    message="My account is locked and I can't access my orders!"
-)
-
-print(response.message)
-# I'll help you with that! Let me create a support ticket...
-```
-
-## Monitoring
-
-Track your agent's performance:
-
-```bash
-# View statistics
-chronos agent stats agent_abc123
-
-# View recent conversations
-chronos logs agent_abc123 --lines 50
-```
-
-## Next Steps
-
-- [Add Voice Capabilities](/docs/voice-ai/getting-started)
-- [Configure Webhooks](/docs/api-reference/webhooks)
-- [Set Up Multi-Agent System](/docs/agents/multi-agent)
+- [Agent Tools](../agents/tools) — Build powerful custom tools
+- [Memory Systems](../agents/memory) — Deep dive into agent memory
+- [Voice AI](../voice-ai/getting-started) — Add voice to your agent
+- [Blueprints](../agents/blueprints) — Save and share agent templates

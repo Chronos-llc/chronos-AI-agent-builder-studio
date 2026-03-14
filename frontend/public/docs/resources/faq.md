@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 title: FAQ
 ---
 
@@ -8,84 +8,67 @@ title: FAQ
 ## General
 
 ### What is Chronos Studio?
-Chronos Studio is an AI agent platform that helps developers build, deploy, and manage intelligent agents for customer service, sales, and automation use cases.
+Chronos Studio is a full-stack AI agent platform — a unified foundation for building both general-purpose AI agents and voice-enabled autonomous systems in a single, cohesive stack.
 
-### How do I get started?
-1. Sign up at https://chronos.studio
-2. Create your first agent
-3. Configure tools and integrations
-4. Deploy and monitor
+### Who is Chronos for?
+- **Individuals & Creators** — Build personal AI sidekicks for workflow automation
+- **Developers** — Create custom agent architectures with full programmatic control
+- **Enterprises** — Deploy scalable voice agents for customer support and sales
 
-### What languages/models do you support?
-- GPT-4, GPT-3.5
-- Claude
-- Custom fine-tuned models via Spark
+### Do I need coding experience?
+No. Chronos offers no-code (Dashboard + Spark), low-code (YAML configs), and pro-code (SDKs) interfaces to suit every skill level.
 
-### What is the pricing?
-- Free tier: 1,000 messages/month
-- Pro: $99/month
-- Enterprise: Custom pricing
+### What LLMs does Chronos support?
+Chronos supports Google Gemini, OpenAI GPT, Anthropic Claude, and open-source models (Llama, Mixtral) via compatible API endpoints.
 
 ## Agents
 
-### How do I create an agent?
-Use the dashboard, CLI, or API:
-```bash
-chronos agent create --name "My Agent" --type conversational
-```
+### How many agents can I create?
+Depends on your plan. Free plans include 3 agents, Pro plans include unlimited agents.
 
-### Can I customize agent behavior?
-Yes, via system prompts, temperature settings, and custom tools.
+### Can agents talk to each other?
+Yes. The Multi-Agent OS enables agents to collaborate in coordinator, pipeline, and parallel patterns.
 
-### How does memory work?
-Agents can use conversation memory (session-based) or persistent memory (across sessions).
+### Can I use my own LLM or fine-tuned model?
+Yes. Any model with an OpenAI-compatible API can be connected.
 
-### Can I use my own model?
-Yes, via Spark platform for fine-tuning and deployment.
+## Voice
 
-## Voice AI
+### What's the voice latency?
+Sub-second — typically 500-800ms end-to-end (speech-to-text → LLM → text-to-speech).
 
-### How does voice work?
-Voice agents use speech-to-text for input and text-to-speech for output, with the agent processing中间.
+### Can I use my own phone number?
+Yes. Bring your existing number via SIP trunk or get new numbers directly from Chronos.
 
-### What languages are supported?
-English, Spanish, French, German, Japanese, and more.
+### Is call recording GDPR/CCPA compliant?
+Yes. Recordings include PII redaction, configurable retention, and consent management.
 
-### Can I use my own voice?
-Yes, upload custom voice samples for synthesis.
+## Pricing
 
-### How is call quality?
-High-quality audio with echo cancellation and noise reduction.
+### Is there a free tier?
+Yes. The free plan includes 3 agents, 1,000 messages/month, and API access.
 
-## Integrations
+### How is voice priced?
+Voice is priced per minute of call time, varying by provider and quality level.
 
-### What integrations are available?
-CRM, helpdesk, database, messaging platforms, and more. See the integrations section.
-
-### Can I build custom integrations?
-Yes, using MCP or custom tool definitions.
-
-### How do I connect to my database?
-Configure via dashboard or configuration file with credentials.
+### Do you offer enterprise pricing?
+Yes. Contact sales@mohex.org for custom enterprise plans with SLA guarantees.
 
 ## Security
 
-### Is my data secure?
-Yes, encryption at rest and in transit, SOC 2 certified.
-
 ### Where is data stored?
-US, EU, or custom regions available.
+On Google Cloud Platform (GCP) with encrypted storage. Enterprise plans support custom regions.
 
-### Do you support HIPAA?
-Yes, HIPAA-compliant options available for Enterprise.
+### Is data used for training?
+No. Your conversations and data are never used for model training.
 
-## Billing
+### Do you support SSO?
+Yes. Enterprise plans include SAML/OIDC single sign-on.
 
-### How does billing work?
-Monthly subscription based on plan tier.
+---
 
-### Can I change plans?
-Yes, upgrade or downgrade anytime.
+## Still have questions?
 
-### Do you offer annual billing?
-Yes, with 20% discount.
+- **Email**: support@mohex.org
+- **Slack Community**: [Join here](https://community.mohex.org)
+- **GitHub**: [github.com/chronos-studio](https://github.com/chronos-studio)

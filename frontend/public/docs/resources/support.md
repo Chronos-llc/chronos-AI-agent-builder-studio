@@ -1,60 +1,65 @@
 ---
 sidebar_position: 4
-title: Support Resources
+title: Support
 ---
 
-# Support Resources
+# Support
 
-## Getting Help
+Get help with Chronos Studio.
 
-### Documentation
-- [Main Docs](/docs/intro)
-- [API Reference](/docs/api-reference/overview)
-- [Guides](/docs/guides/customer-support-bot)
+## Community
 
-### Community
-- **Slack**: Join our community Slack
-- **Forum**: [community.chronos.studio](https://community.chronos.studio)
-- **GitHub**: [github.com/chronos](https://github.com/chronos)
+### Slack Community
+Join our Slack workspace for discussions, help, and feature requests:
+- **[Join Community Slack](https://community.mohex.org)**
 
-## Contact Support
+### GitHub
+- **[GitHub Issues](https://github.com/chronos-studio/issues)** — Bug reports and feature requests
+- **[GitHub Discussions](https://github.com/chronos-studio/discussions)** — Questions and community help
+
+## Direct Support
 
 ### Email
-support@chronos.studio
+- **General support**: support@mohex.org
+- **Sales inquiries**: sales@mohex.org
+- **Security issues**: security@mohex.org
 
-### Enterprise
-enterprise@chronos.studio
+### Enterprise Support
+Enterprise plans include:
+- Dedicated account manager
+- Priority response (< 1 hour SLA)
+- Private Slack channel with the Chronos team
+- Quarterly business reviews
 
-### Response Times
-- Free: 48 hours
-- Pro: 4 hours
-- Enterprise: 1 hour
+## Self-Help Resources
 
-## Status
+| Resource | Description |
+|----------|-------------|
+| [Getting Started](../getting-started/quickstart) | Step-by-step setup guide |
+| [FAQ](./faq) | Common questions answered |
+| [API Reference](../api-reference/overview) | Full API documentation |
+| [Guides](../guides/customer-support-bot) | Real-world tutorials |
+| [Changelog](./changelog) | Latest updates and releases |
 
-Check [status.chronos.studio](https://status.chronos.studio) for system status.
+## Status Page
 
-## Troubleshooting
+Check platform status and uptime:
+- **[status.mohex.org](https://status.mohex.org)**
 
-### Common Issues
+## Report a Bug
 
-**API Errors**
-- Verify API key is valid
-- Check rate limits
-- Ensure proper headers
+When reporting a bug, please include:
+1. **What happened** — Describe the issue
+2. **What you expected** — What should have happened
+3. **Steps to reproduce** — How to trigger the bug
+4. **Environment** — CLI version, OS, browser
+5. **Logs** — Relevant error messages or screenshots
 
-**Agent Not Responding**
-- Check agent status
-- Review logs
-- Verify configuration
+```bash
+# Get diagnostic info
+chronos doctor --full > diagnostics.txt
+```
 
-**Voice Call Issues**
-- Check network quality
-- Verify telephony setup
-- Review call logs
+---
 
-## Resources
-
-- [Quick Start Guide](/docs/getting-started/quickstart)
-- [API Reference](/docs/api-reference/overview)
-- [SDK Documentation](/docs/getting-started/installation)
+Thank you for using Chronos Studio. We're here to help! 🚀

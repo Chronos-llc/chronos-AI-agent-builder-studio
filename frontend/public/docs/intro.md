@@ -6,53 +6,91 @@ title: Welcome to Chronos Studio
 
 # Welcome to Chronos Studio
 
-Chronos Studio is a comprehensive AI agent platform that empowers developers and businesses to build, deploy, and manage intelligent agents for a wide range of use cases. Whether you need conversational AI assistants, autonomous task executors, or voice-enabled agents, Chronos Studio provides the infrastructure and tools to bring your AI vision to life.
+**The Execution Layer for Next-Generation AI Agents**
 
-## Platform Overview
+Chronos Studio is a full-stack AI agent platform — a unified foundation for building both general-purpose AI agents and voice-enabled autonomous systems in a single, cohesive stack.
 
-Chronos Studio offers two primary categories of AI agents:
+---
 
-### General AI Agents
-Our general agent framework enables you to create autonomous agents that can reason, plan, and execute tasks across various domains. These agents can be equipped with custom tools, integrate with external APIs, maintain long-term memory, and work collaboratively in multi-agent systems.
+## What You Can Build
 
-### Voice AI
-Chronos Studio's Voice AI capabilities allow you to build sophisticated voice-enabled agents capable of natural conversational interactions. With support for real-time speech processing, emotion detection, and telephony integration, you can create voice agents for customer service, sales, telehealth, and more.
+<div className="row">
+<div className="col col--6">
 
-## Key Features
+### 🧠 General AI Agents
+Build intelligent agents with custom tools, persistent memory, and autonomous decision-making. Connect to APIs, databases, and social platforms.
 
-- **Agent Builder**: Visual and code-based interfaces for creating intelligent agents
-- **Tool Integration**: Connect agents to external APIs, databases, and services
-- **Memory Management**: Persistent conversation history and contextual awareness
-- **Multi-Agent Systems**: Orchestrate multiple agents working together
-- **Voice Capabilities**: Real-time voice processing with emotion detection
-- **Telephony**: Direct integration with phone systems for voice interactions
-- **Analytics**: Comprehensive monitoring and performance insights
-- **White-Label**: Fully customizable branding and deployment options
+[Get Started →](./agents/overview)
 
-## Getting Started
+</div>
+<div className="col col--6">
 
-New to Chronos Studio? Here's how to begin:
+### 🎙️ Voice AI Agents
+Deploy real-time voice agents with sub-second latency, emotional awareness, and human-like vocal fidelity.
 
-1. **Installation**: Set up your development environment with our [Installation Guide](/docs/getting-started/installation)
-2. **Quick Start**: Get up and running in minutes with the [Quick Start](/docs/getting-started/quickstart)
-3. **Build Your First Agent**: Create your initial agent with our [First Agent Guide](/docs/getting-started/first-agent)
-4. **Explore Voice AI**: Learn about voice capabilities in the [Voice AI Section](/docs/voice-ai/overview)
+[Get Started →](./voice-ai/overview)
 
-## Documentation Structure
+</div>
+</div>
 
-- **[Getting Started](/docs/getting-started/overview)**: Installation, quick start, and core concepts
-- **[Agents](/docs/agents/overview)**: Building and managing AI agents
-- **[Voice AI](/docs/voice-ai/overview)**: Voice agent development and telephony
-- **[API Reference](/docs/api-reference/overview)**: Complete API documentation
-- **[Guides](/docs/guides/customer-support-bot)**: Step-by-step tutorials
-- **[Integrations](/docs/integrations/overview)**: Connect with external services
-- **[Platform](/docs/platform/overview)**: Dashboard and platform features
-- **[Resources](/docs/resources/changelog)**: Changelog, FAQ, and support
+<div className="row" style={{marginTop: '1rem'}}>
+<div className="col col--6">
 
-## Join Our Community
+### ⚡ Spark — Agent Builder
+Describe what you want in natural language. Spark generates a complete agent blueprint — tools, memory, personality — ready to deploy.
 
-- **Slack**: Connect with other developers and the Chronos team
-- **GitHub**: Report issues and contribute to the platform
-- **Support**: Get help with our [Support Resources](/docs/resources/support)
+[Learn More →](./platform/spark)
 
-Start building intelligent agents today with Chronos Studio!
+</div>
+<div className="col col--6">
+
+### 🔌 Integrations & MCP
+Connect agents to messaging apps, external APIs, databases, and Model Context Protocol (MCP) servers for unlimited extensibility.
+
+[Explore →](./integrations/overview)
+
+</div>
+</div>
+
+---
+
+## Quick Start
+
+Get your first agent running in under 5 minutes:
+
+```bash
+# Install the Chronos CLI
+npm install -g @chronos-studio/cli
+
+# Authenticate
+chronos login
+
+# Create your first agent
+chronos init my-first-agent
+
+# Deploy
+chronos deploy
+```
+
+[Full Quickstart Guide →](./getting-started/quickstart)
+
+---
+
+## Who Is This For?
+
+| Audience | Use Case |
+|----------|----------|
+| **Individuals & Creators** | Personal AI sidekicks, workflow automation, social media agents |
+| **Developers** | Custom agent architectures, API-first development, tool building |
+| **Enterprises** | Scalable voice agents for support & sales, white-label solutions, 99.9% SLA telephony |
+
+---
+
+## Explore the Docs
+
+- **[Getting Started](./getting-started/quickstart)** — Install, configure, and deploy your first agent
+- **[Platform Overview](./platform/overview)** — Understand the Chronos architecture
+- **[AI Agents](./agents/overview)** — Deep dive into agent creation
+- **[Voice AI](./voice-ai/overview)** — Build production voice agents
+- **[API Reference](./api-reference/overview)** — Complete REST API documentation
+- **[Guides](./guides/customer-support-bot)** — Step-by-step tutorials for real-world use cases
