@@ -5,164 +5,97 @@ title: Emotion Detection
 
 # Emotion Detection
 
-Chronos Studio's emotion detection enables voice agents to understand and respond to caller emotional state.
+Build empathetic voice agents that detect and respond to caller emotions in real time.
 
-## Overview
+## How It Works
 
-Emotion detection analyzes:
-- Speech patterns
-- Voice tone
-- Speaking pace
-- Volume changes
+Chronos analyzes vocal patterns — pitch, speed, volume, pauses — to detect emotional states during conversation:
 
-## Supported Emotions
+```
+Caller: [speaking quickly, rising pitch]
+        "I've been on hold for an hour and nobody can help me!"
 
-| Emotion | Description |
-|---------|-------------|
-| Happy | Positive, satisfied |
-| Sad | Disappointed, frustrated |
-| Angry | Frustrated, upset |
-| Fearful | Anxious, concerned |
-| Surprised | Unexpected |
-| Neutral | Calm, normal |
+Detected: frustration (0.87), urgency (0.72)
 
-## Enabling Emotion Detection
+Agent: [slows pace, empathetic tone]
+       "I completely understand your frustration, and I'm sorry about
+        the wait. You have my full attention now — let's get this
+        resolved for you right away."
+```
 
-### Configuration
+## Enable Emotion Detection
 
 ```yaml
 voice:
-  emotion_detection:
-    enabled: true
-    sensitivity: medium  # low, medium, high
-    
-    # Triggers
-    triggers:
-      angry:
-        threshold: 0.7
-        action: offer_escalation
-      fearful:
-        threshold: 0.6
-        action: reassure
+  emotion_detection: true
+  emotion_model: default           # default, advanced
+  emotion_response: adaptive       # adaptive, aware, off
 ```
 
-### API
+## Detected Emotions
 
-```python
-call = voice.calls.create(
-    agent_id="voice_agent_123",
-    to="+1234567890",
-    config={
-        "emotion_detection": True
-    }
-)
-```
+| Emotion | Indicators | Agent Response |
+|---------|-----------|----------------|
+| **Frustration** | Fast speech, raised pitch, sighs | Empathize, take ownership |
+| **Confusion** | Hesitation, repetition, questions | Simplify, clarify |
+| **Urgency** | Fast speech, short sentences | Prioritize, act quickly |
+| **Satisfaction** | Relaxed pace, positive words | Reinforce, upsell |
+| **Sadness** | Slow speech, low volume | Be gentle, supportive |
+| **Anger** | Loud, sharp tone, interruptions | Deescalate, validate |
+| **Neutral** | Normal pace and tone | Standard interaction |
 
-## Using Emotion Data
-
-### Webhook Events
-
-```json
-{
-  "event": "voice.emotion",
-  "timestamp": "2024-01-15T14:05:00Z",
-  "call_id": "call_xyz789",
-  "emotion": {
-    "speaker": "caller",
-    "primary": "frustrated",
-    "confidence": 0.85,
-    "secondary": "angry",
-    "score": {
-      "happy": 0.05,
-      "sad": 0.10,
-      "angry": 0.85,
-      "neutral": 0.00
-    }
-  }
-}
-```
-
-### In Conversation
-
-```python
-# Access emotion in agent context
-def handle_message(event):
-    emotions = event.emotions
-    
-    if emotions.primary == "angry" and emotions.confidence > 0.7:
-        # Empathize before responding
-        return f"I understand you're frustrated. Let me help."
-    
-    elif emotions.primary == "happy":
-        # Match enthusiasm
-        return f"Wonderful! I'm glad to hear that!"
-    
-    return process_normal_response(event)
-```
-
-## Emotion Responses
-
-### Pre-defined Responses
-
-```python
-EMOTION_RESPONSES = {
-    "angry": [
-        "I completely understand your frustration.",
-        "I'm sorry you're having this experience.",
-        "Let me make this right for you."
-    ],
-    "frustrated": [
-        "I can hear this is frustrating.",
-        "Let's work through this together."
-    ],
-    "happy": [
-        "That's great to hear!",
-        "I'm so glad I could help!"
-    ]
-}
-```
-
-### Custom Responses
+## Emotion-Aware System Prompts
 
 ```yaml
-emotion_responses:
-  angry:
-    - response: "I completely understand. This is important to us."
-      min_confidence: 0.6
-    - response: "I'm so sorry for the inconvenience."
-      min_confidence: 0.8
-      
-  happy:
-    - response: "Thank you! It's our pleasure!"
+system_prompt: |
+  You are a customer support agent. Adjust your approach based
+  on the caller's emotional state:
+
+  - If frustrated: Acknowledge their frustration first, then solve
+  - If confused: Break things into simple steps, check understanding
+  - If angry: Stay calm, validate feelings, escalate if needed
+  - If satisfied: Be warm, ask if there's anything else
+  - If urgent: Be efficient, skip pleasantries, act fast
 ```
 
-## Analytics
+## Accessing Emotion Data in Tools
 
-### Emotion Tracking
+```python
+from chronos.tools import tool
+from chronos.voice import current_call
 
-```bash
-# View emotion distribution
-chronos voice analytics emotions \
-  --agent voice_agent_123 \
-  --date_range "last_30_days"
+@tool(name="escalate_call")
+async def escalate_if_frustrated(reason: str) -> str:
+    """Escalate to human agent if caller is frustrated."""
+    call = current_call()
+
+    if call.emotion.frustration > 0.8 or call.emotion.anger > 0.7:
+        await call.transfer("+1-555-0100", priority="high")
+        return "Transferred to senior agent (high frustration detected)"
+
+    return "Frustration level normal — continuing conversation"
 ```
 
-### Response Metrics
+## Emotion Analytics
 
-- Emotion accuracy
-- Response effectiveness
-- Escalation rates by emotion
+Track emotional patterns in the dashboard:
 
-## Privacy
+- **Call Sentiment Over Time** — Trend of caller emotions
+- **Resolution by Emotion** — How well agents handle frustrated callers
+- **Escalation Triggers** — What emotions lead to human handoff
+- **Agent Performance** — Which agent configs best handle difficult calls
 
-### Consent
+## Best Practices
 
-- Notify callers about emotion analysis
-- Allow opt-out
-- Store emotion data securely
+1. **Always acknowledge** — Never ignore detected frustration
+2. **Adapt, don't mimic** — Don't match anger; counter it with calm
+3. **Set escalation thresholds** — Auto-transfer at high frustration scores
+4. **Monitor patterns** — Use analytics to improve system prompts
+5. **Test with scenarios** — Simulate emotional callers in development
 
-### Data Usage
+---
 
-- Improve agent responses
-- Quality assurance
-- Analytics (aggregated)
+## Next Steps
+
+- [Guides: Customer Support Bot](../guides/customer-support-bot) — Build a full support agent
+- [Guides: Sales Voice Agent](../guides/sales-voice-agent) — Emotion-aware sales calling

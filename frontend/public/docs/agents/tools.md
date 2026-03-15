@@ -135,3 +135,59 @@ async def search_kb(
     results = await kb.search(query, category=category, limit=limit)
     return [SearchResult(**r) for r in results]
 ```
+
+## MCP Tools
+
+Connect to Model Context Protocol servers for external tool access:
+
+```yaml
+tools:
+  - name: github
+    mcp: true
+    server: github-mcp-server
+    config:
+      repo: "chronos-studio/main-app"
+      token: ${GITHUB_TOKEN}
+
+  - name: postgres
+    mcp: true
+    server: postgres-mcp-server
+    config:
+      connection: ${DATABASE_URL}
+```
+
+## Tool Best Practices
+
+1. **Clear descriptions** — The LLM uses descriptions to decide when to use tools
+2. **Type hints** — Always use Python type hints for parameters
+3. **Error handling** — Return helpful error messages, don't raise exceptions
+4. **Timeouts** — Set reasonable timeouts for external API calls
+5. **Idempotency** — Make tools safe to retry when possible
+6. **Least privilege** — Only give tools the permissions they need
+
+## Testing Tools
+
+```python
+# tests/test_tools.py
+from chronos.testing import ToolTestRunner
+
+async def test_weather_tool():
+    runner = ToolTestRunner("tools/weather.py")
+    result = await runner.call("get_weather", city="Lagos")
+
+    assert result["city"] == "Lagos"
+    assert "temperature" in result
+    assert "condition" in result
+```
+
+```bash
+chronos test tools
+```
+
+---
+
+## Next Steps
+
+- [Memory](./memory) — Give agents persistent context
+- [MCP Integrations](../integrations/mcp) — Connect MCP servers
+- [API Reference: Tools](../api-reference/tools) — REST API for tool management

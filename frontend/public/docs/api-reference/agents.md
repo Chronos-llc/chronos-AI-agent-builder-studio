@@ -14,7 +14,7 @@ GET /v1/agents
 ```
 
 ```bash
-curl https://api.chronos.studio/v1/agents \
+curl https://api.mohex.org/v1/agents \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -44,7 +44,7 @@ POST /v1/agents
 ```
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/agents \
+curl -X POST https://api.mohex.org/v1/agents \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -76,7 +76,7 @@ PATCH /v1/agents/:agent_id
 ```
 
 ```bash
-curl -X PATCH https://api.chronos.studio/v1/agents/agt_abc123 \
+curl -X PATCH https://api.mohex.org/v1/agents/agt_abc123 \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -98,7 +98,7 @@ POST /v1/agents/:agent_id/chat
 ```
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/agents/agt_abc123/chat \
+curl -X POST https://api.mohex.org/v1/agents/agt_abc123/chat \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -125,7 +125,7 @@ curl -X POST https://api.chronos.studio/v1/agents/agt_abc123/chat \
 ### Streaming
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/agents/agt_abc123/chat \
+curl -X POST https://api.mohex.org/v1/agents/agt_abc123/chat \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"message": "Tell me about AI agents", "stream": true}'
@@ -148,7 +148,7 @@ POST /v1/agents/:agent_id/deploy
 ```
 
 ```bash
-curl -X POST https://api.chronos.studio/v1/agents/agt_abc123/deploy \
+curl -X POST https://api.mohex.org/v1/agents/agt_abc123/deploy \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"environment": "production", "tag": "v1.2.0"}'

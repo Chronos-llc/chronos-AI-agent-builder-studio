@@ -1,195 +1,165 @@
 ---
-sidebar_position: 3
-title: Telephony Integration
+sidebar_position: 4
+title: Telephony
 ---
 
-# Telephony Integration
+# Telephony
 
-Connect voice agents to the public telephone network.
-
-## Supported Providers
-
-| Provider | Type | Features |
-|----------|------|----------|
-| Twilio | SIP Trunking | Full PSTN |
-| Plivo | SIP Trunking | Full PSTN |
-| Vonage | SIP Trunking | Full PSTN |
-| Direct SIP | BYOC | Custom |
-
-## Setup
-
-### Twilio
-
-```bash
-chronos voice provider add twilio \
-  --account-sid AC... \
-  --auth-token ... \
-  --phone-number-sid PN...
-```
-
-### BYOC (Bring Your Own Carrier)
-
-```yaml
-# Custom SIP configuration
-telephony:
-  protocol: sip
-  sip_domain: voice.yourcompany.com
-  
-  codecs:
-    - opus
-    - g711
-    
-  dtmf_mode: rfc2833
-  
-  redundancy:
-    enabled: true
-    failover: 100ms
-```
+Connect your voice agents to real phone systems — PSTN numbers, SIP trunks, and WebRTC endpoints.
 
 ## Phone Numbers
 
-### Provision Numbers
+### Get a Number
 
 ```bash
-# Search available numbers
-chronos voice numbers search \
-  --country US \
-  --type toll-free \
-  --area-code 800
+# List available numbers
+chronos voice numbers list --country US --area-code 415
 
-# Purchase number
-chronos voice numbers buy \
-  --number "+1-800-555-0100"
+# Buy a number
+chronos voice numbers buy +1-415-555-0199
 
-# Connect to agent
-chronos voice numbers connect \
-  --number "+1-800-555-0100" \
-  --agent voice_agent_id
+# Assign to an agent
+chronos voice assign +1-415-555-0199 my-voice-agent
 ```
 
 ### Number Types
 
-| Type | Description | Cost |
-|------|-------------|------|
-| Toll-free | 800, 888, etc. | Higher |
-| Local | Geographic | Lower |
-| Mobile | Cell numbers | Varies |
-| Vanity | Custom words | Premium |
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **Local** | City/region number | Local business presence |
+| **Toll-Free** | 800/888/877 numbers | Customer support lines |
+| **International** | Numbers in 40+ countries | Global operations |
 
-## Call Handling
+### Number Management
 
-### Inbound Calls
+```bash
+# List your numbers
+chronos voice numbers mine
 
-```python
-@webhook.on("voice.call.inbound")
-def handle_inbound(call):
-    # Route based on DID
-    if call.to == "+1-800-555-0100":
-        return voice_agent.sales
-    elif call.to == "+1-800-555-0200":
-        return voice_agent.support
+# Transfer a number between agents
+chronos voice assign +1-415-555-0199 different-agent
+
+# Release a number
+chronos voice numbers release +1-415-555-0199
 ```
 
-### Outbound Calls
+## SIP Integration
 
-```python
-call = voice.calls.create(
-    agent_id="voice_agent_123",
-    from_number="+1-800-555-0100",
-    to="+1234567890",
-    config={
-        "record": True,
-        "transcribe": True
-    }
-)
+Connect to existing PBX/phone systems via SIP:
+
+```yaml
+telephony:
+  sip:
+    domain: sip.yourcompany.com
+    username: ${SIP_USERNAME}
+    password: ${SIP_PASSWORD}
+    transport: tls                # tls, tcp, udp
+    codecs: [opus, g711_ulaw]
+    registration: true
 ```
 
-## Call Flows
+### SIP Trunk Configuration
 
-### IVR (Interactive Voice Response)
-
-```python
-def ivr_menu(call):
-    response = voice.speak("Press 1 for sales, 2 for support, 3 for billing")
-    
-    digit = wait_for_digit(timeout=5)
-    
-    if digit == "1":
-        transfer_to_agent("sales")
-    elif digit == "2":
-        transfer_to_agent("support")
-    elif digit == "3":
-        transfer_to_agent("billing")
-    else:
-        voice.speak("Invalid choice")
-        ivr_menu(call)
+```yaml
+telephony:
+  sip_trunk:
+    provider: twilio              # twilio, vonage, telnyx
+    trunk_id: ${SIP_TRUNK_ID}
+    inbound: true
+    outbound: true
+    concurrent_calls: 50
 ```
+
+## WebRTC
+
+For browser-based voice interactions:
+
+```yaml
+channels:
+  - type: voice
+    config:
+      mode: webrtc
+      stun_server: stun:stun.l.google.com:19302
+```
+
+### Embed in Your Website
+
+```html
+<script src="https://cdn.mohex.org/voice-widget.js"></script>
+<chronos-voice
+  agent="my-voice-agent"
+  api-key="your_public_key"
+  theme="dark"
+></chronos-voice>
+```
+
+## Call Features
 
 ### Call Transfer
 
-```python
-# Warm transfer
-voice.transfer(
-    call_id="call_123",
-    to="+1234567890",
-    type="warm",
-    announcement="I'll transfer you to an agent"
-)
-
-# Cold transfer
-voice.transfer(
-    call_id="call_123",
-    to="+1234567890",
-    type="cold"
-)
+```yaml
+tools:
+  - name: transfer_call
+    builtin: true
+    config:
+      destinations:
+        sales: "+1-555-0100"
+        support: "+1-555-0200"
+        billing: "+1-555-0300"
 ```
 
-## Call Recording
+```
+Caller: "I need to speak with someone in billing"
+Agent: "I'll transfer you to our billing department right now. One moment."
+[Agent transfers call to +1-555-0200]
+```
 
-### Configuration
+### Call Recording
 
 ```yaml
-recording:
-  enabled: true
-  channels: mono
-  format: mp3
-  quality: 64kbps
-  storage: s3://your-bucket/recordings/
+telephony:
+  recording:
+    enabled: true
+    format: mp3
+    storage: 90d                 # Retain for 90 days
+    transcription: true          # Auto-transcribe recordings
+    pii_redaction: true          # Redact PII from transcripts
 ```
 
-### Access
+### IVR / Call Routing
 
-```python
-# Get recording
-call = voice.calls.get("call_123")
-url = call.recording_url
-
-# Get transcript
-transcript = call.transcript
+```yaml
+telephony:
+  ivr:
+    greeting: "Welcome to Acme Corp."
+    menu:
+      - key: 1
+        label: "Sales"
+        agent: sales-voice-agent
+      - key: 2
+        label: "Support"
+        agent: support-voice-agent
+      - key: 0
+        label: "Operator"
+        transfer: "+1-555-0000"
+    default_agent: general-voice-agent
 ```
 
-## Quality
+## Enterprise SLA
 
-### Metrics
+For enterprise telephony:
 
-- **MOS Score**: 4.0+ (good)
-- **Latency**: <300ms
-- **Jitter**: <50ms
-- **Packet Loss**: <1%
+| Metric | Guarantee |
+|--------|-----------|
+| Uptime | 99.9% |
+| Call Setup Time | < 2 seconds |
+| Audio Latency | < 200ms |
+| Concurrent Calls | Unlimited (with enterprise plan) |
+| Failover | Automatic regional failover |
 
-### Monitoring
+---
 
-```bash
-# View call quality
-chronos voice quality call_123
+## Next Steps
 
-# Real-time metrics
-chronos voice metrics --live
-```
-
-## Best Practices
-
-1. **Number selection**: Choose appropriate number type
-2. **Recording consent**: Comply with regulations
-3. **Fallback**: Plan for provider outages
-4. **Quality monitoring**: Track continuously
+- [Emotion Detection](./emotion-detection) — Detect and respond to caller sentiment
+- [Guides: Sales Voice Agent](../guides/sales-voice-agent) — Build a complete sales agent

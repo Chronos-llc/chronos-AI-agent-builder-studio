@@ -1,101 +1,51 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 title: Changelog
 ---
 
 # Changelog
 
-All notable changes to Chronos Studio are documented here.
+All notable changes to Chronos Studio.
 
-## [2024.01] - January 2024
+---
 
-### Added
-- Voice AI with emotion detection
-- Multi-agent systems support
-- MCP integration framework
-- White-label capabilities
-- Spark platform for model training
+## v1.0.0 — March 2026 (Launch)
 
-### Improved
-- Agent response latency by 40%
-- Dashboard performance
-- Mobile responsiveness
+### 🚀 Initial Release
 
-### Fixed
-- Webhook delivery reliability
-- Memory handling in long conversations
-- Voice call quality issues
+**Platform**
+- Chronos Studio dashboard with agent management, analytics, and settings
+- CLI tool for local development and deployment
+- Python and TypeScript SDKs
+- Spark — natural language agent builder
 
-## [2023.12] - December 2023
+**AI Agents**
+- General-purpose agent runtime with LLM support (Gemini, GPT, Claude)
+- Custom tool framework with Python decorators
+- Persistent memory with session, KV, and vector storage
+- Agent blueprints — reusable templates
+- Multi-agent orchestration (coordinator, pipeline, parallel patterns)
 
-### Added
-- Agent blueprints gallery
-- Vector memory for RAG
-- PostgreSQL integration
-- Discord integration
+**Voice AI**
+- Real-time voice agents with sub-second latency
+- STT providers: Deepgram, Google, Whisper
+- TTS providers: ElevenLabs, PlayHT, Google
+- Emotion detection and adaptive responses
+- Voice cloning support
+- Enterprise telephony with PSTN, SIP, and WebRTC
 
-### Improved
-- Tool execution time
-- Error messages
-- API rate limits
+**Integrations**
+- MCP server support (host and connect)
+- Messaging channels: Telegram, WhatsApp, Slack, Discord, SMS
+- Webhook support for event-driven automation
+- OpenAPI import for auto-generating tools
 
-### Fixed
-- Memory leak in long sessions
-- OAuth flow issues
-- Timezone handling
+**Infrastructure**
+- Chronos Cloud — fully managed deployment
+- Auto-scaling and global edge distribution
+- 99.9% SLA for enterprise telephony
+- SOC 2 Type II compliance (in progress)
 
-## [2023.11] - November 2023
+---
 
-### Added
-- Real-time transcription for voice
-- Custom voice models
-- Teams integration
-- Workflow automation
-
-### Improved
-- Agent creation wizard
-- Analytics dashboard
-
-### Fixed
-- Webhook signature verification
-- Session persistence bugs
-
-## [2023.10] - October 2023
-
-### Added
-- Slack integration
-- WhatsApp integration
-- Salesforce integration
-- Custom CSS for chat widget
-
-### Improved
-- SDK documentation
-- Error handling
-
-### Fixed
-- Rate limiting edge cases
-- Template rendering issues
-
-## [2023.09] - September 2023
-
-### Added
-- Voice agents (beta)
-- Webhook API
-- Redis integration
-- MongoDB integration
-
-### Improved
-- Dashboard navigation
-- Agent testing interface
-
-### Fixed
-- API authentication bugs
-- File upload issues
-
-## [2023.08] - August 2023
-
-### Added
-- Initial release
-- Core agent API
-- Dashboard
-- Basic integrations
+*This changelog will be updated with each release.*

@@ -1,369 +1,178 @@
 ---
 sidebar_position: 2
-title: Sales Voice Agent
+title: "Guide: Sales Voice Agent"
 ---
 
-# Build a Sales Voice Agent
+# Guide: Build a Sales Voice Agent
 
-This guide covers creating an AI-powered voice agent for sales and outbound calling campaigns.
+Build an AI-powered outbound sales agent that qualifies leads, books meetings, and handles objections — all via phone.
 
-## Overview
+## What We'll Build
 
-We'll build a voice agent that can:
-- Handle inbound sales inquiries
-- Qualify leads through conversation
-- Schedule appointments
-- Answer product questions
-- Transfer to human salespeople
+A voice agent that:
+- Makes outbound calls to leads
+- Qualifies prospects with discovery questions
+- Handles common objections naturally
+- Books meetings on your calendar
+- Logs call outcomes to your CRM
 
-## Step 1: Create Voice Agent
-
-### Configuration
+## Agent Configuration
 
 ```yaml
-name: Sales Voice Agent
-type: voice
+name: sales-caller
+model: gemini-2.0-pro            # Pro model for nuanced conversation
+temperature: 0.6
+
+system_prompt: |
+  You are a sales development representative for {{company_name}}.
+  You're calling leads who expressed interest in {{product_name}}.
+
+  Call structure:
+  1. Introduce yourself warmly (first name only)
+  2. Reference how they found you (lead source)
+  3. Ask 2-3 discovery questions about their needs
+  4. Present a brief value proposition based on their answers
+  5. Offer to book a demo with a solutions engineer
+  6. Handle objections naturally — never be pushy
+
+  Qualification criteria (BANT):
+  - Budget: Can they invest $X/month?
+  - Authority: Are they a decision maker?
+  - Need: Do they have a real problem we solve?
+  - Timeline: Are they looking to implement soon?
+
+  Rules:
+  - Keep the call under 5 minutes
+  - If they're busy, offer to call back
+  - Never lie or exaggerate capabilities
+  - If they say no, thank them and end gracefully
+  - Log every call outcome to CRM
 
 voice:
-  voice_id: "voice_rachel"
-  language: "en-US"
+  stt_provider: deepgram
+  tts_provider: elevenlabs
+  voice_id: josh-professional      # Warm, confident male voice
+  language: en-US
   speed: 1.0
-  pitch: 0
-  
-config:
-  system_prompt: |
-    You are a friendly and enthusiastic sales representative for Acme SaaS.
-    
-    Your role:
-    - Engage prospects in conversation
-    - Understand their needs
-    - Explain product benefits
-    - Handle objections professionally
-    - Qualify leads for sales team
-    
-    Always sound enthusiastic but not pushy.
-    Ask open-ended questions to understand pain points.
-    
-  max_duration: 300
-  interruption_threshold: 0.5
-  silence_timeout: 15
+  interruption: true
   emotion_detection: true
+  end_of_turn_silence: 2s
+
+telephony:
+  recording: true
+  transcription: true
+
+tools:
+  - name: get_lead_info
+    path: ./tools/lead_info.py
+  - name: book_meeting
+    path: ./tools/book_meeting.py
+  - name: log_call_outcome
+    path: ./tools/log_outcome.py
+  - name: schedule_callback
+    path: ./tools/callback.py
 ```
 
-### Via API
+## Example Call Flow
 
-```bash
-curl -X POST https://api.chronos.studio/v1/voice/agents \
-  -H "Authorization: Bearer YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Sales Voice Agent",
-    "agent_id": "agent_sales_123",
-    "voice_id": "voice_rachel",
-    "language": "en-US",
-    "config": {
-      "emotion_detection": true,
-      "max_duration": 300
-    }
-  }'
+```
+Agent: "Hi Sarah, this is Alex from Chronos Studio. You signed up
+        for our waitlist last week — thanks for your interest!
+        Do you have a couple minutes to chat about what brought
+        you to us?"
+
+Lead:  "Yeah, sure. We're looking at voice AI for our support line."
+
+Agent: "Great! Just so I can point you in the right direction —
+        roughly how many support calls does your team handle per month?"
+
+Lead:  "About 2,000, and it's growing."
+
+Agent: "That's significant. And are most of those common questions
+        that could be handled by AI, or more complex issues?"
+
+Lead:  "Probably 60-70% are repetitive — password resets, order
+        status, basic troubleshooting."
+
+Agent: "That's exactly what our voice agents excel at. Our clients
+        typically automate 60-80% of those calls with sub-second
+        response times — no hold music. Would it be helpful to see
+        a 15-minute demo tailored to your support use case?"
+
+Lead:  "Yeah, that sounds good."
+
+Agent: [tool:book_meeting] "Perfect! I have Thursday at 2 PM or
+        Friday at 10 AM available. Which works better?"
 ```
 
-## Step 2: Configure Telephony
+## Tools
 
-### Connect Phone Number
-
-```bash
-# Purchase and configure number
-chronos voice provision \
-  --country US \
-  --type toll-free
-
-# Or connect existing number
-chronos voice connect \
-  --number "+1-800-555-1234" \
-  --agent agent_voice_123
-```
-
-### Supported Providers
-
-| Provider | Setup | Features |
-|----------|-------|----------|
-| Twilio | Auto-configured | Full feature set |
-| Plivo | Auto-configured | Full feature set |
-| Vonage | Manual | Basic |
-| Custom SIP | Manual | BYOC |
-
-## Step 3: Lead Qualification
-
-### Qualification Logic
+### Book Meeting
 
 ```python
-class LeadQualifier:
-    def __init__(self):
-        self.qualification_questions = [
-            "What challenge are you looking to solve?",
-            "How large is your team?",
-            "What's your budget?",
-            "When are you looking to implement?"
-        ]
-    
-    def score_lead(self, conversation_data):
-        score = 0
-        
-        # Budget qualification
-        if conversation_data.get("has_budget"):
-            score += 25
-        
-        # Timeline qualification
-        if conversation_data.get("timeline") in ["immediate", "1-3 months"]:
-            score += 25
-        
-        # Company size
-        if conversation_data.get("company_size", 0) >= 10:
-            score += 25
-        
-        # Decision authority
-        if conversation_data.get("is_decision_maker"):
-            score += 25
-        
-        return score
-    
-    def qualify(self, score):
-        if score >= 75:
-            return "hot"
-        elif score >= 50:
-            return "warm"
-        else:
-            return "cold"
+@tool(name="book_meeting", description="Book a demo on the calendar")
+async def book_meeting(
+    lead_email: str,
+    date: str,
+    time: str,
+    meeting_type: str = "demo"
+) -> str:
+    event = await calendar.create_event(
+        title=f"Chronos Demo — {lead_email}",
+        date=date,
+        time=time,
+        duration=15,
+        attendees=[lead_email, "sales@mohex.org"],
+        description=f"Product demo for {lead_email}"
+    )
+    return f"Meeting booked: {date} at {time}. Calendar invite sent."
 ```
 
-### Integration with CRM
+### Log Call Outcome
 
 ```python
-class CRMIntegration:
-    def sync_lead(self, lead_data):
-        # Create/update in Salesforce
-        response = sf_client.create("Lead", {
-            "FirstName": lead_data["first_name"],
-            "LastName": lead_data["last_name"],
-            "Company": lead_data["company"],
-            "Email": lead_data["email"],
-            "Phone": lead_data["phone"],
-            "LeadSource": "AI Voice Agent",
-            "Rating": lead_data["qualification"]
-        })
-        return response["id"]
+@tool(name="log_call_outcome", description="Log the call result to CRM")
+async def log_call_outcome(
+    lead_id: str,
+    outcome: str,        # "meeting_booked", "callback", "not_interested", "no_answer"
+    notes: str,
+    qualification: dict   # {"budget": bool, "authority": bool, "need": bool, "timeline": bool}
+) -> str:
+    await crm.update_lead(
+        id=lead_id,
+        status=outcome,
+        notes=notes,
+        qualification_score=sum(qualification.values()),
+        last_contact=datetime.now()
+    )
+    return f"CRM updated: {outcome}"
 ```
 
-## Step 4: Appointment Scheduling
-
-### Calendar Integration
+## Launch an Outbound Campaign
 
 ```python
-class AppointmentScheduler:
-    def check_availability(self, rep_id, date):
-        events = calendar.get_events(
-            calendar_id=rep_id,
-            start=date,
-            end=date
-        )
-        return self.find_slots(events)
-    
-    def book_appointment(self, rep_id, lead, slot):
-        event = calendar.create_event(
-            calendar_id=rep_id,
-            title=f"Sales Discovery - {lead['name']}",
-            start=slot["start"],
-            end=slot["end"],
-            attendees=[lead["email"]]
-        )
-        
-        # Send confirmation
-        self.send_confirmation(lead, event)
-        
-        return event["id"]
-    
-    def send_confirmation(self, lead, event):
-        send_email(
-            to=lead["email"],
-            subject="Your Appointment Confirmation",
-            body=f"Hi {lead['name']}, your appointment is confirmed..."
-        )
-```
+from chronos import ChronosClient
 
-### Appointment Tool
+client = ChronosClient(api_key="your_key")
 
-```python
-class ScheduleAppointment(Tool):
-    name = "schedule_appointment"
-    description = "Schedule a meeting with a sales rep"
-    
-    parameters = {
-        "date": {"type": "string", "required": True},
-        "time": {"type": "string", "required": True},
-        "rep_id": {"type": "string", "required": True},
-        "lead_name": {"type": "string", "required": True},
-        "lead_email": {"type": "string", "required": True}
-    }
-    
-    def execute(self, date, time, rep_id, lead_name, lead_email):
-        slot = find_slot(rep_id, date, time)
-        if not slot:
-            return {"error": "No availability"}
-        
-        event = book_appointment(rep_id, {
-            "name": lead_name,
-            "email": lead_email
-        }, slot)
-        
-        return {
-            "status": "confirmed",
-            "appointment_id": event["id"],
-            "meeting_link": event["meet_link"]
+# Get uncontacted leads
+leads = await crm.get_leads(status="new", limit=50)
+
+for lead in leads:
+    await client.voice.call(
+        agent_id="sales-caller",
+        to=lead.phone,
+        context={
+            "lead_name": lead.name,
+            "lead_source": lead.source,
+            "lead_company": lead.company
         }
+    )
 ```
 
-## Step 5: Objection Handling
+---
 
-### Common Objections
+## Next Steps
 
-```yaml
-objections:
-  - pattern: "too expensive"
-    response: |
-      I understand budget is a concern. Let me share how other companies 
-      have seen ROI within the first 3 months. Would that be helpful?
-      
-  - pattern: "need to think about it"
-    response: |
-      Of course, this is an important decision. What specific aspects 
-      would you like to discuss further?
-      
-  - pattern: "competitor better"
-    response: |
-      What features are most important to you? I'd be happy to show you 
-      how we compare in those specific areas.
-```
-
-### Implementation
-
-```python
-def handle_objection(agent, user_text):
-    objection = detect_objection(user_text)
-    
-    if objection == "price":
-        return redirect_to_roi_calculation()
-    elif objection == "timing":
-        return explore_concerns()
-    elif objection == "competitor":
-        return feature_comparison()
-    
-    return None
-```
-
-## Step 6: Outbound Campaigns
-
-### Campaign Setup
-
-```bash
-# Create campaign
-chronos voice campaign create \
-  --name "Q1 Sales Outreach" \
-  --agent voice_agent_123 \
-  --leads-file leads.csv
-
-# Schedule campaign
-chronos voice campaign schedule \
-  --campaign_id campaign_abc \
-  --start "2024-02-01T09:00:00Z" \
-  --end "2024-02-28T18:00:00Z"
-```
-
-### Lead List Format
-```csv
-phone,name,company,email,qualification
-+1234567890,John Smith,john@acme.com,Acme Inc,high
-+1987654321,Jane Doe,jane@tech.co,Tech Corp,medium
-```
-
-## Step 7: Analytics & Recording
-
-### Call Recording
-
-```json
-{
-  "recording": {
-    "enabled": true,
-    "storage": "s3",
-    "retention_days": 90
-  }
-}
-```
-
-### Analytics Dashboard
-
-Track key metrics:
-- Conversion rate
-- Average call duration
-- Qualification rate
-- Appointment set rate
-- Revenue attribution
-
-### Post-Call Summary
-
-```python
-def generate_summary(call_id):
-    transcript = get_transcript(call_id)
-    emotions = get_emotions(call_id)
-    
-    summary = {
-        "duration": get_duration(call_id),
-        "key_points": extract_key_points(transcript),
-        "next_steps": extract_next_steps(transcript),
-        "lead_score": calculate_score(emotions, transcript),
-        "sentiment": analyze_sentiment(emotions)
-    }
-    
-    # Sync to CRM
-    crm.update_lead(lead_id, summary)
-    
-    return summary
-```
-
-## Complete Example
-
-```python
-from chronos import ChronosVoice
-
-# Initialize voice client
-voice = ChronosVoice(api_key="sk_live_...")
-
-# Create voice agent
-agent = voice.agents.create(
-    name="Sales Agent",
-    config={
-        "system_prompt": open("prompts/sales.txt").read(),
-        "voice_id": "voice_rachel",
-        "emotion_detection": True,
-        "tools": ["schedule_appointment", "create_lead", "check_pricing"]
-    }
-)
-
-# Connect phone number
-number = voice.numbers.provision(country="US", type="toll-free")
-
-# Point to agent
-voice.numbers.assign(number, agent)
-
-# Monitor
-voice.events.on("call.completed", lambda call: log_call(call))
-```
-
-## Best Practices
-
-1. **Natural conversation flow** - Don't sound robotic
-2. **Active listening** - Respond to context
-3. **Clear value proposition** - Lead with benefits
-4. **Handle objections gracefully** - Practice scenarios
-5. **Seamless handoff** - Transfer to humans smoothly
-6. **Continuous optimization** - Review and improve
+- [Workflow Automation](./workflow-automation) — Automate follow-ups
+- [Emotion Detection](../voice-ai/emotion-detection) — Handle objections better

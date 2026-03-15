@@ -1,319 +1,125 @@
 ---
-sidebar_position: 5
+sidebar_position: 4
 title: Messaging Platforms
 ---
 
-# Messaging Platforms
+# Messaging Platform Integrations
 
-Deploy your agents on popular messaging platforms to reach users where they are.
+Connect your agents to the messaging apps your users already use.
 
-## Supported Platforms
+## Telegram
 
-| Platform | Status | Features |
-|----------|--------|----------|
-| Slack | Supported | Channels, DMs, threads |
-| Discord | Supported | Servers, channels, DMs |
-| Microsoft Teams | Supported | Channels, meetings |
-| WhatsApp | Supported | Business API |
-| Telegram | Supported | Bots, groups |
-| Web Chat | Supported | Custom widget |
-
-## Slack Integration
+```yaml
+channels:
+  - type: telegram
+    config:
+      bot_token: ${TELEGRAM_BOT_TOKEN}
+      commands:
+        - command: /start
+          response: "Welcome! I'm your AI assistant. How can I help?"
+        - command: /help
+          response: "Just type your question and I'll help you out."
+      features:
+        inline_mode: true
+        group_chats: true
+        file_uploads: true
+```
 
 ### Setup
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. Copy the bot token
+3. Set it as an environment variable: `chronos env set TELEGRAM_BOT_TOKEN=your_token`
+4. Deploy your agent
 
-1. Create Slack App at https://api.slack.com/apps
-2. Enable Bot Token Scopes
-3. Install to workspace
-4. Configure Chronos integration
+## WhatsApp
 
-### Required Scopes
-
-```json
-{
-  "bot_token_scopes": [
-    "chat:write",
-    "channels:read",
-    "groups:read",
-    "im:read",
-    "mpim:read",
-    "users:read"
-  ]
-}
+```yaml
+channels:
+  - type: whatsapp
+    config:
+      phone_number_id: ${WA_PHONE_ID}
+      access_token: ${WA_ACCESS_TOKEN}
+      verify_token: ${WA_VERIFY_TOKEN}
+      features:
+        media_messages: true      # Images, documents, audio
+        template_messages: true   # Pre-approved templates
+        interactive_messages: true # Buttons and lists
 ```
-
-### Configuration
-
-```bash
-chronos integrations add slack \
-  --token xoxb-... \
-  --signing-secret ...
-```
-
-### Usage
-
-```python
-from chronos.integrations import Slack
-
-slack = SlackIntegration(token="xoxb-...")
-
-# Create bot
-bot = slack.bots.create(
-    name="Support Bot",
-    default_channel="#support"
-)
-
-# Handle events
-@slack.event("message")
-def handle_message(event):
-    if not event.user == bot.user_id:
-        response = agent.chat(event.text)
-        bot.reply(event.channel, event.ts, response)
-```
-
-### Interactive Components
-
-```python
-# Buttons
-bot.add_action("button_click", handle_button)
-
-# Menus
-bot.add_action("select_menu", handle_menu)
-
-# Modals
-@slack.command("/help")
-def handle_help(command):
-    bot.open_modal(command.trigger_id, "help_modal")
-```
-
-## Discord Integration
 
 ### Setup
-
-1. Create Application at https://discord.com/developers/applications
-2. Add Bot to server
-3. Configure Chronos integration
-
-### Configuration
-
-```bash
-chronos integrations add discord \
-  --token BOT_TOKEN \
-  --guild-id GUILD_ID
-```
-
-### Usage
-
-```python
-from chronos.integrations import Discord
-
-discord = DiscordIntegration(token="BOT_TOKEN")
-
-# Create bot
-bot = discord.bots.create(
-    name="Game Assistant",
-    guild_id="123456789"
-)
-
-# Handle commands
-@bot.command("ask", description="Ask the AI")
-async def ask(ctx, *, question):
-    response = agent.chat(question)
-    await ctx.reply(response)
-
-# Handle messages
-@bot.event("message_create")
-async def handle_message(message):
-    if bot.mentioned(message):
-        response = agent.chat(message.content)
-        await message.reply(response)
-```
-
-## Microsoft Teams Integration
-
-### Setup
-
-1. Register Azure AD Application
-2. Configure Teams permissions
-3. Add bot to Teams
-
-### Configuration
-
-```bash
-chronos integrations add teams \
-  --tenant-id TENANT_ID \
-  --app-id APP_ID \
-  --app-secret APP_SECRET
-```
-
-### Usage
-
-```python
-from chronos.integrations import Teams
-
-teams = TeamsIntegration(
-    tenant_id="...",
-    app_id="...",
-    app_secret="..."
-)
-
-# Create bot
-bot = teams.bots.create(
-    name="Corporate Assistant"
-)
-
-@bot.command("search")
-async def search(ctx, query):
-    results = agent.chat(f"Search: {query}")
-    await bot.reply(ctx, results)
-```
-
-## WhatsApp Integration
-
-### Setup
-
-1. Create Meta Developer Account
+1. Create a Meta Business account
 2. Set up WhatsApp Business API
-3. Configure webhook
+3. Configure webhook URL: `https://api.mohex.org/webhooks/whatsapp/your-agent`
+4. Set environment variables and deploy
 
-### Configuration
+## Slack
 
-```bash
-chronos integrations add whatsapp \
-  --phone-number-id PHONE_NUMBER_ID \
-  --access-token ACCESS_TOKEN \
-  --verify-token VERIFY_TOKEN
+```yaml
+channels:
+  - type: slack
+    config:
+      bot_token: ${SLACK_BOT_TOKEN}
+      app_token: ${SLACK_APP_TOKEN}
+      features:
+        threads: true
+        reactions: true
+        slash_commands:
+          - command: /ask
+            description: Ask the AI agent a question
+        events:
+          - message.channels
+          - app_mention
 ```
 
-### Usage
+## Discord
 
-```python
-from chronos.integrations import WhatsApp
-
-whatsapp = WhatsAppIntegration(
-    phone_number_id="...",
-    access_token="..."
-)
-
-# Handle incoming messages
-@whatsapp.on_message
-def handle_message(message):
-    response = agent.chat(message.text)
-    whatsapp.send_message(
-        to=message.from_,
-        text=response
-    )
-
-# Send templates
-whatsapp.send_template(
-    to="+1234567890",
-    template="order_confirmation",
-    params={"order_id": "12345"}
-)
+```yaml
+channels:
+  - type: discord
+    config:
+      bot_token: ${DISCORD_BOT_TOKEN}
+      features:
+        slash_commands: true
+        threads: true
+        voice_channels: false
 ```
 
-## Telegram Integration
+## SMS
 
-### Setup
-
-1. Create bot via @BotFather
-2. Get bot token
-3. Configure webhook
-
-### Configuration
-
-```bash
-chronos integrations add telegram \
-  --token BOT_TOKEN
+```yaml
+channels:
+  - type: sms
+    config:
+      provider: twilio
+      phone_number: ${TWILIO_PHONE}
+      account_sid: ${TWILIO_SID}
+      auth_token: ${TWILIO_TOKEN}
 ```
 
-### Usage
+## Multi-Channel Deployment
 
-```python
-from chronos.integrations import Telegram
+Deploy an agent to multiple channels simultaneously:
 
-telegram = TelegramIntegration(token="BOT_TOKEN")
-
-@telegram.message_handler()
-def handle_message(update):
-    response = agent.chat(update.message.text)
-    telegram.send_message(
-        chat_id=update.message.chat.id,
-        text=response
-    )
-
-# Handle commands
-@telegram.command_handler("help")
-def handle_help(update):
-    telegram.send_message(
-        chat_id=update.message.chat.id,
-        text="I'm here to help!"
-    )
+```yaml
+channels:
+  - type: api
+  - type: telegram
+    config:
+      bot_token: ${TELEGRAM_BOT_TOKEN}
+  - type: whatsapp
+    config:
+      phone_number_id: ${WA_PHONE_ID}
+      access_token: ${WA_ACCESS_TOKEN}
+  - type: slack
+    config:
+      bot_token: ${SLACK_BOT_TOKEN}
 ```
 
-## Web Chat Widget
+The agent maintains separate conversation contexts per channel and per user, but shares the same tools and knowledge.
 
-### Installation
+---
 
-```html
-<!-- Add to your website -->
-<script>
-  window.ChronosChat = {
-    agent: 'agent_abc123',
-    position: 'bottom-right',
-    theme: {
-      primary: '#0066FF',
-      secondary: '#00CC66'
-    }
-  };
-</script>
-<script src="https://cdn.chronos.studio/widget.js"></script>
-```
+## Next Steps
 
-### Customization
-
-```javascript
-window.ChronosChat = {
-  agent: 'agent_abc123',
-  
-  // Custom launcher
-  launcher: {
-    text: 'Chat with us',
-    image: '/chat-icon.png'
-  },
-  
-  // Custom messages
-  greeting: 'Hi! How can we help?',
-  offline: 'We\'re currently offline. Leave a message!',
-  
-  // Appearance
-  colors: {
-    primary: '#0066FF',
-    background: '#FFFFFF',
-    text: '#333333'
-  },
-  
-  // Behavior
-  powered_by: false, // Hide Chronos branding
-  file_attachments: true,
-  emojis: true
-};
-```
-
-## Platform Comparison
-
-| Platform | Best For | Limitations |
-|----------|----------|-------------|
-| Slack | Internal tools | Requires Slack workspace |
-| Discord | Community | Gaming-focused |
-| Teams | Enterprise | Complex setup |
-| WhatsApp | Customer support | Business API required |
-| Telegram | Global reach | Limited business features |
-
-## Best Practices
-
-1. **Consistent personality** - Same agent across platforms
-2. **Platform optimization** - Adapt responses to platform
-3. **Rich content** - Use platform-specific features
-4. **Handoff planning** - Route to humans when needed
-5. **Analytics** - Track per-platform performance
+- [Databases](./databases) — Connect data stores
+- [MCP](./mcp) — Extend with MCP servers
