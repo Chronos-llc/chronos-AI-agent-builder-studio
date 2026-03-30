@@ -7,6 +7,28 @@ slug: /user-guide
 
 # Chronos AI Agent Builder Studio - User Guide
 
+## What's New in v1.2+
+
+Chronos AI v1.2 introduces the **Aegis UI Agent** — a major update to the agent interaction experience. Here's a summary of the key new capabilities:
+
+### Chat Mode & Browser Mode Toggle
+
+The agent panel now supports two modes: **Chat Mode** for conversational interaction (with tool call cards, file attachments, voice input, a connector picker, and code cards with copy buttons) and **Browser Mode** for a live view into the agent's active web session. Switch between them instantly without losing context. [Read more →](./chat-browser-mode.md)
+
+### Sub-Agents
+
+The Aegis Agent can now spawn **parallel sub-agents** to decompose complex tasks into concurrent workstreams. A real-time Sub-Agent Panel shows the status, progress, and tool call history of each sub-agent. Human-in-the-Loop (HITL) approval cards surface in the main thread when a sub-agent needs your sign-off before proceeding. [Read more →](./sub-agents.md)
+
+### Reasoning & Thinking Mode
+
+Enable **Reasoning Mode** from the Plus (+) menu in the input bar to have the agent deliberate before acting. A collapsible **Thinking Card** appears at the top of the response showing the agent's internal deliberation trace. **Think Harder** mode allocates a larger compute budget for maximum thoroughness on your most complex tasks. Supported across all major providers (OpenAI, Anthropic, Google, xAI, DeepSeek). [Read more →](./reasoning-thinking.md)
+
+### Tool Permissions
+
+A new **Tool Permissions** system gives you per-tool control over agent behavior. Tools can be set to **Auto** (execute immediately) or **Approve** (pause and show a Confirmation Card in chat before acting). Memory and cron tools are always-on. OAuth connectors require an active authenticated connection. [Read more →](./tool-permissions.md)
+
+---
+
 ## Overview
 
 This guide provides instructions for using the Chronos AI Agent Builder Studio, including:

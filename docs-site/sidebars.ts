@@ -35,6 +35,33 @@ const sidebars: SidebarsConfig = {
       id: 'playwright-deployment',
       label: 'Playwright Deployment',
     },
+    {
+      type: 'category',
+      label: 'Aegis Agent',
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'chat-browser-mode',
+          label: 'Chat & Browser Mode',
+        },
+        {
+          type: 'doc',
+          id: 'sub-agents',
+          label: 'Sub-Agents',
+        },
+        {
+          type: 'doc',
+          id: 'reasoning-thinking',
+          label: 'Reasoning & Thinking Mode',
+        },
+        {
+          type: 'doc',
+          id: 'tool-permissions',
+          label: 'Tool Permissions',
+        },
+      ],
+    },
   ],
 };
 
