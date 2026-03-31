@@ -5,11 +5,11 @@ sidebar_label: API Guide
 slug: /api-guide
 ---
 
-# Chronos AI Agent Builder Studio - API Guide
+# Aegis API Guide
 
 ## Overview
 
-This guide provides documentation for the Chronos AI Agent Builder Studio API. The API is built with FastAPI and provides endpoints for:
+This guide provides documentation for the Aegis API. The API is built with FastAPI and provides endpoints for:
 - Marketplace management
 - Skills system
 - Platform updates
@@ -551,4 +551,4 @@ Used for real-time communication between client and server. Supports events for:
 
 ## Conclusion
 
-This API guide provides documentation for all public endpoints of the Chronos AI Agent Builder Studio. For more detailed information or to report issues, please contact our support team.
+This API guide provides documentation for all public endpoints of Aegis. For more detailed information or to report issues, please contact our support team.

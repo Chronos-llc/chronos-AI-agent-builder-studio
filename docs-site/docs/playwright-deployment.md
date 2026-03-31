@@ -7,7 +7,7 @@ slug: /playwright-deployment
 
 # Playwright MCP Server Deployment Guide
 
-This guide provides comprehensive instructions for deploying and managing the Playwright MCP Server within the Chronos AI infrastructure.
+This guide provides comprehensive instructions for deploying and managing the Playwright MCP Server within the Aegis infrastructure.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ This guide provides comprehensive instructions for deploying and managing the Pl
 
 ## Overview
 
-The Playwright MCP Server provides browser automation capabilities to the Chronos AI agent system. It includes:
+The Playwright MCP Server provides browser automation capabilities to the Aegis agent system. It includes:
 
 - **Browser Management**: Automated browser lifecycle management with pooling
 - **Task Execution**: Asynchronous execution of browser automation tasks

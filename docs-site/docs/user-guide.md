@@ -5,11 +5,11 @@ sidebar_label: User Guide
 slug: /user-guide
 ---
 
-# Chronos AI Agent Builder Studio - User Guide
+# Aegis User Guide
 
 ## What's New in v1.2+
 
-Chronos AI v1.2 introduces the **Aegis UI Agent** — a major update to the agent interaction experience. Here's a summary of the key new capabilities:
+Aegis v1.2 introduces major updates to the agent interaction experience. Here is a summary of the key new capabilities:
 
 ### Chat Mode & Browser Mode Toggle
 
@@ -31,7 +31,7 @@ A new **Tool Permissions** system gives you per-tool control over agent behavior
 
 ## Overview
 
-This guide provides instructions for using the Chronos AI Agent Builder Studio, including:
+This guide provides instructions for using Aegis, including:
 - Marketplace features for discovering and installing agents
 - Skills system for extending agent capabilities
 - Platform updates and notifications
@@ -131,10 +131,10 @@ Each agent page includes:
 4. Track the status of your ticket (Open, In Progress, Resolved, Closed)
 
 ### Community Support
-1. Join the Chronos AI community forum
+1. Join the Aegis community forum
 2. Search for existing solutions
 3. Post your questions or share your knowledge
-4. Connect with other Chronos AI users
+4. Connect with other Aegis users
 
 ## Payment Methods
 
@@ -168,7 +168,7 @@ Each agent page includes:
 4. **Payment processing error**: Verify your payment method details and try again. If the issue continues, contact support.
 
 ### Getting Help
-- **Documentation**: Visit the Chronos AI documentation site
+- **Documentation**: Visit the Aegis documentation site
 - **Support Tickets**: Create a support ticket through the platform
 - **Community Forum**: Join the community discussion
 - **Live Chat**: Contact our support team via live chat (available during business hours)

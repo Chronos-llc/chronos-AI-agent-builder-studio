@@ -21,7 +21,7 @@ Tools in the Aegis Agent fall into two gating categories:
 
 ### Bot Integration Gating
 
-**Bot integration tools** are capabilities tied to the agent's own platform-level integrations — things like reading conversation history, managing agent memory, or interacting with the Chronos AI platform itself. These tools are available to the agent by default without requiring external OAuth.
+**Bot integration tools** are capabilities tied to the agent's own platform-level integrations — things like reading conversation history, managing agent memory, or interacting with the Aegis platform itself. These tools are available to the agent by default without requiring external OAuth.
 
 Bot integration tools are controlled through the **Agent Settings → Tool Permissions** panel and respect the approve/auto mode settings described below.
 

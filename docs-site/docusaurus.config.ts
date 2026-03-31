@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Chronos AI Agent Builder Studio',
-  tagline: 'Build, manage, and deploy intelligent AI agents with advanced configuration capabilities',
+  title: 'Aegis Documentation',
+  tagline: 'Documentation for Aegis, the agent workspace and orchestration platform',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -62,9 +62,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Chronos AI',
+      title: 'Aegis',
       logo: {
-        alt: 'Chronos AI Logo',
+        alt: 'Aegis Logo',
         src: 'img/logo.svg',
       },
       items: [

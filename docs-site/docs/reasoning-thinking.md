@@ -17,7 +17,7 @@ This is distinct from the agent simply "being smart." Reasoning Mode allocates d
 
 ## Supported Providers
 
-Reasoning Mode is available across all major model providers supported by Chronos AI. The mechanism differs slightly per provider but the user experience is uniform:
+Reasoning Mode is available across all major model providers supported by Aegis. The mechanism differs slightly per provider but the user experience is uniform:
 
 | Provider | Reasoning Mechanism |
 |---|---|
