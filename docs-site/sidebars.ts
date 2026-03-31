@@ -13,7 +13,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  Create as many sidebars as you want.
  */
 const sidebars: SidebarsConfig = {
-  // Chronos AI documentation sidebar
+  // Aegis documentation sidebar
   docsSidebar: [
     {
       type: 'doc',
@@ -34,6 +34,33 @@ const sidebars: SidebarsConfig = {
       type: 'doc',
       id: 'playwright-deployment',
       label: 'Playwright Deployment',
+    },
+    {
+      type: 'category',
+      label: 'Aegis Agent',
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'chat-browser-mode',
+          label: 'Chat & Browser Mode',
+        },
+        {
+          type: 'doc',
+          id: 'sub-agents',
+          label: 'Sub-Agents',
+        },
+        {
+          type: 'doc',
+          id: 'reasoning-thinking',
+          label: 'Reasoning & Thinking Mode',
+        },
+        {
+          type: 'doc',
+          id: 'tool-permissions',
+          label: 'Tool Permissions',
+        },
+      ],
     },
   ],
 };

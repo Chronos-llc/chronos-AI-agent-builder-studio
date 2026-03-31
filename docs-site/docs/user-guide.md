@@ -5,11 +5,33 @@ sidebar_label: User Guide
 slug: /user-guide
 ---
 
-# Chronos AI Agent Builder Studio - User Guide
+# Aegis User Guide
+
+## What's New in v1.2+
+
+Aegis v1.2 introduces major updates to the agent interaction experience. Here is a summary of the key new capabilities:
+
+### Chat Mode & Browser Mode Toggle
+
+The agent panel now supports two modes: **Chat Mode** for conversational interaction (with tool call cards, file attachments, voice input, a connector picker, and code cards with copy buttons) and **Browser Mode** for a live view into the agent's active web session. Switch between them instantly without losing context. [Read more →](./chat-browser-mode.md)
+
+### Sub-Agents
+
+The Aegis Agent can now spawn **parallel sub-agents** to decompose complex tasks into concurrent workstreams. A real-time Sub-Agent Panel shows the status, progress, and tool call history of each sub-agent. Human-in-the-Loop (HITL) approval cards surface in the main thread when a sub-agent needs your sign-off before proceeding. [Read more →](./sub-agents.md)
+
+### Reasoning & Thinking Mode
+
+Enable **Reasoning Mode** from the Plus (+) menu in the input bar to have the agent deliberate before acting. A collapsible **Thinking Card** appears at the top of the response showing the agent's internal deliberation trace. **Think Harder** mode allocates a larger compute budget for maximum thoroughness on your most complex tasks. Supported across all major providers (OpenAI, Anthropic, Google, xAI, DeepSeek). [Read more →](./reasoning-thinking.md)
+
+### Tool Permissions
+
+A new **Tool Permissions** system gives you per-tool control over agent behavior. Tools can be set to **Auto** (execute immediately) or **Approve** (pause and show a Confirmation Card in chat before acting). Memory and cron tools are always-on. OAuth connectors require an active authenticated connection. [Read more →](./tool-permissions.md)
+
+---
 
 ## Overview
 
-This guide provides instructions for using the Chronos AI Agent Builder Studio, including:
+This guide provides instructions for using Aegis, including:
 - Marketplace features for discovering and installing agents
 - Skills system for extending agent capabilities
 - Platform updates and notifications
@@ -109,10 +131,10 @@ Each agent page includes:
 4. Track the status of your ticket (Open, In Progress, Resolved, Closed)
 
 ### Community Support
-1. Join the Chronos AI community forum
+1. Join the Aegis community forum
 2. Search for existing solutions
 3. Post your questions or share your knowledge
-4. Connect with other Chronos AI users
+4. Connect with other Aegis users
 
 ## Payment Methods
 
@@ -146,7 +168,7 @@ Each agent page includes:
 4. **Payment processing error**: Verify your payment method details and try again. If the issue continues, contact support.
 
 ### Getting Help
-- **Documentation**: Visit the Chronos AI documentation site
+- **Documentation**: Visit the Aegis documentation site
 - **Support Tickets**: Create a support ticket through the platform
 - **Community Forum**: Join the community discussion
 - **Live Chat**: Contact our support team via live chat (available during business hours)
