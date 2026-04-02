@@ -1,7 +1,9 @@
 /// <reference types="vite/client" />
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useWebSocket } from '@/hooks/useWebSocket'
-import { Send, BookOpen, Play, Pause, Square, X, AlertCircle, ThumbsUp, ThumbsDown, Flag, Edit, AlertTriangle } from 'lucide-react'
+import { useModelCatalog } from '@/hooks/useModelCatalog'
+import type { ModelCatalogEntry } from '@/hooks/useModelCatalog'
+import { Send, BookOpen, Play, Pause, Square, X, AlertCircle, ThumbsUp, ThumbsDown, Flag, Edit, AlertTriangle, Cpu, Zap, Lock } from 'lucide-react'
 
 interface ChatMessage {
     id: string
@@ -36,9 +38,10 @@ interface TrainingInteraction {
 interface ChatTesterProps {
     agentId: string
     onClose: () => void
+    initialModel?: string
 }
 
-export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
+export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose, initialModel }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [inputValue, setInputValue] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -49,8 +52,37 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
     const [feedbackTarget, setFeedbackTarget] = useState<string | null>(null)
     const [isPaused, setIsPaused] = useState(false)
 
+    // Model selection state
+    const [selectedModel, setSelectedModel] = useState<string>(initialModel ?? '')
+    const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium')
+
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    
+
+    // Model catalog data
+    const { data: catalogData } = useModelCatalog()
+    const chatModels = useMemo(() => catalogData?.models?.chat ?? [], [catalogData])
+    const allProviders = useMemo(() => catalogData?.providers ?? [], [catalogData])
+
+    // Derived model metadata — the full catalog entry for the currently selected model
+    const currentModelMeta: ModelCatalogEntry | null = useMemo(
+        () => chatModels.find(m => m.model === selectedModel) ?? null,
+        [chatModels, selectedModel]
+    )
+
+    // A model is "local-only" when its provider is installed locally but has no cloud API key
+    const isLocalOnly: boolean = useMemo(() => {
+        if (!currentModelMeta) return false
+        const provider = allProviders.find(p => p.id === currentModelMeta.provider)
+        return (provider?.installed === true) && !(provider?.has_default_key ?? false)
+    }, [currentModelMeta, allProviders])
+
+    // The user has full access when the provider is available (key present or local)
+    const hasFullAccess: boolean = useMemo(() => {
+        if (!currentModelMeta) return false
+        const provider = allProviders.find(p => p.id === currentModelMeta.provider)
+        return provider?.available ?? false
+    }, [currentModelMeta, allProviders])
+
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws')
     const token = localStorage.getItem('access_token')
@@ -248,7 +280,9 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
                 const messageData = JSON.stringify({
                     session_id: trainingSession.id,
                     message: currentInput,
-                    type: 'user_message'
+                    type: 'user_message',
+                    model: selectedModel || undefined,
+                    reasoning_effort: currentModelMeta ? reasoningEffort : undefined,
                 })
                 send(messageData)
 
@@ -402,6 +436,66 @@ export const ChatTester: React.FC<ChatTesterProps> = ({ agentId, onClose }) => {
                             Close
                         </button>
                     </div>
+                </div>
+
+                {/* Model selection & configuration row */}
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-[200px]">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
+                        <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            aria-label="Select chat model"
+                        >
+                            <option value="">Default model</option>
+                            {chatModels.map(m => (
+                                <option key={`${m.provider}-${m.model}`} value={m.model}>
+                                    {m.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {currentModelMeta && (
+                        <div className="flex-1 min-w-[160px]">
+                            <label className="block text-xs font-medium text-gray-500 mb-1">
+                                <Zap className="inline h-3 w-3 mr-1" />
+                                Reasoning Effort
+                            </label>
+                            <select
+                                value={reasoningEffort}
+                                onChange={(e) => setReasoningEffort(e.target.value as 'low' | 'medium' | 'high')}
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                aria-label="Reasoning effort level"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    )}
+
+                    {currentModelMeta && (
+                        <div className="flex items-center gap-2 pt-5">
+                            {isLocalOnly && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    <Cpu className="h-3 w-3 mr-1" />
+                                    Local
+                                </span>
+                            )}
+                            {hasFullAccess ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Full access
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Limited
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {isTrainingMode && trainingSession && (
