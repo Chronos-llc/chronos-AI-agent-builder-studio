@@ -1,0 +1,35 @@
+import urllib.parse
+import json
+import re
+
+encoded = "%7B%22action%22%3A%22create%22%2C%22alert%22%3A%7B%22id%22%3A6784316513%2C%22number%22%3A72%2C%22state%22%3A%22open%22%2C%22node_id%22%3A%22RVA_kwDORElxzc8AAAABlGB0YQ%22%2C%22affected_range%22%3A%22%3C+0.0.27%22%2C%22affected_package_name%22%3A%22python-multipart%22%2C%22external_reference%22%3A%22https%3A%2F%2Fgithub.com%2Fadvisories%2FGHSA-pp6c-gr5w-3c5g%22%2C%22external_identifier%22%3A%22CVE-2026-42561%22%2C%22ghsa_id%22%3A%22GHSA-pp6c-gr5w-3c5g%22%2C%22severity%22%3A%22high%22%2C%22created_at%22%3A%222026-05-08T11%3A25%3A28Z%22%2C%22fixed_in%22%3A%220.0.27%22%7D%2C%22repository%22%3A%7B%22id%22%3A1145663949%2C%22node_id%22%3A%22R_kgDORElxzQ%22%2C%22name%22%3A%22chronos-AI-agent-builder-studio%22%2C%22full_name%22%3A%22Chronos-llc%2Fchronos-AI-agent-builder-studio%22%2C%22private%22%3Afalse%2C%22owner%22%3A%7B%22login%22%3A%22Chronos-llc%22%2C%22id%22%3A258978628%2C%22node_id%22%3A%22O_kgDOD2-zRA%22%2C%22avatar_url%22%3A%22https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F258978628%3Fv%3D4%22%2C%22gravatar_id%22%3A%22%22%2C%22url%22%3A%2A%2F%2Fapi.github.com%2Fusers%2FChronos-llc%22%2C%22html_url%22%3A%22https%3A%2F%2Fgithub.com%2FChronos-llc%22%2C%22type%22%3A%22Organization%22%2C%22site_admin%22%3Afalse%7D%2C%22html_url%22%3A%22https%3A%2F%2Fgithub.com%2FChronos-llc%2Fchronos-AI-agent-builder-studio%22%2C%22description%22%3A%22a+studio+for+building+AI+agents%22%2C%22fork%22%3Afalse%2C%22url%22%3A%22https%3A%2F%2Fapi.github.com%2Frepos%2FChronos-llc%2Fchronos-AI-agent-builder-studio%22%2C%22created_at%22%3A%222026-01-30T04%3A04%3A48Z%22%2C%22updated_at%22%3A%222026-03-15T05%3A34%3A48Z%22%2C%22pushed_at%22%3A%222026-05-08T06%3A40%3A22Z%22%2C%22git_url%22%3A%22git%3A%2F%2Fgithub.com%2FChronos-llc%2Fchronos-AI-agent-builder-studio.git%22%2C%22ssh_url%22%3A%22git%40github.com%3AChronos-llc%2Fchronos-AI-agent-builder-studio.git%22%2C%22clone_url%22%3A%22https%3A%2F%2Fgithub.com%2FChronos-llc%2Fchronos-AI-agent-builder-studio.git%22%2C%22size%22%3A49790%2C%22stargazers_count%22%3A1%2C%22watchers_count%22%3A1%2C%22language%22%3A%22Python%22%2C%22has_issues%22%3Atrue%2C%22has_projects%22%3Atrue%2C%22has_downloads%22%3Atrue%2C%22has_wiki%22%3Atrue%2C%22has_pages%22%3Afalse%2C%22has_discussions%22%3Atrue%2C%22forks_count%22%3A0%2C%22archived%22%3Afalse%2C%22disabled%22%3Afalse%2C%22open_issues_count%22%3A16%2C%22license%22%3A%7B%22key%22%3A%22apache-2.0%22%2C%22name%22%3A%22Apache+License+2.0%22%2C%22spdx_id%22%3A%22Apache-2.0%22%2C%22url%22%3A%22https%3A%2F%2Fapi.github.com%2Flicenses%2Fapache-2.0%22%2C%22node_id%22%3A%22MDc6TGljZW5zZTI%3D%22%7D%2C%22allow_forking%22%3Atrue%2C%22is_template%22%3Atrue%2C%22web_commit_signoff_required%22%3Atrue%2C%22has_pull_requests%22%3Atrue%2C%22pull_request_creation_policy%22%3A%22all%22%2C%22visibility%22%3A%22public%22%2C%22forks%22%3A0%2C%22open_issues%22%3A16%2C%22watchers%22%3A1%2C%22default_branch%22%3A%22main%22%7D%2C%22organization%22%3A%7B%22login%22%3A%22Chronos-llc%22%2C%22id%22%3A258978628%2C%22node_id%22%3A%22O_kgDOD2-zRA%22%2C%22url%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2F-Chronos-llc%22%2C%22repos_url%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2FChronos-llc%2Frepos%22%2C%22events_url%22%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2FChronos-llc%2Fevents%22%2C%22hooks_url%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2FChronos-llc%2Fhooks%22%2C%22issues_url%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2FChronos-llc%2Fissues%22%2C%22members_url%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2FChronos-llc%2Fmembers%7B%2Fmember%7D%22%2C%22public_members_url%22%3A%22https%3A%2F%2Fapi.github.com%2Forgs%2FChronos-llc%2Fpublic_members%7B%2Fmember%7D%22%2C%22avatar_url%22%3A%22https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F258978628%3Fv%3D4%22%2C%22description%22%3A%22%22%7D%2C%22sender%22%3A%7B%22login%22%3A%22github%22%2C%22id%22%3A9919%2C%22node_id%22%3A%22MDEyOk9yZ2FuaXphdGlvbjk5MTk%3D%22%2C%22avatar_url%22%3A%22https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F9919%3Fv%3D4%22%2C%22url%22%3A%22https%3A%2F%2Fapi.github.com%2Fusers%2Fgithub%22%2C%22html_url%22%3A%22https%3A%2F%2Fgithub.com%2Fgithub%22%2C%22type%22%3A%22Organization%22%2C%22site_admin%22%3Afalse%7D%7D"
+
+# Apply fixes in order
+# Fix 1: events_url has extra quotes: %22events_url%22%22%3A -> %22events_url%22%3A
+fixed = re.sub(r'%22events_url%22%22%3A', '%22events_url%22%3A', encoded)
+
+# Fix 2: owner url field with asterisk instead of https
+fixed = re.sub(r'%22url%22%3A%2A%2F%2F', '%22url%22%3Ahttps%3A%2F%2F', fixed)  # Fix the asterisk pattern in the owner object
+
+# Also check for any remaining asterisk patterns. The owner object's url field should be fixed.
+print("After substitutions, checking for %2A pattern:")
+if '%2A' in fixed:
+    print("Still contains %2A (asterisk encoding)")
+    idx = fixed.find('%2A')
+    print(f"Context: {fixed[max(0,idx-50):idx+50]}")
+else:
+    print("No %2A found - pattern was replaced")
+
+# Now decode
+decoded = urllib.parse.unquote(fixed)
+print(f"\nDecoded length: {len(decoded)}")
+print("First 200 chars:", decoded[:200])
+print("\nCharacter around position 730-740:", repr(decoded[728:742]))
+
+try:
+    data = json.loads(decoded)
+    print("\n✓ JSON parsed successfully!")
+    print(json.dumps(data, indent=2))
+except json.JSONDecodeError as e:
+    print(f"\n✗ JSON ERROR at position {e.pos}: {e.msg}")
+    print(f"Context: ...{decoded[max(0,e.pos-50):e.pos+50]}...")
