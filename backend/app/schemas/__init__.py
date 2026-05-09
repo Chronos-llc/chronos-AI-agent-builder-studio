@@ -64,6 +64,15 @@ from .mcp_server import (
     # Analytics schemas
     MCPAnalyticsRequest, MCPAnalyticsResponse
 )
+from .github_webhook import (
+    WorkflowJobStep,
+    WorkflowJob,
+    GitHubRepository,
+    GitHubUser,
+    GitHubOrganization,
+    GitHubWorkflowJobWebhookPayload,
+    GitHubWebhookEvent,
+)
 
 __all__ = [
     # Auth schemas
@@ -109,5 +118,14 @@ __all__ = [
     "MCPBatchOperation", "MCPBatchOperationResult",
     "MCPServerConfigAdvanced",
     "MCPWebSocketMessage", "MCPWebSocketResponse",
-    "MCPAnalyticsRequest", "MCPAnalyticsResponse"
+    "MCPAnalyticsRequest", "MCPAnalyticsResponse",
+    
+    # GitHub webhook schemas
+    "WorkflowJobStep",
+    "WorkflowJob",
+    "GitHubRepository",
+    "GitHubUser",
+    "GitHubOrganization",
+    "GitHubWorkflowJobWebhookPayload",
+    "GitHubWebhookEvent",
 ]
